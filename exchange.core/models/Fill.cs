@@ -7,15 +7,15 @@ namespace exchange.coinbase.models
     {
         #region Properties
         [JsonPropertyName("trade_id")]
-        public string Trade_ID { get; set; }
+        public int TradeID { get; set; }
         [JsonPropertyName("product_id")]
-        public string Product_ID { get; set; }
+        public string ProductID { get; set; }
         [JsonPropertyName("price")]
         public string Price { get; set; }
         [JsonPropertyName("size")]
         public string Size { get; set; }
         [JsonPropertyName("order_id")]
-        public string Order_ID { get; set; }
+        public string OrderID { get; set; }
         [JsonPropertyName("side")]
         public string Side { get; set; }
         [JsonPropertyName("fee")]

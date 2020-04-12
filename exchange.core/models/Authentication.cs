@@ -1,13 +1,9 @@
-﻿using exchange.coinbase.models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Globalization;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace exchange.coinbase
+namespace exchange.coinbase.models
 {
     public class Authentication
     {

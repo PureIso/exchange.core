@@ -7,7 +7,7 @@ namespace exchange.coinbase.models
     {
 
         [JsonPropertyName("sequence")]
-        public string Sequence { get; set; }
+        public long Sequence { get; set; }
         [JsonPropertyName("bids")]
         public ArrayList[] Bids { get; set; }
         [JsonPropertyName("asks")]

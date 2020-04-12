@@ -6,7 +6,7 @@ namespace exchange.coinbase.models
     {
         #region Properties
         [JsonPropertyName("trade_id")]
-        public int Trade_ID { get; set; }
+        public int TradeID { get; set; }
         public string ProductID { get; set; }
         [JsonPropertyName("size")]
         public string Size { get; set; }

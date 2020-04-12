@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.coinbase", "exchan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.test", "exchange.test\exchange.test.csproj", "{FCBD979A-A83C-4BC7-AA10-E81E04728427}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalr.client", "exchange.signalr.client\exchange.signalr.client.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "exchange.core", "exchange.interfaces\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21F098C5-5536-472B-BF68-227366C2F778}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21F098C5-5536-472B-BF68-227366C2F778}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21F098C5-5536-472B-BF68-227366C2F778}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21F098C5-5536-472B-BF68-227366C2F778}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

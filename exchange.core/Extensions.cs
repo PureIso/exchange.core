@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace exchange.coinbase
 {
@@ -42,9 +43,9 @@ namespace exchange.coinbase
                 {
                     Order order = new Order()
                     {
-                        Price = (string)array[0],
-                        Size = (string)array[1],
-                        Quantity = (long)array[2]
+                        Price = ((JsonElement)array[0]).GetString(),
+                        Size = ((JsonElement)array[1]).GetString(),
+                        Quantity = ((JsonElement)array[2]).GetInt32()
                     };
                     orders.Add(order);
                 }
@@ -62,12 +63,12 @@ namespace exchange.coinbase
                     DateTime unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                     HistoricRate historicRate = new HistoricRate()
                     {
-                        DateAndTime = unix.AddSeconds((long)array[0]),
-                        Low = Convert.ToDecimal(array[1]),
-                        High = Convert.ToDecimal(array[2]),
-                        Open = Convert.ToDecimal(array[3]),
-                        Close = Convert.ToDecimal(array[4]),
-                        Volume = Convert.ToDecimal(array[5]),
+                        DateAndTime = unix.AddSeconds(((JsonElement)array[0]).GetInt64()),
+                        Low = ((JsonElement)array[1]).GetDecimal(),
+                        High = ((JsonElement)array[2]).GetDecimal(),
+                        Open = ((JsonElement)array[3]).GetDecimal(),
+                        Close = ((JsonElement)array[4]).GetDecimal(),
+                        Volume = ((JsonElement)array[5]).GetDecimal()
                     };
                     historicRates.Add(historicRate);
                 }

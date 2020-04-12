@@ -8,15 +8,15 @@ namespace exchange.coinbase.models
         [JsonPropertyName("id")]
         public string ID { get; set; }
         [JsonPropertyName("base_currency")]
-        public string Base_Currency { get; set; }
+        public string BaseCurrency { get; set; }
         [JsonPropertyName("quote_currency")]
-        public string Quote_Currency { get; set; }
+        public string QuoteCurrency { get; set; }
         [JsonPropertyName("base_min_size")]
-        public string Base_Min_Size { get; set; }
+        public string BaseMinSize { get; set; }
         [JsonPropertyName("base_max_size")]
-        public string Base_Max_Size { get; set; }
+        public string BaseMaxSize { get; set; }
         [JsonPropertyName("quote_increment")]
-        public string Quote_Increment { get; set; }
+        public string QuoteIncrement { get; set; }
         #endregion
     }
 }

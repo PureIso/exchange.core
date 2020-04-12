@@ -11,11 +11,11 @@ namespace exchange.coinbase.models
         [JsonPropertyName("currency")]
         public string Currency { get; set; }
         [JsonPropertyName("balance")]
-        public decimal Balance { get; set; }
+        public string Balance { get; set; }
         [JsonPropertyName("hold")]
-        public decimal Hold { get; set; }
+        public string Hold { get; set; }
         [JsonPropertyName("available")]
-        public decimal Available { get; set; }
+        public string Available { get; set; }
         [JsonPropertyName("trading_enabled")]
         public bool TradingEnabled { get; set; }
         #endregion

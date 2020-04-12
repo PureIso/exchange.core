@@ -2,7 +2,7 @@
 using System.Net.Http;
 using System.Text;
 
-namespace exchange.coinbase
+namespace exchange.coinbase.models
 {
     public class Request
     {
