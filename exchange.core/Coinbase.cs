@@ -23,6 +23,8 @@ namespace exchange.coinbase
         private ClientWebSocket _clientWebsocket;
         #endregion
 
+        public Action<Feed> FeedBroadCast;
+
         #region Virtual Properties
         public virtual WebSocketState WebSocketState { get { return _clientWebsocket.State; } }
         #endregion
@@ -34,6 +36,7 @@ namespace exchange.coinbase
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
+        public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public bool IsWebSocketClosed { get; set; }
         public Product SelectedProduct { get; set; }
@@ -108,6 +111,15 @@ namespace exchange.coinbase
             Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             return Fills;
         }
+        //public async Task<List<Order>> UpdateOrdersAsync(Product product)
+        //{
+        //    Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders");
+        //    string json = await RequestAsync(request);
+        //    if (string.IsNullOrWhiteSpace(json))
+        //        return Orders;
+        //    Orders = JsonSerializer.Deserialize<List<Order>>(json);
+        //    return Orders;
+        //}
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
@@ -159,8 +171,14 @@ namespace exchange.coinbase
                         }
                         while (!IsWebSocketClosed)
                         {
-                            string response = await WebSocketReceiveAsync().ConfigureAwait(false);
-                            Console.WriteLine(response);
+                            string json = await WebSocketReceiveAsync().ConfigureAwait(false);
+                            feed = JsonSerializer.Deserialize<Feed>(json);
+                            if (feed == null || feed.Type == "error")
+                            {
+                                IsWebSocketClosed = true;
+                                return;
+                            }
+                            FeedBroadCast?.Invoke(feed);
                         }
                     }
                     catch (Exception ex)
@@ -250,7 +268,21 @@ namespace exchange.coinbase
                 ArraySegment<byte> subscribeRequest = new ArraySegment<byte>(requestBytes);
                 await _clientWebsocket.SendAsync(subscribeRequest, WebSocketMessageType.Text, true,
                     CancellationToken.None);
-                string json = await WebSocketReceiveAsync().ConfigureAwait(false);
+                if (WebSocketState != WebSocketState.Open)
+                    return null;
+                ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
+                WebSocketReceiveResult webSocketReceiveResult = await _clientWebsocket.ReceiveAsync(
+                    receiveBuffer,
+                    CancellationToken.None);
+                if (webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
+                {
+                    _clientWebsocket.Abort();
+                    _clientWebsocket.Dispose();
+                    return null;
+                }
+                if (webSocketReceiveResult.Count == 0 || !receiveBuffer.Any() || receiveBuffer.Array == null)
+                    return null;
+                string json = Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
                 if (string.IsNullOrWhiteSpace(json))
                 {
                     WebSocketClose();

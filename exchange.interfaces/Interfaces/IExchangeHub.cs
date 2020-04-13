@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace exchange.service.interfaces
+namespace exchange.core.interfaces
 {
     public interface IExchangeHub
     {

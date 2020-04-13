@@ -16,5 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\exchange.core\exchange.coinbase.csproj" />
+    <ProjectReference Include="..\exchange.interfaces\exchange.core.csproj" />
   </ItemGroup>
 </Project>

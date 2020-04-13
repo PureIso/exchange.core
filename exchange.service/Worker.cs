@@ -6,8 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase;
 using exchange.coinbase.models;
+using exchange.core.interfaces;
 using exchange.service.hubs;
-using exchange.service.interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -48,17 +48,24 @@ namespace exchange.service
                 httpClient);
             _coinbase.UpdateAccountsAsync().Wait();
             _coinbase.UpdateProductsAsync().Wait();
-            _coinbase.UpdateProductOrderBookAsync(_coinbase.Products[0]).Wait();
-
             List<Product> products = new List<Product>
             {
                 _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
                 _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
             };
+            _coinbase.UpdateProductOrderBookAsync(products[0]).Wait();
+            _coinbase.UpdateOrdersAsync(products[0]).Wait();
             _coinbase.UpdateTickersAsync(products).Wait();
             _coinbase.WebSocketSubscribe(products);
+            _coinbase.FeedBroadCast += FeedBroadCast;
             _logger.LogInformation($"Acount Count: {_coinbase.Accounts.Count}");
             await base.StartAsync(cancellationToken);
+        }
+        public async void FeedBroadCast(Feed feed)
+        {
+            _coinbase.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+            await _exchangeHub.Clients.All.CurrentPrices(_coinbase.CurrentPrices);
+            _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}]");
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
@@ -75,12 +82,8 @@ namespace exchange.service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await _exchangeHub.Clients.All.CurrentPrices(_coinbase.CurrentPrices);
-                await Task.Delay(1000, stoppingToken);
-            }
+            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);              
+            await Task.Delay(1000);
         }
     }
 }
