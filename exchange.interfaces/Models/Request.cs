@@ -1,10 +1,11 @@
-﻿using System;
+﻿using exchange.core.Interfaces;
+using System;
 using System.Net.Http;
 using System.Text;
 
-namespace exchange.coinbase.models
+namespace exchange.core.models
 {
-    public class Request
+    public class Request : IRequest
     {
         #region Properties
 
@@ -16,7 +17,7 @@ namespace exchange.coinbase.models
 
         public string RequestUrl { get; set; }
 
-        public double TimeStamp { get; }
+        public long TimeStamp { get; set; }
         public Uri AbsoluteUri { get; set; }
 
         #endregion
@@ -27,8 +28,6 @@ namespace exchange.coinbase.models
             RequestUrl = requestUrl;
             AbsoluteUri = new Uri(new Uri(endpointUrl), RequestUrl);
             TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
-
-            
         }
         public StringContent GetRequestBody(string contentType = "application/json")
         {
@@ -38,7 +37,7 @@ namespace exchange.coinbase.models
         }
         #region Private Methods
 
-        private static double GetCurrentUnixTimeStamp()
+        public long GetCurrentUnixTimeStamp()
         {
             return DateTime.UtcNow.ToUnixTimestamp();
         }

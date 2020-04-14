@@ -1,14 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using exchange.core.Interfaces;
+using exchange.coinbase;
+using exchange.core.interfaces;
+using exchange.core;
 
 namespace exchange.service
 {
@@ -19,7 +19,7 @@ namespace exchange.service
             CreateHostBuilder(args).Build().Run();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
             .ConfigureWebHostDefaults(webBuilder =>
             {
@@ -32,8 +32,14 @@ namespace exchange.service
             .ConfigureServices((hostContext, services) => {
                 IConfiguration configuration = hostContext.Configuration;
                 ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
-                services.AddSingleton(exchangeSettings);
+                services.AddSingleton<IExchangeSettings>(exchangeSettings);
+                services.AddHttpClient<IConnectionFactory, ConnectionFactory>(httpClient =>
+                {
+                    if (exchangeSettings.Uri != null)
+                        httpClient.BaseAddress = new Uri(exchangeSettings.Uri);
+                });
                 services.AddSignalR();
+                services.AddSingleton<IExchangeService, Coinbase>();
                 services.AddHostedService<Worker>();
              })
             .ConfigureAppConfiguration((hostContext, configApp) =>{

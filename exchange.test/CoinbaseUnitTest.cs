@@ -6,7 +6,8 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase;
-using exchange.coinbase.models;
+using exchange.core;
+using exchange.core.models;
 using exchange.service;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -19,12 +20,11 @@ namespace exchange.test
     {
         #region Fields
         private ExchangeSettings _exchangeSettings;
-        private Authentication _authentication;
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
         #endregion
 
         [TestInitialize()]
-        public void Initialize() 
+        public void Initialize()
         {
             _exchangeSettings = new ExchangeSettings
             {
@@ -33,8 +33,7 @@ namespace exchange.test
                 Secret = "NiWaGaqmhB3lgI/tQmm/gQ==",
                 EndpointUrl = "https://api.pro.coinbase.com",
                 Uri = "wss://ws-feed.gdax.com"
-            }; 
-            _authentication = new Authentication(_exchangeSettings.APIKey, _exchangeSettings.PassPhrase, _exchangeSettings.Secret, _exchangeSettings.EndpointUrl, _exchangeSettings.Uri);
+            };
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         }
 
@@ -70,7 +69,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
             //Act
             subjectUnderTest.UpdateAccountsAsync().Wait();
             //Assert
@@ -119,7 +119,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
             //Act
             subjectUnderTest.UpdateProductsAsync().Wait();
             //Assert
@@ -142,8 +143,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
-            List<Product> products = new List<Product> 
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            List<Product> products = new List<Product>
             {
                 new Product
                 {
@@ -209,7 +211,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -246,7 +249,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -281,7 +285,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Coinbase subjectUnderTest = new Coinbase(_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -301,6 +306,66 @@ namespace exchange.test
             Assert.AreEqual((decimal)0.32, subjectUnderTest.HistoricRates[0].Low);
             Assert.AreEqual((decimal)12.3, subjectUnderTest.HistoricRates[0].Volume);
         }
+        [TestMethod]
+        public void UpdateOrders_ShouldReturnAllOrders_WhenOrdersExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[
+                            {{
+                                ""id"": ""d0c5340b-6d6c-49d9-b567-48c4bfca13d2"",
+                                ""price"": ""0.10000000"",
+                                ""size"": ""0.01000000"",
+                                ""product_id"": ""BTC-USD"",
+                                ""side"": ""buy"",
+                                ""stp"": ""dc"",
+                                ""type"": ""limit"",
+                                ""time_in_force"": ""GTC"",
+                                ""post_only"": false,
+                                ""created_at"": ""2016-12-08T20:02:28.53864Z"",
+                                ""fill_fees"": ""0.0000000000000000"",
+                                ""filled_size"": ""0.00000000"",
+                                ""executed_value"": ""0.0000000000000000"",
+                                ""status"": ""open"",
+                                ""settled"": false
+                            }},
+                            {{
+                                ""id"": ""8b99b139-58f2-4ab2-8e7a-c11c846e3022"",
+                                ""price"": ""1.00000000"",
+                                ""size"": ""1.00000000"",
+                                ""product_id"": ""BTC-USD"",
+                                ""side"": ""buy"",
+                                ""stp"": ""dc"",
+                                ""type"": ""limit"",
+                                ""time_in_force"": ""GTC"",
+                                ""post_only"": false,
+                                ""created_at"": ""2016-12-08T20:01:19.038644Z"",
+                                ""fill_fees"": ""0.0000000000000000"",
+                                ""filled_size"": ""0.00000000"",
+                                ""executed_value"": ""0.0000000000000000"",
+                                ""status"": ""open"",
+                                ""settled"": false
+                            }}
+                        ]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            subjectUnderTest.UpdateOrdersAsync().Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Orders);
+            Assert.AreEqual(2, subjectUnderTest.Orders.Count);
+            Assert.AreEqual("d0c5340b-6d6c-49d9-b567-48c4bfca13d2", subjectUnderTest.Orders[0].ID);
+            Assert.AreEqual("8b99b139-58f2-4ab2-8e7a-c11c846e3022", subjectUnderTest.Orders[1].ID);
+        }
         #endregion
 
         #region Web Socket Test
@@ -309,9 +374,10 @@ namespace exchange.test
         {
             //Arrange
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            Mock<Coinbase> coinbaseMock = new Mock<Coinbase>(MockBehavior.Strict,_authentication, httpClient);
+            ConnectionFactory connectionFactory = new ConnectionFactory(httpClient, _exchangeSettings);
+            Mock<Coinbase> coinbaseMock = new Mock<Coinbase>(MockBehavior.Strict, connectionFactory);
             coinbaseMock.Setup(x => x.WebSocketReceiveAsync()).Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
-            coinbaseMock.Setup(x => x.WebSocketState).Returns(WebSocketState.Open);
+            coinbaseMock.Setup(x => x.GetWebSocketState()).Returns(WebSocketState.Open);
             coinbaseMock.Setup(x => x.WebSocketCloseAndDisposeAsync()).Returns(Task.FromResult(true));
             Coinbase subjectUnderTest = coinbaseMock.Object;
             List<Product> products = new List<Product>
@@ -339,9 +405,8 @@ namespace exchange.test
             Assert.IsTrue(subjectUnderTest.IsWebSocketClosed);
             subjectUnderTest.WebSocketSubscribe(products);
             Assert.IsFalse(subjectUnderTest.IsWebSocketClosed);
-            subjectUnderTest.WebSocketClose();          
+            subjectUnderTest.WebSocketClose();
             Assert.IsTrue(subjectUnderTest.IsWebSocketClosed);
-
         }
         #endregion
     }

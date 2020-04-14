@@ -1,11 +1,12 @@
-﻿using System;
+﻿using exchange.core.Interfaces;
+using System;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace exchange.coinbase.models
+namespace exchange.core.models
 {
-    public class Authentication
+    public class Authentication : IAuthentication
     {
 
         #region Fields
@@ -19,20 +20,21 @@ namespace exchange.coinbase.models
         public string ApiKey { get; }
         public string Passphrase { get; }
         public string EndpointUrl { get; }
-        public Uri ExchangeUri { get; }
+        public Uri WebSocketUri { get; }
         #endregion
 
-        public Authentication(string apiKey, string passphrase, string secret, string endpointUrl, string uri)
+        public Authentication(string apiKey, string passphrase, string secret, string endpointUrl, string webSocketUri)
         {
             ApiKey = apiKey;
             Passphrase = passphrase;
             EndpointUrl = endpointUrl;
-            ExchangeUri = new Uri(uri);
+            WebSocketUri = new Uri(webSocketUri);
             _secret = secret;
         }
         #region Public Methods
-        public AuthenticationSignature ComputeSignature(Request request)
+        public IAuthenticationSignature ComputeSignature(IRequest request)
         {
+            request.TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
             string timestamp = request.TimeStamp.ToString(CultureInfo.InvariantCulture);
             string prehash = timestamp + request.Method + request.RequestUrl + request.RequestBody;
             byte[] data = Convert.FromBase64String(_secret);
@@ -47,7 +49,7 @@ namespace exchange.coinbase.models
 
         #region Private Methods
 
-        private static string HashString(string prehashString, byte[] secret)
+        public string HashString(string prehashString, byte[] secret)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(prehashString);
             using (HMACSHA256 hmac = new HMACSHA256(secret))

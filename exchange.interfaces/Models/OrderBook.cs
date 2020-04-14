@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Text.Json.Serialization;
 
-namespace exchange.coinbase.models
+namespace exchange.core.models
 {
     public class OrderBook
     {

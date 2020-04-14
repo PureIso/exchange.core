@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using exchange.core.Interfaces;
 
 namespace exchange.service
 {
-    public class ExchangeSettings
+    public class ExchangeSettings : IExchangeSettings
     {
         public string Uri { get; set; }
         public string APIKey { get; set; }

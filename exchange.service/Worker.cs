@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using exchange.coinbase;
-using exchange.coinbase.models;
 using exchange.core.interfaces;
 using exchange.service.hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using exchange.core.models;
+using exchange.core;
 
 namespace exchange.service
 {
@@ -18,50 +17,35 @@ namespace exchange.service
     {
         private readonly ILogger<Worker> _logger;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
+        private readonly IExchangeService _coinbase;
 
-        private ExchangeSettings ExchangeSettings { get; }
-        private Coinbase _coinbase;
-
-        public Worker(ILogger<Worker> logger, ExchangeSettings configuration, IHubContext<ExchangeHub, IExchangeHub> exchangeHub)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IExchangeService coinbase)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
-            ExchangeSettings = configuration;
+            _coinbase = coinbase;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            Authentication authentication = new Authentication(
-                ExchangeSettings.APIKey,
-                ExchangeSettings.PassPhrase,
-                ExchangeSettings.Secret,
-                ExchangeSettings.EndpointUrl,
-                ExchangeSettings.Uri);
-
-            HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", authentication.ApiKey);
-            httpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", authentication.Passphrase);
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
-            _coinbase = new Coinbase(
-                authentication,
-                httpClient);
-            _coinbase.UpdateAccountsAsync().Wait();
-            _coinbase.UpdateProductsAsync().Wait();
+            _coinbase.UpdateAccountsAsync().Wait(cancellationToken);
+            _coinbase.UpdateProductsAsync().Wait(cancellationToken);
             List<Product> products = new List<Product>
             {
                 _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
                 _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
             };
-            _coinbase.UpdateProductOrderBookAsync(products[0]).Wait();
-            _coinbase.UpdateOrdersAsync(products[0]).Wait();
-            _coinbase.UpdateTickersAsync(products).Wait();
+            _coinbase.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
+            _coinbase.UpdateOrdersAsync().Wait(cancellationToken);
+            _coinbase.UpdateTickersAsync(products).Wait(cancellationToken);
             _coinbase.WebSocketSubscribe(products);
             _coinbase.FeedBroadCast += FeedBroadCast;
-            _logger.LogInformation($"Acount Count: {_coinbase.Accounts.Count}");
+            _logger.LogInformation($"Account Count: {_coinbase.Accounts.Count}");
             await base.StartAsync(cancellationToken);
         }
-        public async void FeedBroadCast(Feed feed)
+
+        private async void FeedBroadCast(Feed feed)
         {
             _coinbase.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
             await _exchangeHub.Clients.All.CurrentPrices(_coinbase.CurrentPrices);
@@ -83,7 +67,7 @@ namespace exchange.service
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);              
-            await Task.Delay(1000);
+            await Task.Delay(1000, stoppingToken);
         }
     }
 }

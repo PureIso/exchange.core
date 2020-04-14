@@ -1,4 +1,7 @@
-﻿using exchange.coinbase.models;
+﻿using exchange.core;
+using exchange.core.interfaces;
+using exchange.core.Interfaces;
+using exchange.core.models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,21 +15,23 @@ using System.Threading.Tasks;
 
 namespace exchange.coinbase
 {
-    public class Coinbase
+    public class Coinbase : IExchangeService
     {
         #region Fields
         private readonly SemaphoreSlim _ioRequestSemaphoreSlim;
         private readonly SemaphoreSlim _ioSemaphoreSlim;
-        private readonly Uri _exchangeEndpointUri;
-        private Authentication _authentication;
-        private HttpClient _httpClient;      
-        private ClientWebSocket _clientWebsocket;
+        private readonly Authentication _authentication;
+        private readonly HttpClient _httpClient;      
+        private readonly ClientWebSocket _clientWebsocket;
         #endregion
 
-        public Action<Feed> FeedBroadCast;
+        #region Events
+        public Action<Feed> FeedBroadCast { get; set; }
+        #endregion
 
         #region Virtual Properties
-        public virtual WebSocketState WebSocketState { get { return _clientWebsocket.State; } }
+        public virtual WebSocketState GetWebSocketState()
+        { return _clientWebsocket.State; }
         #endregion
 
         #region Public Properties
@@ -42,15 +47,13 @@ namespace exchange.coinbase
         public Product SelectedProduct { get; set; }
         #endregion
 
-        public Coinbase(Authentication authentication, HttpClient httpClient)
+        public Coinbase(IConnectionFactory connectionFactory)
         {
-            _authentication = authentication;
-            _httpClient = httpClient;
-
+            _authentication = connectionFactory.Authentication;
+            _httpClient = connectionFactory.HttpClient;
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _clientWebsocket = new ClientWebSocket();
-            _exchangeEndpointUri = authentication.ExchangeUri;
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             IsWebSocketClosed = true;
@@ -79,6 +82,8 @@ namespace exchange.coinbase
         {
             if (products == null || !products.Any())
                 return Tickers;
+            if (Tickers == null)
+                Tickers = new List<Ticker>();
             //Get price of all products
             foreach (Product product in products)
             {
@@ -87,13 +92,11 @@ namespace exchange.coinbase
                 if (string.IsNullOrWhiteSpace(json))
                     return Tickers;
                 Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
-                if (Tickers != null)
-                    Tickers.RemoveAll(x => x.ProductID == product.ID);
-                if (ticker != null)
-                {
-                    ticker.ProductID = product.ID;
-                    Tickers.Add(ticker);
-                }
+                Tickers?.RemoveAll(x => x.ProductID == product.ID);
+                if (ticker == null) 
+                    continue;
+                ticker.ProductID = product.ID;
+                Tickers.Add(ticker);
             }
             foreach (Ticker ticker in Tickers)
             {
@@ -111,15 +114,15 @@ namespace exchange.coinbase
             Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             return Fills;
         }
-        //public async Task<List<Order>> UpdateOrdersAsync(Product product)
-        //{
-        //    Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders");
-        //    string json = await RequestAsync(request);
-        //    if (string.IsNullOrWhiteSpace(json))
-        //        return Orders;
-        //    Orders = JsonSerializer.Deserialize<List<Order>>(json);
-        //    return Orders;
-        //}
+        public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
+        {
+            Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
+            string json = await RequestAsync(request);
+            if (string.IsNullOrWhiteSpace(json))
+                return Orders;
+            Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            return Orders;
+        }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
@@ -161,8 +164,12 @@ namespace exchange.coinbase
                         {
                             productIds += $@"""{product.ID}"",";
                         }
+
+                        if (productIds == null) 
+                            continue;
                         productIds = productIds.Remove(productIds.Length - 1, 1);
-                        string message = $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds}]}}]}}";
+                        string message =
+                            $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds}]}}]}}";
                         Feed feed = await WebSocketSendAsync(message);
                         if (feed == null || feed.Type == "error")
                         {
@@ -178,6 +185,7 @@ namespace exchange.coinbase
                                 IsWebSocketClosed = true;
                                 return;
                             }
+
                             FeedBroadCast?.Invoke(feed);
                         }
                     }
@@ -192,18 +200,19 @@ namespace exchange.coinbase
         #endregion
 
         #region Private Methods
-        private async Task<string> RequestAsync(Request request)
+        private async Task<string> RequestAsync(IRequest request)
         {
             try
             {
                 await _ioRequestSemaphoreSlim.WaitAsync();
-                AuthenticationSignature authenticationSignature = _authentication.ComputeSignature(request);
+                IAuthenticationSignature authenticationSignature = _authentication.ComputeSignature(request);
                 StringContent requestBody = request.GetRequestBody();
-                Console.WriteLine("{0} - {1}", DateTime.Now, request.AbsoluteUri);
-
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", _authentication.ApiKey);
+                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", _authentication.Passphrase);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
                 _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
                 _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
-
                 HttpResponseMessage response = null;
                 switch (request.Method)
                 {
@@ -224,15 +233,10 @@ namespace exchange.coinbase
                         throw new NotImplementedException("The supplied HTTP method is not supported: " +
                                                             request.Method);
                 }
-
                 if (response == null)
                     throw new Exception("Create Category returned no response");
                 string contentBody = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                {
-                    return null;
-                }
-                return contentBody;
+                return !response.IsSuccessStatusCode ? null : contentBody;
             }
             catch (Exception)
             {
@@ -247,7 +251,7 @@ namespace exchange.coinbase
         }
         private bool IsWebSocketConnected()
         {
-            return _clientWebsocket != null && WebSocketState == WebSocketState.Open;
+            return _clientWebsocket != null && GetWebSocketState() == WebSocketState.Open;
         }
         #endregion
 
@@ -261,14 +265,14 @@ namespace exchange.coinbase
                 if (_clientWebsocket == null)
                     return feed;
                 byte[] requestBytes = Encoding.UTF8.GetBytes(message);
-                if (WebSocketState != WebSocketState.Open)
+                if (GetWebSocketState() != WebSocketState.Open)
                 {
-                    await _clientWebsocket.ConnectAsync(_exchangeEndpointUri, CancellationToken.None);
+                    await _clientWebsocket.ConnectAsync(_authentication.WebSocketUri, CancellationToken.None);
                 }
                 ArraySegment<byte> subscribeRequest = new ArraySegment<byte>(requestBytes);
                 await _clientWebsocket.SendAsync(subscribeRequest, WebSocketMessageType.Text, true,
                     CancellationToken.None);
-                if (WebSocketState != WebSocketState.Open)
+                if (GetWebSocketState() != WebSocketState.Open)
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await _clientWebsocket.ReceiveAsync(
@@ -307,7 +311,7 @@ namespace exchange.coinbase
                 await _ioSemaphoreSlim.WaitAsync();
                 if (_clientWebsocket == null)
                     return null;
-                if (WebSocketState != WebSocketState.Open)
+                if (GetWebSocketState() != WebSocketState.Open)
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await _clientWebsocket.ReceiveAsync(
