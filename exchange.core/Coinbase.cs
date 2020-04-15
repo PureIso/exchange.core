@@ -43,8 +43,9 @@ namespace exchange.coinbase
         public List<Fill> Fills { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
-        public bool IsWebSocketClosed { get; set; }
+        public bool IsWebSocketClosed => !_connectionFactory.IsWebSocketConnected();
         public Product SelectedProduct { get; set; }
+        private IConnectionFactory _connectionFactory;
         #endregion
 
         public Coinbase(IConnectionFactory connectionFactory)
@@ -53,26 +54,133 @@ namespace exchange.coinbase
             _httpClient = connectionFactory.HttpClient;
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
-            _clientWebsocket = new ClientWebSocket();
+            _clientWebsocket = connectionFactory.ClientWebSocket;
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
-            IsWebSocketClosed = true;
+            _connectionFactory = connectionFactory;
         }
 
         #region Public Methods
-        public async Task<List<Account>> UpdateAccountsAsync()
+
+        public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", "/accounts");
-            string json = await RequestAsync(request);
+            /***
+             * Account ID
+             * {
+    "id": "a1b2c3d4",
+    "balance": "1.100",
+    "holds": "0.100",
+    "available": "1.00",
+    "currency": "USD"
+}
+             */
+            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}");
+            string json = await _connectionFactory.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Accounts;
             Accounts = JsonSerializer.Deserialize<List<Account>>(json);
             return Accounts;
         }
+        public async Task<List<Account>> UpdateAccountHistoryAsync(string accountId)
+        {
+            /***
+             * Account History
+             *[
+    {
+        "id": "100",
+        "created_at": "2014-11-07T08:19:27.028459Z",
+        "amount": "0.001",
+        "balance": "239.669",
+        "type": "fee",
+        "details": {
+            "order_id": "d50ec984-77a8-460a-b958-66f114b0de9b",
+            "trade_id": "74",
+            "product_id": "BTC-USD"
+        }
+    }
+]
+             */
+            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
+            string json = await _connectionFactory.RequestAsync(request);
+            if (string.IsNullOrWhiteSpace(json))
+                return Accounts;
+            Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+            return Accounts;
+        }
+        public async Task<List<Account>> UpdateAccountHoldsAsync(string accountId)
+        {
+            /***
+             * Account Holds
+             *[
+    {
+        "id": "82dcd140-c3c7-4507-8de4-2c529cd1a28f",
+        "account_id": "e0b3f39a-183d-453e-b754-0c13e5bab0b3",
+        "created_at": "2014-11-06T10:34:47.123456Z",
+        "updated_at": "2014-11-06T10:40:47.123456Z",
+        "amount": "4.23",
+        "type": "order",
+        "ref": "0a205de4-dd35-4370-a285-fe8fc375a273",
+    }
+]
+             */
+            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
+            string json = await _connectionFactory.RequestAsync(request);
+            if (string.IsNullOrWhiteSpace(json))
+                return Accounts;
+            Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+            return Accounts;
+        }
+        public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
+        {
+            Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
+            string json = await _connectionFactory.RequestAsync(request);
+            if (string.IsNullOrWhiteSpace(json))
+                return Orders;
+            Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            return Orders;
+        }
+        public async Task<List<Order>> PostOrdersAsync(Product product = null)
+        {
+            /***
+             * {
+    "size": "0.01",
+    "price": "0.100",
+    "side": "buy",
+    "product_id": "BTC-USD"
+}
+             */
+            Request request = new Request(_authentication.EndpointUrl, "POST", $"/orders");
+            string json = await _connectionFactory.RequestAsync(request);
+            if (string.IsNullOrWhiteSpace(json))
+                return Orders;
+            Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            return Orders;
+
+            /***
+             *{
+    "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+    "price": "0.10000000",
+    "size": "0.01000000",
+    "product_id": "BTC-USD",
+    "side": "buy",
+    "stp": "dc",
+    "type": "limit",
+    "time_in_force": "GTC",
+    "post_only": false,
+    "created_at": "2016-12-08T20:02:28.53864Z",
+    "fill_fees": "0.0000000000000000",
+    "filled_size": "0.00000000",
+    "executed_value": "0.0000000000000000",
+    "status": "pending",
+    "settled": false
+}
+             */
+        }
+
         public async Task<List<Product>> UpdateProductsAsync()
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/products");
-            string json = await RequestAsync(request);
+            string json = await _connectionFactory.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Products;
             Products = JsonSerializer.Deserialize<List<Product>>(json);
@@ -88,7 +196,7 @@ namespace exchange.coinbase
             foreach (Product product in products)
             {
                 Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/ticker");
-                string json = await RequestAsync(request);
+                string json = await _connectionFactory.RequestAsync(request);
                 if (string.IsNullOrWhiteSpace(json))
                     return Tickers;
                 Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
@@ -108,25 +216,17 @@ namespace exchange.coinbase
         public async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/fills?product_id={product.ID ?? string.Empty}");
-            string json = await RequestAsync(request);
+            string json = await _connectionFactory.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Fills;
             Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             return Fills;
         }
-        public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
-        {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
-            string json = await RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Orders;
-            Orders = JsonSerializer.Deserialize<List<Order>>(json);
-            return Orders;
-        }
+        
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
-            string json = await RequestAsync(request);
+            string json = await _connectionFactory.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return OrderBook;
             OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
@@ -135,228 +235,64 @@ namespace exchange.coinbase
         public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
         {
             Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
-            string json = await RequestAsync(request);
+            string json = await _connectionFactory.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return HistoricRates;
             ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
             HistoricRates = candles.ToHistoricRateList();
             return HistoricRates;
         }
-        public void WebSocketClose()
+        
+        public bool Close()
         {
-            IsWebSocketClosed = WebSocketCloseAndDisposeAsync().GetAwaiter().GetResult();
+            bool isClosed = _connectionFactory.WebSocketCloseAsync().GetAwaiter().GetResult();
+            return isClosed;
         }
-        public void WebSocketSubscribe(List<Product> products)
+        public bool Subscribe(List<Product> products)
         {
-            Task.Run(async () => {
-                IsWebSocketClosed = false;
-                while (!IsWebSocketClosed)
-                {
-                    try
-                    {
-                        if (products == null || !products.Any())
-                        {
-                            IsWebSocketClosed = true;
-                            return;
-                        }
-                        string productIds = null;
-                        foreach (Product product in products)
-                        {
-                            productIds += $@"""{product.ID}"",";
-                        }
+            if (products == null || !products.Any())
+                return false;
+            string productIds = null;
+            foreach (Product product in products)
+            {
+                productIds += $@"""{product.ID}"",";
+            }
+            if (productIds == null)
+                return false;
+            productIds = productIds.Remove(productIds.Length - 1, 1);
+            string message =
+                $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds}]}}]}}";
+            string json = _connectionFactory.WebSocketSendAsync(message).Result;
+            Feed feed = JsonSerializer.Deserialize<Feed>(json);
+            if (feed == null || feed.Type == "error")
+                return false;
 
-                        if (productIds == null) 
-                            continue;
-                        productIds = productIds.Remove(productIds.Length - 1, 1);
-                        string message =
-                            $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds}]}}]}}";
-                        Feed feed = await WebSocketSendAsync(message);
+            Task.Run(async () =>
+            {
+                try
+                {
+                    while (_connectionFactory.IsWebSocketConnected())
+                    {
+                        json = await _connectionFactory.WebSocketReceiveAsync().ConfigureAwait(false);
+                        feed = JsonSerializer.Deserialize<Feed>(json);
                         if (feed == null || feed.Type == "error")
                         {
-                            IsWebSocketClosed = true;
+                            //IsWebSocketClosed = true;
                             return;
                         }
-                        while (!IsWebSocketClosed)
-                        {
-                            string json = await WebSocketReceiveAsync().ConfigureAwait(false);
-                            feed = JsonSerializer.Deserialize<Feed>(json);
-                            if (feed == null || feed.Type == "error")
-                            {
-                                IsWebSocketClosed = true;
-                                return;
-                            }
-
-                            FeedBroadCast?.Invoke(feed);
-                        }
+                        FeedBroadCast?.Invoke(feed);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.StackTrace);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
                 }
             });
             Task.Delay(1000).Wait();
+            return true;
         }
         #endregion
 
-        #region Private Methods
-        private async Task<string> RequestAsync(IRequest request)
-        {
-            try
-            {
-                await _ioRequestSemaphoreSlim.WaitAsync();
-                IAuthenticationSignature authenticationSignature = _authentication.ComputeSignature(request);
-                StringContent requestBody = request.GetRequestBody();
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", _authentication.ApiKey);
-                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", _authentication.Passphrase);
-                _httpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
-                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
-                _httpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
-                HttpResponseMessage response = null;
-                switch (request.Method)
-                {
-                    case "GET":
-                        if (requestBody != null)
-                            response = await _httpClient.PostAsync(request.AbsoluteUri, requestBody);
-                        else
-                            response = await _httpClient.GetAsync(request.AbsoluteUri);
-                        break;
-                    case "POST":
-                        if (requestBody != null)
-                            response = await _httpClient.PostAsync(request.AbsoluteUri, requestBody);
-                        break;
-                    case "DELETE":
-                        response = await _httpClient.DeleteAsync(request.AbsoluteUri);
-                        break;
-                    default:
-                        throw new NotImplementedException("The supplied HTTP method is not supported: " +
-                                                            request.Method);
-                }
-                if (response == null)
-                    throw new Exception("Create Category returned no response");
-                string contentBody = await response.Content.ReadAsStringAsync();
-                return !response.IsSuccessStatusCode ? null : contentBody;
-            }
-            catch (Exception)
-            {
-            }
-            finally
-            {
-                await Task.Delay(500);
-                _ioRequestSemaphoreSlim.Release();
-            }
-
-            return null;
-        }
-        private bool IsWebSocketConnected()
-        {
-            return _clientWebsocket != null && GetWebSocketState() == WebSocketState.Open;
-        }
-        #endregion
-
-        #region Virtual Methods
-        public virtual async Task<Feed> WebSocketSendAsync(string message)
-        {
-            Feed feed = new Feed { Type = "error" };
-            try
-            {
-                await _ioSemaphoreSlim.WaitAsync();  
-                if (_clientWebsocket == null)
-                    return feed;
-                byte[] requestBytes = Encoding.UTF8.GetBytes(message);
-                if (GetWebSocketState() != WebSocketState.Open)
-                {
-                    await _clientWebsocket.ConnectAsync(_authentication.WebSocketUri, CancellationToken.None);
-                }
-                ArraySegment<byte> subscribeRequest = new ArraySegment<byte>(requestBytes);
-                await _clientWebsocket.SendAsync(subscribeRequest, WebSocketMessageType.Text, true,
-                    CancellationToken.None);
-                if (GetWebSocketState() != WebSocketState.Open)
-                    return null;
-                ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
-                WebSocketReceiveResult webSocketReceiveResult = await _clientWebsocket.ReceiveAsync(
-                    receiveBuffer,
-                    CancellationToken.None);
-                if (webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
-                {
-                    _clientWebsocket.Abort();
-                    _clientWebsocket.Dispose();
-                    return null;
-                }
-                if (webSocketReceiveResult.Count == 0 || !receiveBuffer.Any() || receiveBuffer.Array == null)
-                    return null;
-                string json = Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    WebSocketClose();
-                    return feed;
-                }
-                feed = JsonSerializer.Deserialize<Feed>(json);
-            }
-            catch (Exception)
-            {
-                await Task.Delay(5000);
-            }
-            finally
-            {
-                _ioSemaphoreSlim.Release();
-            }
-            return feed;
-        }
-        public virtual async Task<string> WebSocketReceiveAsync()
-        {
-            try
-            {
-                await _ioSemaphoreSlim.WaitAsync();
-                if (_clientWebsocket == null)
-                    return null;
-                if (GetWebSocketState() != WebSocketState.Open)
-                    return null;
-                ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
-                WebSocketReceiveResult webSocketReceiveResult = await _clientWebsocket.ReceiveAsync(
-                    receiveBuffer,
-                    CancellationToken.None);
-                if (webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
-                {
-                    _clientWebsocket.Abort();
-                    _clientWebsocket.Dispose();
-                    return null;
-                }
-                if (webSocketReceiveResult.Count == 0 || !receiveBuffer.Any() || receiveBuffer.Array == null)
-                    return null;
-                return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
-            }
-            catch (Exception)
-            {
-                await Task.Delay(5000);
-            }
-            finally
-            {
-                _ioSemaphoreSlim.Release();
-            }
-            return null;
-        }
-        public virtual async Task<bool> WebSocketCloseAndDisposeAsync()
-        {
-            try
-            {
-                await _ioSemaphoreSlim.WaitAsync();
-                if (_clientWebsocket == null || !IsWebSocketConnected())
-                    return true;
-                await _clientWebsocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty,CancellationToken.None);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-            }
-            finally
-            {
-                _ioSemaphoreSlim.Release();
-            }
-            return false;
-        }
-        #endregion
+       
     }
 }

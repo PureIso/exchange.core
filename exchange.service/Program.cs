@@ -9,6 +9,7 @@ using exchange.core.Interfaces;
 using exchange.coinbase;
 using exchange.core.interfaces;
 using exchange.core;
+using Microsoft.AspNetCore.WebSockets;
 
 namespace exchange.service
 {

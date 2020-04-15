@@ -27,18 +27,18 @@ namespace exchange.core.interfaces
         List<Fill> Fills { get; set; }
         List<Order> Orders { get; set; }
         OrderBook OrderBook { get; set; }
-        bool IsWebSocketClosed { get; set; }
         Product SelectedProduct { get; set; }
         #endregion
 
-        Task<List<Account>> UpdateAccountsAsync();
+        Task<List<Account>> UpdateAccountsAsync(string accountId="");
         Task<List<Product>> UpdateProductsAsync();
         Task<List<Ticker>> UpdateTickersAsync(List<Product> products);
         Task<List<Fill>> UpdateFillsAsync(Product product);
         Task<List<Order>> UpdateOrdersAsync(Product product = null);
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
-        void WebSocketClose();
-        void WebSocketSubscribe(List<Product> products);
+
+        bool Close();
+        bool Subscribe(List<Product> products);
     }
 }
