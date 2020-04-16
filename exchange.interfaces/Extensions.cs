@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace exchange.core
@@ -76,6 +77,18 @@ namespace exchange.core
         {
             DateTime result = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, 0, 0);
             return result.AddMinutes((dateTime.Minute / 5 + 1) * 5);
+        }
+
+        public static string ToProductIDSubscribeString(this List<Product> products)
+        {
+            if (products == null || !products.Any())
+                return null;
+            string productIds = null;
+            foreach (Product product in products)
+            {
+                productIds += $@"""{product.ID}"",";
+            }
+            return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
         }
     }
 }

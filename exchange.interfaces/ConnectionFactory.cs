@@ -27,10 +27,6 @@ namespace exchange.core
         public Action<Feed> FeedBroadCast { get; set; }
         #endregion
 
-        //#region Virtual Properties
-        //public virtual WebSocketState GetWebSocketState() { return ClientWebSocket.State; }
-        //#endregion
-
         public ConnectionFactory(HttpClient httpClient, IExchangeSettings exchangeSettings)
         {
             Authentication = new Authentication(

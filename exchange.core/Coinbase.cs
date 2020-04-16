@@ -6,11 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.WebSockets;
-using System.Text;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace exchange.coinbase
@@ -18,20 +14,12 @@ namespace exchange.coinbase
     public class Coinbase : IExchangeService
     {
         #region Fields
-        private readonly SemaphoreSlim _ioRequestSemaphoreSlim;
-        private readonly SemaphoreSlim _ioSemaphoreSlim;
         private readonly Authentication _authentication;
-        private readonly HttpClient _httpClient;      
-        private readonly ClientWebSocket _clientWebsocket;
+        private readonly IConnectionFactory _connectionFactory;
         #endregion
 
         #region Events
         public Action<Feed> FeedBroadCast { get; set; }
-        #endregion
-
-        #region Virtual Properties
-        public virtual WebSocketState GetWebSocketState()
-        { return _clientWebsocket.State; }
         #endregion
 
         #region Public Properties
@@ -43,18 +31,13 @@ namespace exchange.coinbase
         public List<Fill> Fills { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
-        public bool IsWebSocketClosed => !_connectionFactory.IsWebSocketConnected();
         public Product SelectedProduct { get; set; }
-        private IConnectionFactory _connectionFactory;
+        
         #endregion
 
         public Coinbase(IConnectionFactory connectionFactory)
         {
             _authentication = connectionFactory.Authentication;
-            _httpClient = connectionFactory.HttpClient;
-            _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
-            _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
-            _clientWebsocket = connectionFactory.ClientWebSocket;
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             _connectionFactory = connectionFactory;
@@ -243,56 +226,44 @@ namespace exchange.coinbase
             return HistoricRates;
         }
         
-        public bool Close()
+        public async Task<bool> Close()
         {
-            bool isClosed = _connectionFactory.WebSocketCloseAsync().GetAwaiter().GetResult();
+            bool isClosed = await _connectionFactory.WebSocketCloseAsync();
             return isClosed;
         }
-        public bool Subscribe(List<Product> products)
+        public bool Subscribe(string message)
         {
-            if (products == null || !products.Any())
-                return false;
-            string productIds = null;
-            foreach (Product product in products)
-            {
-                productIds += $@"""{product.ID}"",";
-            }
-            if (productIds == null)
-                return false;
-            productIds = productIds.Remove(productIds.Length - 1, 1);
-            string message =
-                $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds}]}}]}}";
             string json = _connectionFactory.WebSocketSendAsync(message).Result;
+            if (string.IsNullOrEmpty(json))
+                return false;
             Feed feed = JsonSerializer.Deserialize<Feed>(json);
             if (feed == null || feed.Type == "error")
                 return false;
-
-            Task.Run(async () =>
+            
+            Task.Run(async () => 
             {
-                try
-                {
-                    while (_connectionFactory.IsWebSocketConnected())
-                    {
-                        json = await _connectionFactory.WebSocketReceiveAsync().ConfigureAwait(false);
-                        feed = JsonSerializer.Deserialize<Feed>(json);
-                        if (feed == null || feed.Type == "error")
-                        {
+                 try
+                 {
+                     while (_connectionFactory.IsWebSocketConnected())
+                     {
+                         json = await _connectionFactory.WebSocketReceiveAsync().ConfigureAwait(false);
+                         feed = JsonSerializer.Deserialize<Feed>(json);
+                         if (feed == null || feed.Type == "error")
+                         {
                             //IsWebSocketClosed = true;
                             return;
-                        }
-                        FeedBroadCast?.Invoke(feed);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.StackTrace);
-                }
+                         }
+                         FeedBroadCast?.Invoke(feed);
+                     }
+                 }
+                 catch (Exception ex)
+                 {
+                     Console.WriteLine(ex.StackTrace);
+                 }
             });
             Task.Delay(1000).Wait();
             return true;
         }
         #endregion
-
-       
     }
 }

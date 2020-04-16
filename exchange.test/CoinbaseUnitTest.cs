@@ -372,38 +372,39 @@ namespace exchange.test
         [TestMethod]
         public void WebSocketSubscribeAndClose_ShouldReturnTrue()
         {
-            ////Arrange
-            //HttpClient httpClient = new HttpClient();
-            //Mock<ConnectionFactory> connectionFactoryMock = new Mock<ConnectionFactory>(MockBehavior.Strict, httpClient, _exchangeSettings);
-            //connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
-            //connectionFactoryMock.Setup(x => x.WebSocketSendAsync("")).Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
-            //connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync()).Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
-            ////_connectionFactoryMock.Setup(x => x.GetWebSocketState()).Returns(WebSocketState.Open);
-            //Coinbase subjectUnderTest = new Coinbase(connectionFactoryMock.Object);
-            //List<Product> products = new List<Product>
-            //{
-            //    new Product
-            //    {
-            //        ID = "BTC-EUR",
-            //        BaseCurrency = "BTC",
-            //        QuoteCurrency = "EUR",
-            //        BaseMinSize = "0.001",
-            //        BaseMaxSize = "10000.00",
-            //        QuoteIncrement = "0.01"
-            //    },
-            //        new Product
-            //    {
-            //        ID = "ETH-EUR",
-            //        BaseCurrency = "ETH",
-            //        QuoteCurrency = "EUR",
-            //        BaseMinSize = "0.001",
-            //        BaseMaxSize = "10000.00",
-            //        QuoteIncrement = "0.01"
-            //    },
-            //};
-            ////Act / Assert
-            //bool success = subjectUnderTest.Subscribe(products);
-            //Assert.IsTrue(success);
+            //Arrange
+            List<Product> products = new List<Product>
+            {
+                new Product
+                {
+                    ID = "BTC-EUR",
+                    BaseCurrency = "BTC",
+                    QuoteCurrency = "EUR",
+                    BaseMinSize = "0.001",
+                    BaseMaxSize = "10000.00",
+                    QuoteIncrement = "0.01"
+                },
+                new Product
+                {
+                    ID = "ETH-EUR",
+                    BaseCurrency = "ETH",
+                    QuoteCurrency = "EUR",
+                    BaseMinSize = "0.001",
+                    BaseMaxSize = "10000.00",
+                    QuoteIncrement = "0.01"
+                },
+            };
+            HttpClient httpClient = new HttpClient();
+            Mock<ConnectionFactory> connectionFactoryMock = new Mock<ConnectionFactory>(MockBehavior.Strict, httpClient, _exchangeSettings);
+            connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToProductIDSubscribeString()))
+                .ReturnsAsync($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}");
+            connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
+            connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync()).Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
+
+            Coinbase subjectUnderTest = new Coinbase(connectionFactoryMock.Object);
+            //Act
+            bool success = subjectUnderTest.Subscribe(products.ToProductIDSubscribeString());
+            Assert.IsTrue(success);
         }
         #endregion
     }

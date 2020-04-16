@@ -14,10 +14,6 @@ namespace exchange.core.interfaces
     {
         Action<Feed> FeedBroadCast { get; set; }
 
-        #region Virtual Properties
-        WebSocketState GetWebSocketState();
-        #endregion
-
         #region Public Properties
         Dictionary<string, decimal> CurrentPrices { get; set; }
         List<Ticker> Tickers { get; set; }
@@ -38,7 +34,7 @@ namespace exchange.core.interfaces
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
 
-        bool Close();
-        bool Subscribe(List<Product> products);
+        Task<bool> Close();
+        bool Subscribe(string message);
     }
 }
