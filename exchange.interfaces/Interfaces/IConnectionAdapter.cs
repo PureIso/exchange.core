@@ -1,15 +1,15 @@
-﻿using exchange.core.models;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.WebSockets;
+using exchange.core.models;
 using System.Threading.Tasks;
 
 namespace exchange.core.Interfaces
 {
-    public interface IConnectionFactory
+    public interface IConnectionAdapter
     {
-        Authentication Authentication { get; set; }
-        HttpClient HttpClient { get; set; } 
-        ClientWebSocket ClientWebSocket { get; set; }
+        Authentication Authentication { get; } 
+        HttpClient HttpClient { get; }
+        ClientWebSocket ClientWebSocket { get; }
 
         Task<string> WebSocketSendAsync(string message); 
         Task<string> WebSocketReceiveAsync(); 

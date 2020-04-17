@@ -12,7 +12,7 @@ namespace exchange.core
         private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
-        ///     Seconds since January 1st, 1970.
+        /// Seconds since January 1st, 1970.
         /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
@@ -79,7 +79,7 @@ namespace exchange.core
             return result.AddMinutes((dateTime.Minute / 5 + 1) * 5);
         }
 
-        public static string ToProductIDSubscribeString(this List<Product> products)
+        public static string ToSubscribeString(this List<Product> products)
         {
             if (products == null || !products.Any())
                 return null;

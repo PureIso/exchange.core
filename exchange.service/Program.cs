@@ -34,7 +34,7 @@ namespace exchange.service
                 IConfiguration configuration = hostContext.Configuration;
                 ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
-                services.AddHttpClient<IConnectionFactory, ConnectionFactory>(httpClient =>
+                services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>(httpClient =>
                 {
                     if (exchangeSettings.Uri != null)
                         httpClient.BaseAddress = new Uri(exchangeSettings.Uri);

@@ -11,11 +11,10 @@ using System.Threading.Tasks;
 
 namespace exchange.coinbase
 {
-    public class Coinbase : IExchangeService
+    public class Coinbase : IExchangeService, IDisposable
     {
         #region Fields
-        private readonly Authentication _authentication;
-        private readonly IConnectionFactory _connectionFactory;
+        private readonly IConnectionAdapter _connectionAdapter;
         #endregion
 
         #region Events
@@ -35,30 +34,19 @@ namespace exchange.coinbase
         
         #endregion
 
-        public Coinbase(IConnectionFactory connectionFactory)
+        public Coinbase(IConnectionAdapter connectionAdapter)
         {
-            _authentication = connectionFactory.Authentication;
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
-            _connectionFactory = connectionFactory;
+            _connectionAdapter = connectionAdapter;
         }
 
         #region Public Methods
 
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
-            /***
-             * Account ID
-             * {
-    "id": "a1b2c3d4",
-    "balance": "1.100",
-    "holds": "0.100",
-    "available": "1.00",
-    "currency": "USD"
-}
-             */
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Accounts;
             Accounts = JsonSerializer.Deserialize<List<Account>>(json);
@@ -66,25 +54,8 @@ namespace exchange.coinbase
         }
         public async Task<List<Account>> UpdateAccountHistoryAsync(string accountId)
         {
-            /***
-             * Account History
-             *[
-    {
-        "id": "100",
-        "created_at": "2014-11-07T08:19:27.028459Z",
-        "amount": "0.001",
-        "balance": "239.669",
-        "type": "fee",
-        "details": {
-            "order_id": "d50ec984-77a8-460a-b958-66f114b0de9b",
-            "trade_id": "74",
-            "product_id": "BTC-USD"
-        }
-    }
-]
-             */
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Accounts;
             Accounts = JsonSerializer.Deserialize<List<Account>>(json);
@@ -106,8 +77,8 @@ namespace exchange.coinbase
     }
 ]
              */
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Accounts;
             Accounts = JsonSerializer.Deserialize<List<Account>>(json);
@@ -115,8 +86,8 @@ namespace exchange.coinbase
         }
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Orders;
             Orders = JsonSerializer.Deserialize<List<Order>>(json);
@@ -132,8 +103,8 @@ namespace exchange.coinbase
     "product_id": "BTC-USD"
 }
              */
-            Request request = new Request(_authentication.EndpointUrl, "POST", $"/orders");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Orders;
             Orders = JsonSerializer.Deserialize<List<Order>>(json);
@@ -162,8 +133,8 @@ namespace exchange.coinbase
 
         public async Task<List<Product>> UpdateProductsAsync()
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/products");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Products;
             Products = JsonSerializer.Deserialize<List<Product>>(json);
@@ -178,8 +149,8 @@ namespace exchange.coinbase
             //Get price of all products
             foreach (Product product in products)
             {
-                Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/ticker");
-                string json = await _connectionFactory.RequestAsync(request);
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/ticker");
+                string json = await _connectionAdapter.RequestAsync(request);
                 if (string.IsNullOrWhiteSpace(json))
                     return Tickers;
                 Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
@@ -198,8 +169,8 @@ namespace exchange.coinbase
         }
         public async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/fills?product_id={product.ID ?? string.Empty}");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/fills?product_id={product.ID ?? string.Empty}");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return Fills;
             Fills = JsonSerializer.Deserialize<List<Fill>>(json);
@@ -208,8 +179,8 @@ namespace exchange.coinbase
         
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return OrderBook;
             OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
@@ -217,52 +188,51 @@ namespace exchange.coinbase
         }
         public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
         {
-            Request request = new Request(_authentication.EndpointUrl, "GET", $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
-            string json = await _connectionFactory.RequestAsync(request);
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
+            string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
                 return HistoricRates;
             ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
             HistoricRates = candles.ToHistoricRateList();
             return HistoricRates;
         }
-        
-        public async Task<bool> Close()
-        {
-            bool isClosed = await _connectionFactory.WebSocketCloseAsync();
-            return isClosed;
-        }
         public bool Subscribe(string message)
         {
-            string json = _connectionFactory.WebSocketSendAsync(message).Result;
+            string json = _connectionAdapter.WebSocketSendAsync(message).Result;
             if (string.IsNullOrEmpty(json))
                 return false;
             Feed feed = JsonSerializer.Deserialize<Feed>(json);
-            if (feed == null || feed.Type == "error")
-                return false;
-            
-            Task.Run(async () => 
+            return feed != null && feed.Type != "error";
+        }
+        public void ProcessFeed()
+        {
+            Task.Run(async () =>
             {
-                 try
-                 {
-                     while (_connectionFactory.IsWebSocketConnected())
-                     {
-                         json = await _connectionFactory.WebSocketReceiveAsync().ConfigureAwait(false);
-                         feed = JsonSerializer.Deserialize<Feed>(json);
-                         if (feed == null || feed.Type == "error")
-                         {
-                            //IsWebSocketClosed = true;
-                            return;
-                         }
-                         FeedBroadCast?.Invoke(feed);
-                     }
-                 }
-                 catch (Exception ex)
-                 {
-                     Console.WriteLine(ex.StackTrace);
-                 }
+                try
+                {
+                    while (_connectionAdapter.IsWebSocketConnected())
+                    {
+                        string json = await _connectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
+                        Feed feed = JsonSerializer.Deserialize<Feed>(json);
+                        if (feed == null || feed.Type == "error")
+                            return; 
+                        FeedBroadCast?.Invoke(feed);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.StackTrace);
+                }
             });
-            Task.Delay(1000).Wait();
-            return true;
+        }
+        public async Task<bool> Close()
+        {
+            bool isClosed = await _connectionAdapter.WebSocketCloseAsync();
+            return isClosed;
+        }
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
         #endregion
     }

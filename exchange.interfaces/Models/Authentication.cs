@@ -52,11 +52,9 @@ namespace exchange.core.models
         public string HashString(string prehashString, byte[] secret)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(prehashString);
-            using (HMACSHA256 hmac = new HMACSHA256(secret))
-            {
-                byte[] hash = hmac.ComputeHash(bytes);
-                return Convert.ToBase64String(hash);
-            }
+            using HMACSHA256 hmac = new HMACSHA256(secret);
+            byte[] hash = hmac.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
         }
 
         #endregion

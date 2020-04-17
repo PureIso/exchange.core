@@ -10,12 +10,12 @@ using System.Threading.Tasks;
 
 namespace exchange.core
 {
-    public class ConnectionFactory : IConnectionFactory
+    public class ConnectionAdapter : IConnectionAdapter
     {
         #region Properties
-        public Authentication Authentication { get; set; }
-        public HttpClient HttpClient { get; set; }
-        public ClientWebSocket ClientWebSocket { get; set; }
+        public Authentication Authentication { get; }
+        public HttpClient HttpClient { get; }
+        public ClientWebSocket ClientWebSocket { get; }
         #endregion
 
         #region Fields
@@ -27,7 +27,7 @@ namespace exchange.core
         public Action<Feed> FeedBroadCast { get; set; }
         #endregion
 
-        public ConnectionFactory(HttpClient httpClient, IExchangeSettings exchangeSettings)
+        public ConnectionAdapter(HttpClient httpClient, IExchangeSettings exchangeSettings)
         {
             Authentication = new Authentication(
                 exchangeSettings.APIKey,
@@ -114,7 +114,7 @@ namespace exchange.core
             }
             return null;
         }
-        public async Task<bool> WebSocketCloseAsync()
+        public virtual async Task<bool> WebSocketCloseAsync()
         {
             try
             {

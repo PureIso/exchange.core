@@ -1,7 +1,6 @@
 ﻿using exchange.core.models;
 using System;
 using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
 
 namespace exchange.core.interfaces
@@ -36,5 +35,6 @@ namespace exchange.core.interfaces
 
         Task<bool> Close();
         bool Subscribe(string message);
+        void ProcessFeed();
     }
 }

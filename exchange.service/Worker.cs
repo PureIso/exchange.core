@@ -39,7 +39,7 @@ namespace exchange.service
             _coinbase.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
             _coinbase.UpdateOrdersAsync().Wait(cancellationToken);
             _coinbase.UpdateTickersAsync(products).Wait(cancellationToken); 
-            _coinbase.Subscribe(products.ToProductIDSubscribeString());
+            _coinbase.Subscribe(products.ToSubscribeString());
             _coinbase.FeedBroadCast += FeedBroadCast;
             _logger.LogInformation($"Account Count: {_coinbase.Accounts.Count}");
             await base.StartAsync(cancellationToken);

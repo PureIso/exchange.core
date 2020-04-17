@@ -5,7 +5,6 @@ namespace exchange.core.models
 {
     public class OrderBook
     {
-
         [JsonPropertyName("sequence")]
         public long Sequence { get; set; }
         [JsonPropertyName("bids")]
