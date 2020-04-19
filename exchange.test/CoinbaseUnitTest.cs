@@ -91,6 +91,141 @@ namespace exchange.test
         [TestMethod]
         public void UpdateAccountHistory_ShouldReturnAccountHistory_WhenAccountExists()
         {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[
+                            {{
+                                ""id"": ""100"",
+                                ""created_at"": ""2014-11-07T08:19:27.028459Z"",
+                                ""amount"": ""0.001"",
+                                ""balance"": ""239.669"",
+                                ""type"": ""fee"",
+                                ""details"": {{
+                                    ""order_id"": ""d50ec984-77a8-460a-b958-66f114b0de9b"",
+                                    ""trade_id"": ""74"",
+                                    ""product_id"": ""BTC-USD""
+                                }}
+                            }}
+                        ]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            subjectUnderTest.UpdateAccountHistoryAsync("100").Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.AccountHistories);
+            Assert.AreEqual(1, subjectUnderTest.AccountHistories.Count);
+            Assert.AreEqual("100", subjectUnderTest.AccountHistories[0].ID);
+            Assert.IsNotNull(subjectUnderTest.AccountHistories[0].Detail);
+            Assert.AreEqual("d50ec984-77a8-460a-b958-66f114b0de9b", subjectUnderTest.AccountHistories[0].Detail.OrderID);
+        }
+        [TestMethod]
+        public void UpdateAccountHolds_ShouldReturnAccountHolds_WhenAccountExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[
+                            {{
+                                ""id"": ""82dcd140-c3c7-4507-8de4-2c529cd1a28f"",
+                                ""account_id"": ""e0b3f39a-183d-453e-b754-0c13e5bab0b3"",
+                                ""created_at"": ""2014-11-06T10:34:47.123456Z"",
+                                ""updated_at"": ""2014-11-06T10:40:47.123456Z"",
+                                ""amount"": ""4.23"",
+                                ""type"": ""order"",
+                                ""ref"": ""0a205de4-dd35-4370-a285-fe8fc375a273""
+                            }}
+                           ]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            subjectUnderTest.UpdateAccountHoldsAsync("82dcd140-c3c7-4507-8de4-2c529cd1a28f").Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.AccountHolds);
+            Assert.AreEqual(1, subjectUnderTest.AccountHolds.Count);
+            Assert.AreEqual("82dcd140-c3c7-4507-8de4-2c529cd1a28f", subjectUnderTest.AccountHolds[0].ID);
+            Assert.AreEqual("e0b3f39a-183d-453e-b754-0c13e5bab0b3", subjectUnderTest.AccountHolds[0].AccountID);
+        }
+        [TestMethod]
+        public void UpdateOrders_ShouldReturnAllOrders_WhenOrdersExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[
+                            {{
+                                ""id"": ""d0c5340b-6d6c-49d9-b567-48c4bfca13d2"",
+                                ""price"": ""0.10000000"",
+                                ""size"": ""0.01000000"",
+                                ""product_id"": ""BTC-USD"",
+                                ""side"": ""buy"",
+                                ""stp"": ""dc"",
+                                ""type"": ""limit"",
+                                ""time_in_force"": ""GTC"",
+                                ""post_only"": false,
+                                ""created_at"": ""2016-12-08T20:02:28.53864Z"",
+                                ""fill_fees"": ""0.0000000000000000"",
+                                ""filled_size"": ""0.00000000"",
+                                ""executed_value"": ""0.0000000000000000"",
+                                ""status"": ""open"",
+                                ""settled"": false
+                            }},
+                            {{
+                                ""id"": ""8b99b139-58f2-4ab2-8e7a-c11c846e3022"",
+                                ""price"": ""1.00000000"",
+                                ""size"": ""1.00000000"",
+                                ""product_id"": ""BTC-USD"",
+                                ""side"": ""buy"",
+                                ""stp"": ""dc"",
+                                ""type"": ""limit"",
+                                ""time_in_force"": ""GTC"",
+                                ""post_only"": false,
+                                ""created_at"": ""2016-12-08T20:01:19.038644Z"",
+                                ""fill_fees"": ""0.0000000000000000"",
+                                ""filled_size"": ""0.00000000"",
+                                ""executed_value"": ""0.0000000000000000"",
+                                ""status"": ""open"",
+                                ""settled"": false
+                            }}
+                        ]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            subjectUnderTest.UpdateOrdersAsync().Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Orders);
+            Assert.AreEqual(2, subjectUnderTest.Orders.Count);
+            Assert.AreEqual("d0c5340b-6d6c-49d9-b567-48c4bfca13d2", subjectUnderTest.Orders[0].ID);
+            Assert.AreEqual("8b99b139-58f2-4ab2-8e7a-c11c846e3022", subjectUnderTest.Orders[1].ID);
+        }
+        [TestMethod]
+        public void PostOrders_ShouldReturnPostedOrder_WhenOrderIsSuccessful()
+        {
+           
         }
         [TestMethod]
         public void UpdateProducts_ShouldReturnProducts_WhenProductExists()
@@ -309,66 +444,7 @@ namespace exchange.test
             Assert.AreEqual((decimal)0.32, subjectUnderTest.HistoricRates[0].Low);
             Assert.AreEqual((decimal)12.3, subjectUnderTest.HistoricRates[0].Volume);
         }
-        [TestMethod]
-        public void UpdateOrders_ShouldReturnAllOrders_WhenOrdersExists()
-        {
-            //Arrange
-            _httpMessageHandlerMock
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent(
-                        $@"[
-                            {{
-                                ""id"": ""d0c5340b-6d6c-49d9-b567-48c4bfca13d2"",
-                                ""price"": ""0.10000000"",
-                                ""size"": ""0.01000000"",
-                                ""product_id"": ""BTC-USD"",
-                                ""side"": ""buy"",
-                                ""stp"": ""dc"",
-                                ""type"": ""limit"",
-                                ""time_in_force"": ""GTC"",
-                                ""post_only"": false,
-                                ""created_at"": ""2016-12-08T20:02:28.53864Z"",
-                                ""fill_fees"": ""0.0000000000000000"",
-                                ""filled_size"": ""0.00000000"",
-                                ""executed_value"": ""0.0000000000000000"",
-                                ""status"": ""open"",
-                                ""settled"": false
-                            }},
-                            {{
-                                ""id"": ""8b99b139-58f2-4ab2-8e7a-c11c846e3022"",
-                                ""price"": ""1.00000000"",
-                                ""size"": ""1.00000000"",
-                                ""product_id"": ""BTC-USD"",
-                                ""side"": ""buy"",
-                                ""stp"": ""dc"",
-                                ""type"": ""limit"",
-                                ""time_in_force"": ""GTC"",
-                                ""post_only"": false,
-                                ""created_at"": ""2016-12-08T20:01:19.038644Z"",
-                                ""fill_fees"": ""0.0000000000000000"",
-                                ""filled_size"": ""0.00000000"",
-                                ""executed_value"": ""0.0000000000000000"",
-                                ""status"": ""open"",
-                                ""settled"": false
-                            }}
-                        ]")
-                }))
-                .Verifiable();
-            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
-            //Act
-            subjectUnderTest.UpdateOrdersAsync().Wait();
-            //Assert
-            Assert.IsNotNull(subjectUnderTest.Orders);
-            Assert.AreEqual(2, subjectUnderTest.Orders.Count);
-            Assert.AreEqual("d0c5340b-6d6c-49d9-b567-48c4bfca13d2", subjectUnderTest.Orders[0].ID);
-            Assert.AreEqual("8b99b139-58f2-4ab2-8e7a-c11c846e3022", subjectUnderTest.Orders[1].ID);
-        }
+        
         #endregion
 
         #region Web Socket Test

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using exchange.core.Models;
 
 namespace exchange.coinbase
 {
@@ -25,6 +26,8 @@ namespace exchange.coinbase
         public Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
+        public List<AccountHistory> AccountHistories { get; set; }
+        public List<AccountHold> AccountHolds { get; set; }
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
@@ -52,37 +55,23 @@ namespace exchange.coinbase
             Accounts = JsonSerializer.Deserialize<List<Account>>(json);
             return Accounts;
         }
-        public async Task<List<Account>> UpdateAccountHistoryAsync(string accountId)
+        public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
             string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
-                return Accounts;
-            Accounts = JsonSerializer.Deserialize<List<Account>>(json);
-            return Accounts;
+                return AccountHistories;
+            AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
+            return AccountHistories;
         }
-        public async Task<List<Account>> UpdateAccountHoldsAsync(string accountId)
+        public async Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
-            /***
-             * Account Holds
-             *[
-    {
-        "id": "82dcd140-c3c7-4507-8de4-2c529cd1a28f",
-        "account_id": "e0b3f39a-183d-453e-b754-0c13e5bab0b3",
-        "created_at": "2014-11-06T10:34:47.123456Z",
-        "updated_at": "2014-11-06T10:40:47.123456Z",
-        "amount": "4.23",
-        "type": "order",
-        "ref": "0a205de4-dd35-4370-a285-fe8fc375a273",
-    }
-]
-             */
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
             string json = await _connectionAdapter.RequestAsync(request);
             if (string.IsNullOrWhiteSpace(json))
-                return Accounts;
-            Accounts = JsonSerializer.Deserialize<List<Account>>(json);
-            return Accounts;
+                return AccountHolds;
+            AccountHolds = JsonSerializer.Deserialize<List<AccountHold>>(json);
+            return AccountHolds;
         }
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
