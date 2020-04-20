@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using exchange.core.Models;
 
 namespace exchange.core.interfaces
 {
@@ -22,18 +23,24 @@ namespace exchange.core.interfaces
         List<Fill> Fills { get; set; }
         List<Order> Orders { get; set; }
         OrderBook OrderBook { get; set; }
-        Product SelectedProduct { get; set; }
+        Product SelectedProduct { get; set; } 
+        List<AccountHistory> AccountHistories { get; set; } 
+        List<AccountHold> AccountHolds { get; set; }
         #endregion
 
         Task<List<Account>> UpdateAccountsAsync(string accountId="");
+        Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId);
+        Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId);
+        Task<List<Order>> UpdateOrdersAsync(Product product = null);
+        Task<Order> PostOrdersAsync(Order order);
+        Task<List<Order>> CancelOrdersAsync(Order order);
         Task<List<Product>> UpdateProductsAsync();
         Task<List<Ticker>> UpdateTickersAsync(List<Product> products);
         Task<List<Fill>> UpdateFillsAsync(Product product);
-        Task<List<Order>> UpdateOrdersAsync(Product product = null);
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
 
-        Task<bool> Close();
+        Task<bool> CloseFeed();
         bool Subscribe(string message);
         void ProcessFeed();
     }

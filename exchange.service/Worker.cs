@@ -29,22 +29,30 @@ namespace exchange.service
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            _coinbase.UpdateAccountsAsync().Wait(cancellationToken);
-            _coinbase.UpdateProductsAsync().Wait(cancellationToken);
-            List<Product> products = new List<Product>
+            await _coinbase.UpdateAccountsAsync();
+            if (_coinbase.Accounts != null && _coinbase.Accounts.Any())
             {
-                _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
-            };
-            _coinbase.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
-            _coinbase.UpdateOrdersAsync().Wait(cancellationToken);
-            _coinbase.UpdateTickersAsync(products).Wait(cancellationToken); 
-            _coinbase.Subscribe(products.ToSubscribeString());
-            
-            _coinbase.FeedBroadCast += FeedBroadCast;
-            _coinbase.ProcessFeed();
+                await _coinbase.UpdateAccountHistoryAsync(_coinbase.Accounts[0].ID);
+                await _coinbase.UpdateAccountHoldsAsync(_coinbase.Accounts[0].ID);
 
-            _logger.LogInformation($"Account Count: {_coinbase.Accounts.Count}");
+                _coinbase.UpdateProductsAsync().Wait(cancellationToken);
+                List<Product> products = new List<Product>
+                {
+                    _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
+                    _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
+                };
+                _coinbase.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
+                _coinbase.UpdateOrdersAsync().Wait(cancellationToken);
+                _coinbase.UpdateFillsAsync(products[0]).Wait(cancellationToken);
+                _coinbase.UpdateTickersAsync(products).Wait(cancellationToken);
+                _coinbase.Subscribe(products.ToSubscribeString());
+
+                _coinbase.FeedBroadCast += FeedBroadCast;
+                _coinbase.ProcessFeed();
+
+                _logger.LogInformation($"Account Count: {_coinbase.Accounts.Count}");
+            }
+           
             await base.StartAsync(cancellationToken);
         }
 
@@ -57,7 +65,7 @@ namespace exchange.service
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
-            _coinbase.Close();
+            _coinbase.CloseFeed();
             return base.StopAsync(cancellationToken);
         }
         public override void Dispose()

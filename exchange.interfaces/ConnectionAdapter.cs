@@ -149,10 +149,13 @@ namespace exchange.core
                 IAuthenticationSignature authenticationSignature = Authentication.ComputeSignature(request);
                 StringContent requestBody = request.GetRequestBody();
                 HttpClient.DefaultRequestHeaders.Clear();
+                //The api key as a string.
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", Authentication.ApiKey);
+                //The passphrase you specified when creating the API key.
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", Authentication.Passphrase);
-                HttpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
+                //The base64-encoded signature (see Signing a Message).
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
+                // A timestamp for your request.
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
                 HttpResponseMessage response = null;
                 switch (request.Method)

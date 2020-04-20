@@ -10,7 +10,11 @@ namespace exchange.core.Interfaces
         string RequestUrl { get; set; }
         long TimeStamp { get; set; }
         Uri AbsoluteUri { get; set; }
-
+        /// <summary>
+        /// All request bodies should have content type application/json and be valid JSON.
+        /// </summary>
+        /// <param name="contentType">The content type</param>
+        /// <returns>String Content</returns>
         StringContent GetRequestBody(string contentType = "application/json");
     }
 }

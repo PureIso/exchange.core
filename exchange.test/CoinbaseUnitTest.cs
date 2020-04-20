@@ -89,6 +89,11 @@ namespace exchange.test
             Assert.AreEqual((decimal)1.0035025000000000, subjectUnderTest.Accounts[1].Hold.ToDecimal());
         }
         [TestMethod]
+        public void UpdateAccountsWithParameter_ShouldReturnAccounts_WhenAccountExists()
+        {
+            
+        }
+        [TestMethod]
         public void UpdateAccountHistory_ShouldReturnAccountHistory_WhenAccountExists()
         {
             //Arrange
@@ -225,7 +230,43 @@ namespace exchange.test
         [TestMethod]
         public void PostOrders_ShouldReturnPostedOrder_WhenOrderIsSuccessful()
         {
-           
+            //Arrange
+            Order order = new Order {Size = "0.01", Price = "0.100", Side = "buy", ProductID = "BTC-EUR"};
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{
+                            ""id"": ""d0c5340b-6d6c-49d9-b567-48c4bfca13d2"",
+                            ""price"": ""0.10000000"",
+                            ""size"": ""0.01000000"",
+                            ""product_id"": ""BTC-EUR"",
+                            ""side"": ""buy"",
+                            ""stp"": ""dc"",
+                            ""type"": ""limit"",
+                            ""time_in_force"": ""GTC"",
+                            ""post_only"": false,
+                            ""created_at"": ""2016-12-08T20:02:28.53864Z"",
+                            ""fill_fees"": ""0.0000000000000000"",
+                            ""filled_size"": ""0.00000000"",
+                            ""executed_value"": ""0.0000000000000000"",
+                            ""status"": ""pending"",
+                            ""settled"": false
+                           }}")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            Order orderResult = subjectUnderTest.PostOrdersAsync(order).Result;
+            //Assert
+            Assert.IsNotNull(orderResult);
+            Assert.AreEqual((decimal)0.10000000, orderResult.Price.ToDecimal());
+            Assert.AreEqual("BTC-EUR", orderResult.ProductID);
         }
         [TestMethod]
         public void UpdateProducts_ShouldReturnProducts_WhenProductExists()
@@ -444,7 +485,6 @@ namespace exchange.test
             Assert.AreEqual((decimal)0.32, subjectUnderTest.HistoricRates[0].Low);
             Assert.AreEqual((decimal)12.3, subjectUnderTest.HistoricRates[0].Volume);
         }
-        
         #endregion
 
         #region Web Socket Test

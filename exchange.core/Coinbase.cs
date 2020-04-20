@@ -34,7 +34,6 @@ namespace exchange.coinbase
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
-        
         #endregion
 
         public Coinbase(IConnectionAdapter connectionAdapter)
@@ -45,6 +44,7 @@ namespace exchange.coinbase
         }
 
         #region Public Methods
+        #region Trading
 
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
@@ -82,44 +82,41 @@ namespace exchange.coinbase
             Orders = JsonSerializer.Deserialize<List<Order>>(json);
             return Orders;
         }
-        public async Task<List<Order>> PostOrdersAsync(Product product = null)
+        public async Task<Order> PostOrdersAsync(Order order)
         {
-            /***
-             * {
-    "size": "0.01",
-    "price": "0.100",
-    "side": "buy",
-    "product_id": "BTC-USD"
-}
-             */
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders");
+            object data;
+            if (order.Type =="market")
+                data = new
+                {
+                    size = order.Size,
+                    side = order.Side,
+                    type = "market",
+                    product_id = order.ProductID
+                };
+            else
+                data = new
+                {
+                    size = order.Size,
+                    price = order.Price,
+                    side = order.Side,
+                    type = "limit",
+                    product_id = order.ProductID
+                };
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
+            {
+                RequestBody = JsonSerializer.Serialize(data)
+            };
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Orders;
-            Orders = JsonSerializer.Deserialize<List<Order>>(json);
-            return Orders;
-
-            /***
-             *{
-    "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-    "price": "0.10000000",
-    "size": "0.01000000",
-    "product_id": "BTC-USD",
-    "side": "buy",
-    "stp": "dc",
-    "type": "limit",
-    "time_in_force": "GTC",
-    "post_only": false,
-    "created_at": "2016-12-08T20:02:28.53864Z",
-    "fill_fees": "0.0000000000000000",
-    "filled_size": "0.00000000",
-    "executed_value": "0.0000000000000000",
-    "status": "pending",
-    "settled": false
-}
-             */
+            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<Order>(json);
         }
-
+        public async Task<List<Order>> CancelOrdersAsync(Order order)
+        {
+            //product_id	[optional]	Only cancel orders open for a specific product
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
+                $"/orders/{order.ID ?? string.Empty}");
+            string json = await _connectionAdapter.RequestAsync(request);
+            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<List<Order>>(json);
+        }
         public async Task<List<Product>> UpdateProductsAsync()
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
@@ -165,7 +162,6 @@ namespace exchange.coinbase
             Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             return Fills;
         }
-        
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
@@ -185,6 +181,8 @@ namespace exchange.coinbase
             HistoricRates = candles.ToHistoricRateList();
             return HistoricRates;
         }
+        #endregion
+        #region Feed
         public bool Subscribe(string message)
         {
             string json = _connectionAdapter.WebSocketSendAsync(message).Result;
@@ -214,11 +212,12 @@ namespace exchange.coinbase
                 }
             });
         }
-        public async Task<bool> Close()
+        public async Task<bool> CloseFeed()
         {
             bool isClosed = await _connectionAdapter.WebSocketCloseAsync();
             return isClosed;
         }
+        #endregion
         public void Dispose()
         {
             throw new NotImplementedException();
