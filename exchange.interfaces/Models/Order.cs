@@ -1,8 +1,9 @@
 ﻿using System.Text.Json.Serialization;
+using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Order
+    public class Order : Error
     {
         [JsonPropertyName("id")]
         public string ID { get; set; }

@@ -17,5 +17,6 @@ namespace exchange.core.Interfaces
         Task<string> RequestAsync(IRequest request);
 
         bool IsWebSocketConnected();
+        void Dispose();
     }
 }

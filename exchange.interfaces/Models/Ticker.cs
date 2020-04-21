@@ -1,8 +1,9 @@
 ﻿using System.Text.Json.Serialization;
+using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Ticker
+    public class Ticker : Error
     {
         #region Properties
         [JsonPropertyName("trade_id")]

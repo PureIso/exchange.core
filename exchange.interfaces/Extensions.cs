@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using exchange.core.Models;
 
 namespace exchange.core
 {
@@ -89,6 +90,11 @@ namespace exchange.core
                 productIds += $@"""{product.ID}"",";
             }
             return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
+        }
+
+        public static string GetPossibleError(this string json)
+        {
+            return JsonSerializer.Deserialize<Error>(json).Message;
         }
     }
 }

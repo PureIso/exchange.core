@@ -122,6 +122,7 @@ namespace exchange.core
                 if (ClientWebSocket == null || !IsWebSocketConnected())
                     return true;
                 await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                Dispose();
                 return true;
             }
             catch (Exception ex)
@@ -140,6 +141,12 @@ namespace exchange.core
         }
         #endregion
 
+        public void Dispose()
+        {
+            HttpClient.Dispose();
+            ClientWebSocket.Dispose();
+        }
+
         #region Private Methods
         public async Task<string> RequestAsync(IRequest request)
         {
@@ -157,6 +164,8 @@ namespace exchange.core
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
                 // A timestamp for your request.
                 HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
+                //user-agent header
+                HttpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
                 HttpResponseMessage response = null;
                 switch (request.Method)
                 {
@@ -178,20 +187,14 @@ namespace exchange.core
                                                             request.Method);
                 }
                 if (response == null)
-                    throw new Exception("Create Category returned no response");
-                string contentBody = await response.Content.ReadAsStringAsync();
-                return !response.IsSuccessStatusCode ? null : contentBody;
-            }
-            catch (Exception)
-            {
+                    throw new Exception($"null response from RequestAsync \r\n URI:{request.AbsoluteUri} \r\n:Request Body:{requestBody}");
+                return await response.Content.ReadAsStringAsync();
             }
             finally
             {
                 await Task.Delay(500);
                 _ioRequestSemaphoreSlim.Release();
             }
-
-            return null;
         }
         #endregion
     }

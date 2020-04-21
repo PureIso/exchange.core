@@ -1,13 +1,12 @@
 ﻿using System.Text.Json.Serialization;
+using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Feed
+    public class Feed : Error
     {
         [JsonPropertyName("type")]
         public string Type { get; set; }
-        [JsonPropertyName("message")]
-        public string Message { get; set; }
         [JsonPropertyName("reason")]
         public string Reason { get; set; }
         [JsonPropertyName("channels")]

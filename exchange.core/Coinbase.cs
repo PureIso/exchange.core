@@ -50,36 +50,33 @@ namespace exchange.coinbase
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Accounts;
-            Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+            //check if we do not have any error messages
+            if(string.IsNullOrEmpty(json.GetPossibleError()))
+                Accounts = JsonSerializer.Deserialize<List<Account>>(json);
             return Accounts;
         }
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return AccountHistories;
-            AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
+            if (string.IsNullOrEmpty(json.GetPossibleError()))
+                AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
             return AccountHistories;
         }
         public async Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return AccountHolds;
-            AccountHolds = JsonSerializer.Deserialize<List<AccountHold>>(json);
+            if (string.IsNullOrEmpty(json.GetPossibleError()))
+                AccountHolds = JsonSerializer.Deserialize<List<AccountHold>>(json);
             return AccountHolds;
         }
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Orders;
-            Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            if (string.IsNullOrEmpty(json.GetPossibleError()))
+                Orders = JsonSerializer.Deserialize<List<Order>>(json);
             return Orders;
         }
         public async Task<Order> PostOrdersAsync(Order order)
@@ -115,15 +112,14 @@ namespace exchange.coinbase
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
                 $"/orders/{order.ID ?? string.Empty}");
             string json = await _connectionAdapter.RequestAsync(request);
-            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<List<Order>>(json);
+            return string.IsNullOrEmpty(json.GetPossibleError()) ? JsonSerializer.Deserialize<List<Order>>(json) : null;
         }
         public async Task<List<Product>> UpdateProductsAsync()
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Products;
-            Products = JsonSerializer.Deserialize<List<Product>>(json);
+            if (string.IsNullOrEmpty(json.GetPossibleError()))
+                Products = JsonSerializer.Deserialize<List<Product>>(json);
             return Products;
         }
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
@@ -137,7 +133,7 @@ namespace exchange.coinbase
             {
                 Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/ticker");
                 string json = await _connectionAdapter.RequestAsync(request);
-                if (string.IsNullOrWhiteSpace(json))
+                if (!string.IsNullOrEmpty(json.GetPossibleError()))
                     return Tickers;
                 Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
                 Tickers?.RemoveAll(x => x.ProductID == product.ID);
@@ -157,17 +153,14 @@ namespace exchange.coinbase
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/fills?product_id={product.ID ?? string.Empty}");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return Fills;
-            Fills = JsonSerializer.Deserialize<List<Fill>>(json);
+            if (string.IsNullOrEmpty(json.GetPossibleError()))
+                Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             return Fills;
         }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return OrderBook;
             OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
             return OrderBook;
         }
@@ -175,8 +168,6 @@ namespace exchange.coinbase
         {
             Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
             string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrWhiteSpace(json))
-                return HistoricRates;
             ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
             HistoricRates = candles.ToHistoricRateList();
             return HistoricRates;
@@ -220,7 +211,7 @@ namespace exchange.coinbase
         #endregion
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _connectionAdapter.Dispose();
         }
         #endregion
     }
