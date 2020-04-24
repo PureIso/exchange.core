@@ -1,9 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Feed : Error
+    public class Feed
     {
         [JsonPropertyName("type")]
         public string Type { get; set; }

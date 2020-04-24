@@ -1,26 +1,30 @@
 ﻿using System.Text.Json.Serialization;
-using exchange.core.Models;
+using exchange.core.Enums;
 
 namespace exchange.core.models
 {
-    public class Order : Error
+    public class Order
     {
         [JsonPropertyName("id")]
         public string ID { get; set; }
-        [JsonPropertyName("price")]
-        public string Price { get; set; }
         [JsonPropertyName("size")]
         public string Size { get; set; }
         [JsonPropertyName("product_id")]
         public string ProductID { get; set; }
         [JsonPropertyName("side")]
-        public string Side { get; set; }
+        public OrderSide Side { get; set; }
+        [JsonPropertyName("stp")]
+        public SelfTradePreventionType SelfTradePrevention { get; set; }
+        [JsonPropertyName("fund")]
+        public string Fund { get; set; }
         [JsonPropertyName("type")]
-        public string Type { get; set; }
-        [JsonPropertyName("time_in_force")]
-        public string TimeInForce { get; set; }
+        public OrderType Type { get; set; }
         [JsonPropertyName("post_only")]
         public bool PostOnly { get; set; }
+        [JsonPropertyName("price")]
+        public string Price { get; set; }
+        [JsonPropertyName("time_in_force")]
+        public TimeInForce TimeInForce { get; set; }
         [JsonPropertyName("created_at")]
         public string CreatedAt { get; set; }
         [JsonPropertyName("fill_fees")]

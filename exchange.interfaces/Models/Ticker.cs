@@ -3,7 +3,7 @@ using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Ticker : Error
+    public class Ticker
     {
         #region Properties
         [JsonPropertyName("trade_id")]

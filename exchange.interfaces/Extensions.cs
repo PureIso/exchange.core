@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using exchange.core.Models;
 
@@ -60,7 +61,7 @@ namespace exchange.core
             foreach (ArrayList array in arrayLists)
             {
                 DateTime unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                HistoricRate historicRate = new HistoricRate()
+                HistoricRate historicRate = new HistoricRate
                 {
                     DateAndTime = unix.AddSeconds(((JsonElement)array[0]).GetInt64()),
                     Low = ((JsonElement)array[1]).GetDecimal(),
@@ -91,10 +92,35 @@ namespace exchange.core
             }
             return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
         }
-
-        public static string GetPossibleError(this string json)
+        public static string ToUnSubscribeString(this List<Product> products)
         {
-            return JsonSerializer.Deserialize<Error>(json).Message;
+            if (products == null || !products.Any())
+                return null;
+            string productIds = null;
+            foreach (Product product in products)
+            {
+                productIds += $@"""{product.ID}"",";
+            }
+            return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
+        }
+        /// <summary>
+        /// Will get the string value for a given enums value, this will
+        /// only work if you assign the StringValue attribute to
+        /// the items in your enum.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string GetStringValue(this Enum value)
+        {
+            // Get the type
+            Type type = value.GetType();
+            // Get fieldinfo for this type
+            FieldInfo fieldInfo = type.GetField(value.ToString());
+            // Get the stringvalue attributes
+            // Return the first if there was a match.
+            return fieldInfo.GetCustomAttributes(
+                typeof(StringValueAttribute), false) is StringValueAttribute[] stringValueAttributes && stringValueAttributes.Length > 0 ?
+                stringValueAttributes[0].StringValue : null;
         }
     }
 }

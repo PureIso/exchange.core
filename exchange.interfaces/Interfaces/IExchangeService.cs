@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using exchange.core.Enums;
 using exchange.core.Models;
 
 namespace exchange.core.interfaces
@@ -12,7 +13,10 @@ namespace exchange.core.interfaces
     /// </summary>
     public interface IExchangeService
     {
-        Action<Feed> FeedBroadCast { get; set; }
+        #region Actions
+        Action<Feed> FeedBroadcast { get; set; }
+        Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        #endregion
 
         #region Public Properties
         Dictionary<string, decimal> CurrentPrices { get; set; }
@@ -28,6 +32,7 @@ namespace exchange.core.interfaces
         List<AccountHold> AccountHolds { get; set; }
         #endregion
 
+        #region Methods
         Task<List<Account>> UpdateAccountsAsync(string accountId="");
         Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId);
         Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId);
@@ -39,9 +44,9 @@ namespace exchange.core.interfaces
         Task<List<Fill>> UpdateFillsAsync(Product product);
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
-
         Task<bool> CloseFeed();
-        bool Subscribe(string message);
-        void ProcessFeed();
+        bool ChangeFeed(string message);
+        void StartProcessingFeed();
+        #endregion
     }
 }

@@ -9,9 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.coinbase", "exchan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.test", "exchange.test\exchange.test.csproj", "{FCBD979A-A83C-4BC7-AA10-E81E04728427}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalr.client", "exchange.signalr.client\exchange.signalr.client.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client", "exchange.signalr.client\exchange.signalR.client.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "exchange.core", "exchange.interfaces\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.core", "exchange.interfaces\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

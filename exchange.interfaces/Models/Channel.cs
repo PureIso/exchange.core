@@ -1,9 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Channel : Error
+    public class Channel
     {
         [JsonPropertyName("name")]
         public string Name { get; set; }

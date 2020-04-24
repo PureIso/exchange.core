@@ -71,15 +71,10 @@ namespace exchange.core
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
             }
-            catch (Exception)
-            {
-                await Task.Delay(5000);
-            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
-            return null;
         }
         public virtual async Task<string> WebSocketReceiveAsync()
         {
@@ -104,15 +99,10 @@ namespace exchange.core
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
             }
-            catch (Exception)
-            {
-                await Task.Delay(5000);
-            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
-            return null;
         }
         public virtual async Task<bool> WebSocketCloseAsync()
         {
@@ -125,15 +115,10 @@ namespace exchange.core
                 Dispose();
                 return true;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.StackTrace);
-            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
-            return false;
         }
         public virtual bool IsWebSocketConnected()
         {
@@ -143,8 +128,8 @@ namespace exchange.core
 
         public void Dispose()
         {
-            HttpClient.Dispose();
-            ClientWebSocket.Dispose();
+            HttpClient?.Dispose();
+            ClientWebSocket?.Dispose();
         }
 
         #region Private Methods

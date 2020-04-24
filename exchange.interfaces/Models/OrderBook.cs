@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Text.Json.Serialization;
-using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class OrderBook : Error
+    public class OrderBook
     {
         [JsonPropertyName("sequence")]
         public long Sequence { get; set; }

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase;
 using exchange.core;
+using exchange.core.Enums;
 using exchange.core.models;
 using exchange.service;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -231,7 +232,7 @@ namespace exchange.test
         public void PostOrders_ShouldReturnPostedOrder_WhenOrderIsSuccessful()
         {
             //Arrange
-            Order order = new Order {Size = "0.01", Price = "0.100", Side = "buy", ProductID = "BTC-EUR"};
+            Order order = new Order {Size = "0.01", Price = "0.100", Side = OrderSide.Buy, ProductID = "BTC-EUR"};
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
@@ -523,7 +524,7 @@ namespace exchange.test
 
             Coinbase subjectUnderTest = new Coinbase(connectionFactoryMock.Object);
             //Act
-            bool success = subjectUnderTest.Subscribe(products.ToSubscribeString());
+            bool success = subjectUnderTest.ChangeFeed(products.ToSubscribeString());
             Assert.IsTrue(success);
         }
         [TestMethod]
@@ -590,7 +591,7 @@ namespace exchange.test
             bool eventRaised = false;
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);
-            subjectUnderTest.FeedBroadCast += delegate(Feed feed)
+            subjectUnderTest.FeedBroadcast += delegate(Feed feed)
             {
                 eventRaised = true;
                 if(feed.Sequence == 7000000002 || feed.Sequence == 7000000001 || feed.Sequence == 7000000000) 
@@ -599,7 +600,7 @@ namespace exchange.test
                     autoEvent.Set();
             };
             //Act
-            subjectUnderTest.ProcessFeed();
+            subjectUnderTest.StartProcessingFeed();
             autoEvent.WaitOne();
             Assert.IsTrue(eventRaised);
         }

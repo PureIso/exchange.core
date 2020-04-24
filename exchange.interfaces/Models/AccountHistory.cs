@@ -2,7 +2,7 @@
 
 namespace exchange.core.Models
 {
-    public class AccountHistory : Error
+    public class AccountHistory
     {
         [JsonPropertyName("id")]
         public string ID { get; set; }

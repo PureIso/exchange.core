@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace exchange.signalr.client
+namespace exchange.signalR.client
 {
     static class Program
     {

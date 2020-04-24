@@ -1,9 +1,8 @@
 ﻿using System.Text.Json.Serialization;
-using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Product : Error
+    public class Product
     {
         #region Properties
         [JsonPropertyName("id")]

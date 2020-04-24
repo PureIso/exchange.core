@@ -1,4 +1,12 @@
 {
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/exchange.service",
+      "sslPort": 0
+    }
+  },
   "profiles": {
     "exchange.service": {
       "commandName": "Project",

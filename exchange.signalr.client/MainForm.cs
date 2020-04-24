@@ -1,38 +1,51 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using exchange.core.Enums;
+using exchange.core.interfaces;
 
-namespace exchange.signalr.client
+namespace exchange.signalR.client
 {
-    public partial class MainForm : Form
+    public partial class MainForm : Form , IExchangeHub
     {
-        private HubConnection _connection;
-        public MainForm()
+        public Task NotifyCurrentPrices(Dictionary<string, decimal> currentPrices)
         {
-            InitializeComponent();
-            string hubAddress = "https://localhost:5001/hubs/exchange";
-            _connection = new HubConnectionBuilder().WithUrl(hubAddress).Build(); // WithUrl not found
-            //_connection.ConnectionId
-            //ou need a SignalR client. You can’t send posts from a normal web client
-            _connection.On<Dictionary<string,decimal>>("CurrentPrices", currentPrices =>
+            return Task.Run(() =>
             {
                 List<ListViewItem> listViewItems = new List<ListViewItem>();
-                Console.WriteLine($"================Current Prices======================");
-                foreach(KeyValuePair<string, decimal> item in currentPrices)
+                foreach ((string key, decimal value) in currentPrices)
                 {
-                    listViewItems.Add(new ListViewItem(new string []{ item.Key, item.Value.ToString() }));
+                    listViewItems.Add(new ListViewItem(new string[] { key, value.ToString(CultureInfo.InvariantCulture) }));
                 }
                 currentPriceListView.UpdateListViewItemsThreadSafe(listViewItems.ToArray());
             });
+        }
 
-            _connection.StartAsync();
+        public Task NotifyInformation(MessageType messageType, string message)
+        {
+            return Task.Run(() =>
+            {
+                logRichTextBox.LogTextEvent(messageType, message);
+            });
+        }
 
-            _connection.Closed += async (error) =>
+        public MainForm()
+        {
+            InitializeComponent();
+            const string hubAddress = "https://localhost:5001/hubs/exchange";
+            HubConnection connection = new HubConnectionBuilder().WithUrl(hubAddress).Build();
+            //you need a SignalR client. You can’t send posts from a normal web client
+            connection.On<Dictionary<string,decimal>>(nameof(IExchangeHub.NotifyCurrentPrices), NotifyCurrentPrices);
+            connection.On<MessageType,string>(nameof(IExchangeHub.NotifyInformation), NotifyInformation);
+            connection.StartAsync();
+
+            connection.Closed += async (error) =>
             {
                 await Task.Delay(new Random().Next(0, 5) * 1000);
-                await _connection.StartAsync();
+                await connection.StartAsync();
             };
         }
 

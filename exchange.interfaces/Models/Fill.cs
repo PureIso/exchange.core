@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Text.Json.Serialization;
-using exchange.core.Models;
 
 namespace exchange.core.models
 {
-    public class Fill : Error
+    public class Fill
     {
         #region Properties
         [JsonPropertyName("trade_id")]

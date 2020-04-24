@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using exchange.core.Enums;
 using exchange.core.Models;
 
 namespace exchange.coinbase
@@ -15,14 +16,20 @@ namespace exchange.coinbase
     public class Coinbase : IExchangeService, IDisposable
     {
         #region Fields
+
         private readonly IConnectionAdapter _connectionAdapter;
+
         #endregion
 
         #region Events
-        public Action<Feed> FeedBroadCast { get; set; }
+
+        public Action<Feed> FeedBroadcast { get; set; }
+        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+
         #endregion
 
         #region Public Properties
+
         public Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
@@ -34,184 +41,372 @@ namespace exchange.coinbase
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
+
         #endregion
 
         public Coinbase(IConnectionAdapter connectionAdapter)
         {
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
+            Accounts = new List<Account>();
+            AccountHistories = new List<AccountHistory>();
+            AccountHolds = new List<AccountHold>();
+            Products = new List<Product>();
+            HistoricRates = new List<HistoricRate>();
+            Fills = new List<Fill>();
+            Orders = new List<Order>();
+            OrderBook = new OrderBook();
+            SelectedProduct = new Product();
             _connectionAdapter = connectionAdapter;
         }
 
         #region Public Methods
+
         #region Trading
 
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            //check if we do not have any error messages
-            if(string.IsNullOrEmpty(json.GetPossibleError()))
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/accounts/{accountId}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                //check if we do not have any error messages
                 Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return Accounts;
         }
+
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/ledger");
-            string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrEmpty(json.GetPossibleError()))
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account History Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/accounts/{accountId}/ledger");
+                string json = await _connectionAdapter.RequestAsync(request);
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountHistoryAsync JSON:\r\n{json}");
                 AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountHistoryAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return AccountHistories;
         }
+
         public async Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/accounts/{accountId}/holds");
-            string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrEmpty(json.GetPossibleError()))
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account Holds Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/accounts/{accountId}/holds");
+                string json = await _connectionAdapter.RequestAsync(request);
                 AccountHolds = JsonSerializer.Deserialize<List<AccountHold>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountHoldsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return AccountHolds;
         }
+
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrEmpty(json.GetPossibleError()))
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Orders Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
+                string json = await _connectionAdapter.RequestAsync(request);
                 Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return Orders;
         }
+
         public async Task<Order> PostOrdersAsync(Order order)
         {
-            object data;
-            if (order.Type =="market")
-                data = new
-                {
-                    size = order.Size,
-                    side = order.Side,
-                    type = "market",
-                    product_id = order.ProductID
-                };
-            else
-                data = new
-                {
-                    size = order.Size,
-                    price = order.Price,
-                    side = order.Side,
-                    type = "limit",
-                    product_id = order.ProductID
-                };
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
+            Order outputOrder = null;
+            try
             {
-                RequestBody = JsonSerializer.Serialize(data)
-            };
-            string json = await _connectionAdapter.RequestAsync(request);
-            return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<Order>(json);
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Post Order Information.");
+                object data;
+                if (order.Type == OrderType.Market || string.IsNullOrEmpty(order.Price))
+                    data = new
+                    {
+                        size = order.Size,
+                        side = order.Side.GetStringValue(),
+                        type = OrderType.Market.GetStringValue(),
+                        product_id = order.ProductID,
+                        stp = order.SelfTradePrevention.GetStringValue()
+                    };
+                else
+                    data = new
+                    {
+                        size = order.Size,
+                        price = order.Price,
+                        side = order.Side.GetStringValue(),
+                        type = OrderType.Limit.GetStringValue(),
+                        product_id = order.ProductID,
+                        stp = order.SelfTradePrevention.GetStringValue()
+                    };
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
+                {
+                    RequestBody = JsonSerializer.Serialize(data)
+                };
+                string json = await _connectionAdapter.RequestAsync(request);
+                outputOrder = JsonSerializer.Deserialize<Order>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: PostOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return outputOrder;
         }
+
         public async Task<List<Order>> CancelOrdersAsync(Order order)
         {
-            //product_id	[optional]	Only cancel orders open for a specific product
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
-                $"/orders/{order.ID ?? string.Empty}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            return string.IsNullOrEmpty(json.GetPossibleError()) ? JsonSerializer.Deserialize<List<Order>>(json) : null;
+            List<Order> ordersOutput = new List<Order>();
+            try
+            {
+                if (order == null)
+                    return ordersOutput;
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Cancel Orders Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
+                    $"/orders/{order.ID ?? string.Empty}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                ordersOutput = JsonSerializer.Deserialize<List<Order>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return ordersOutput;
         }
+
         public async Task<List<Product>> UpdateProductsAsync()
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
-            string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrEmpty(json.GetPossibleError()))
-                Products = JsonSerializer.Deserialize<List<Product>>(json);
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Update Products Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
+                string json = await _connectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                    Products = JsonSerializer.Deserialize<List<Product>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateProductsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
             return Products;
         }
+
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
-            if (products == null || !products.Any())
-                return Tickers;
-            if (Tickers == null)
-                Tickers = new List<Ticker>();
-            //Get price of all products
-            foreach (Product product in products)
+            try
             {
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/ticker");
-                string json = await _connectionAdapter.RequestAsync(request);
-                if (!string.IsNullOrEmpty(json.GetPossibleError()))
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Update Tickers Information.");
+                if (products == null || !products.Any())
                     return Tickers;
-                Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
-                Tickers?.RemoveAll(x => x.ProductID == product.ID);
-                if (ticker == null) 
-                    continue;
-                ticker.ProductID = product.ID;
-                Tickers.Add(ticker);
+                if (Tickers == null)
+                    Tickers = new List<Ticker>();
+                //Get price of all products
+                foreach (Product product in products)
+                {
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                        $"/products/{product.ID}/ticker");
+                    string json = await _connectionAdapter.RequestAsync(request);
+                    if (string.IsNullOrEmpty(json))
+                        return Tickers;
+                    Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
+                    Tickers?.RemoveAll(x => x.ProductID == product.ID);
+                    if (ticker == null)
+                        continue;
+                    ticker.ProductID = product.ID;
+                    Tickers.Add(ticker);
+                }
+
+                foreach (Ticker ticker in Tickers)
+                {
+                    if (decimal.TryParse(ticker.Price, out decimal decimalPrice))
+                        CurrentPrices[ticker.ProductID] = decimalPrice;
+                }
             }
-            foreach (Ticker ticker in Tickers)
+            catch (Exception e)
             {
-                if(decimal.TryParse(ticker.Price, out decimal decimalPrice))
-                    CurrentPrices[ticker.ProductID] = decimalPrice;
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateTickersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
+
             return Tickers;
         }
+
         public async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/fills?product_id={product.ID ?? string.Empty}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            if (string.IsNullOrEmpty(json.GetPossibleError()))
-                Fills = JsonSerializer.Deserialize<List<Fill>>(json);
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/fills?product_id={product.ID ?? string.Empty}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                    Fills = JsonSerializer.Deserialize<List<Fill>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return Fills;
         }
+
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/book?level={level}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Orders Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{product.ID}/book?level={level}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateProductOrderBookAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
             return OrderBook;
         }
-        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
+
+        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product,
+            DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
-            string json = await _connectionAdapter.RequestAsync(request);
-            ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
-            HistoricRates = candles.ToHistoricRateList();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Historic Candles Information.");
+                if (startingDateTime.AddMilliseconds(granularity) >= endingDateTime)
+                    return null;
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
+                HistoricRates = candles.ToHistoricRateList();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return HistoricRates;
         }
+
         #endregion
+
         #region Feed
-        public bool Subscribe(string message)
+
+        public bool ChangeFeed(string message)
         {
-            string json = _connectionAdapter.WebSocketSendAsync(message).Result;
-            if (string.IsNullOrEmpty(json))
-                return false;
-            Feed feed = JsonSerializer.Deserialize<Feed>(json);
+            Feed feed = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Subscribing to Feed Information.");
+                string json = _connectionAdapter.WebSocketSendAsync(message).Result;
+                if (string.IsNullOrEmpty(json))
+                    return false;
+                feed = JsonSerializer.Deserialize<Feed>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}");
+            }
+
             return feed != null && feed.Type != "error";
         }
-        public void ProcessFeed()
+
+        public void StartProcessingFeed()
         {
             Task.Run(async () =>
             {
                 try
                 {
+                    ProcessLogBroadcast?.Invoke(MessageType.General, $"Started Processing Feed Information.");
                     while (_connectionAdapter.IsWebSocketConnected())
                     {
                         string json = await _connectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
                         Feed feed = JsonSerializer.Deserialize<Feed>(json);
                         if (feed == null || feed.Type == "error")
-                            return; 
-                        FeedBroadCast?.Invoke(feed);
+                            return;
+                        FeedBroadcast?.Invoke(feed);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    Console.WriteLine(ex.StackTrace);
+                    ProcessLogBroadcast?.Invoke(MessageType.Error,
+                        $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}");
                 }
             });
         }
+
         public async Task<bool> CloseFeed()
         {
-            bool isClosed = await _connectionAdapter.WebSocketCloseAsync();
+            bool isClosed = false;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Closing Feed Subscription.");
+                isClosed = await _connectionAdapter.WebSocketCloseAsync();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: CloseFeed\r\nException Stack Trace: {e.StackTrace}");
+            }
             return isClosed;
         }
+
         #endregion
+
         public void Dispose()
         {
-            _connectionAdapter.Dispose();
+            _connectionAdapter?.Dispose();
+            CurrentPrices = null;
+            Tickers = null;
+            Accounts = null;
+            AccountHistories = null;
+            AccountHolds = null;
+            Products = null;
+            HistoricRates = null;
+            Fills = null;
+            Orders = null;
+            OrderBook = null;
+            SelectedProduct = null;
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
         }
         #endregion
     }

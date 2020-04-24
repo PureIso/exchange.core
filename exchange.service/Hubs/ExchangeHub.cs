@@ -13,19 +13,19 @@ namespace exchange.service.hubs
             IExchangeService = exchangeService;
         }
 
-        #region Request Methods
-        public virtual void RequestAccounts()
-        {
+        //#region Request Methods
+        //public virtual void RequestAccounts()
+        //{
 
-        }
-        #endregion
+        //}
+        //#endregion
 
-        #region Notification Methods
-        public async Task CurrentPrices(Dictionary<string, decimal> currentPrices)
-        {
-            await Clients.All.CurrentPrices(currentPrices);
-        }
-        #endregion
+        ////#region Notification Methods
+        ////public async Task CurrentPrices(Dictionary<string, decimal> currentPrices)
+        ////{
+        ////    await Clients.All.NotifyCurrentPrices(currentPrices);
+        ////}
+        ////#endregion
 
         #region Overridden Methods
         public override Task OnConnectedAsync()
