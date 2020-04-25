@@ -1,0 +1,14 @@
+<div *ngFor="let notification of notificationContainer.notifications">
+    <div *ngIf="!notification.dismissed">
+
+        <div class="alert alert-dismissible fade show" role="alert" [ngClass]="{'alert-info': notification.style==='info',
+        'alert-danger': notification.style==='danger',
+        'alert-success': notification.style==='success'}">
+            {{notification.content}}
+            <button type="button" class="close" data-dismiss="alert" (click)="dismiss(notification.id)" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+    </div>
+</div>

@@ -1,4 +1,4 @@
-﻿namespace exchange.signalR.client
+﻿namespace exchange.signalR.client.win.form
 {
     partial class MainForm
     {

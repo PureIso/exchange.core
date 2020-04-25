@@ -1,0 +1,75 @@
+{
+    /**signals to the IDE to generate all files for a given tsconfig.json upon saving*/
+    "compileOnSave": false,
+    "compilerOptions": {
+        /**Base directory to resolve non-relative module names.*/
+        "baseUrl": ".",
+        /**Specify ECMAScript target version*/
+        "target": "es5",
+        /**Specify module code generation*/
+        "module": "commonjs",
+        /**Determine how modules get resolved*/
+        "moduleResolution": "node",
+        /**Generates corresponding .map file - de-reference uglified code*/
+        "sourceMap": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        /**Raise error on expressions and declarations with an implied any type*/
+        "noImplicitAny": false,
+        /** Suppress --noImplicitAny errors for indexing objects lacking index signatures. See issue #1232 for more details*/
+        "suppressImplicitAnyIndexErrors": true,
+        /**	List of library files to be included in the compilation*/
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        /**List of folders to include type definitions from*/
+        "typeRoots": [
+            "node_modules/@types"
+        ],
+        /**List of path mapping entries for module names to locations relative to the baseUrl*/
+        "paths": {
+            "@actions/*": [
+                "src/app/shared/actions/*"
+            ],
+            "@store/*": [
+                "src/app/shared/store/*"
+            ],
+            "@reducers/*": [
+                "src/app/shared/reducers/*"
+            ],
+            "@models/*": [
+                "src/app/shared/models/*"
+            ],
+            "@interfaces/*": [
+                "src/app/shared/interfaces/*"
+            ],
+            "@modules/*": [
+                "src/app/shared/modules/*"
+            ],
+            "@services/*": [
+                "src/app/core/services/*"
+            ],
+            "@config/*": [
+                "src/app/config/*"
+            ],
+            "@main/*": [
+                "src/app/modules/main/*"
+            ],
+            "@assets/*": [
+                "src/app/assets/*"
+            ]
+        }
+    },
+    /**files included explicitly using the "files" property are always included regardless of "exclude"*/
+    "include": [
+        "src/**/*"
+    ],
+    /**https://www.typescriptlang.org/docs/handbook/tsconfig-json.html*/
+    "exclude": [
+        "node_modules"
+    ]
+}

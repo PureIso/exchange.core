@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using exchange.core.Enums;
 using exchange.core.interfaces;
+using Microsoft.AspNetCore.SignalR.Client;
 
-namespace exchange.signalR.client
+namespace exchange.signalR.client.win.form
 {
     public partial class MainForm : Form , IExchangeHub
     {

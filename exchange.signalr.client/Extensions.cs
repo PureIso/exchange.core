@@ -2,9 +2,8 @@
 using System.Drawing;
 using System.Windows.Forms;
 using exchange.core.Enums;
-using exchange.signalR.client.Properties;
 
-namespace exchange.signalR.client
+namespace exchange.signalR.client.win.form
 {
     public static class Extensions
     {

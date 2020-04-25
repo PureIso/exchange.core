@@ -26,7 +26,7 @@ The following development process seems to work well for this project.
 
 ## Core Features
 
-- Work Service with SignalR broadcast
+- Worker Service with SignalR broadcast
 - Coinbase Pro Trading
   - Acount Information
   - Account History
@@ -60,8 +60,18 @@ The following development process seems to work well for this project.
 
 ## Technologies
 
-- [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/)
-- [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0)
+- [Angular](https://angular.io/) - (Framework - Frontend)
+- [TypeScript](https://www.typescriptlang.org/) - (Language - Frontend)
+- [Webpack](https://webpack.js.org/) - (Bundler)
+- [npm](https://www.npmjs.com/) - (Package Manager)
+- [Karma](http://karma-runner.github.io/0.12/index.html) - (Test Runner)
+- [Jasmine](https://jasmine.github.io/) - (Test Framework)
+- [Rxjs](https://github.com/ReactiveX/rxjs)
+- [Sass](http://sass-lang.com/)
+- [Bootstrap](http://getbootstrap.com/)
+- [Font Awesome](https://fontawesome.com/)
+- [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/) - (Language - Backend)
+- [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0) - (Real-Time web functionality library)
 
 ## Configuration
 
