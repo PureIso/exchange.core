@@ -4,7 +4,7 @@ import { MainService } from "@services/main.service";
 
 @Component({
   templateUrl: "./dashboard.component.html",
-  styleUrls: ["./dashboard.component.sass"]
+  styleUrls: ["./dashboard.component.css"]
 })
 
 /**

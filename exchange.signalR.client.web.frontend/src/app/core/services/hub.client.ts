@@ -8,4 +8,12 @@ export class HubClient{
     setRedux(redux: NgRedux<AppState>){
         HubClient.redux = redux;
     }
+
+    notifyCurrentPrices(prices: any){
+        console.log(prices);
+    }
+
+    notifyInformation(messageType:any,message:string){
+        console.log(messageType +" - "+message);
+    }
 }

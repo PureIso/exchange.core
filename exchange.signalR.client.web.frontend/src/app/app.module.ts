@@ -7,6 +7,7 @@ import { SharedModule } from "@modules/shared.modules";
 import { AppRoutingModule } from "./app-routing.module";
 import { MainModule } from "@main/main.module";
 import { MainRoutingModule } from "@main/main-routing.module";
+import { MainService } from "@services/main.service";
 
 @NgModule({
   imports: [MainModule, MainRoutingModule, AppRoutingModule, SharedModule],
@@ -15,8 +16,9 @@ import { MainRoutingModule } from "@main/main-routing.module";
   bootstrap: [AppComponent]
 })
 export class AppModule {
-  constructor(ngRedux: NgRedux<AppState>) {
+  constructor(ngRedux: NgRedux<AppState>, mainService: MainService) {
     //Initial state of our store
     ngRedux.provideStore(store);
+    mainService.start();
   }
 }

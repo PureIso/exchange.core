@@ -33,6 +33,11 @@ namespace exchange.service
                 IConfiguration configuration = hostContext.Configuration;
                 ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
+                //cross origin requests
+                services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
+                    builder.WithOrigins("http://localhost:9000")
+                        .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                }));
                 services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>(httpClient =>
                 {
                     if (exchangeSettings.Uri != null)

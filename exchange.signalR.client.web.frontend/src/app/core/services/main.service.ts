@@ -9,6 +9,7 @@ import { HubClient } from "./hub.client";
 //Interface to the business layer
 @Injectable()
 export class MainService extends HubClient {
+    private hubUrlChange = false;
     private hubConnection: HubConnection;
     private hubUrl = this.config.setting["HubUrl"];
     private hubName = this.config.setting["HubName"];
@@ -25,8 +26,12 @@ export class MainService extends HubClient {
 
     start(){
         this.hubConnection.onclose(function(){
-
+            console.log("closed");
         });
+
+        this.hubConnection.on("notifyCurrentPrices",super.notifyCurrentPrices);
+        this.hubConnection.on("notifyInformation",super.notifyInformation);
+
 
         this.hubConnection.start()
         .then(function(){
@@ -37,4 +42,17 @@ export class MainService extends HubClient {
         })
     }
     
+    initialiseSubscriptions(){
+
+    }
+
+    exception_handler(title:string, description: string, style:string){
+
+    }
+
+    set_Huburl(hubUrl:string){
+        this.hubUrlChange  = true;
+        this.hubUrl = hubUrl;
+        //this.window.clearInterval(this.serverHubInitId)
+    }
 }

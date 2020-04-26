@@ -48,6 +48,7 @@
         "@fortawesome/fontawesome-free-regular": "^5.0.13",
         "@fortawesome/fontawesome-free-solid": "^5.0.13",
         "@ngtools/webpack": "^9.0.4",
+        "@swimlane/ngx-charts": "^14.0.0",
         "@types/jasmine": "^3.5.7",
         "@types/node": "^13.7.6",
         "angular-router-loader": "^0.8.5",
@@ -104,5 +105,7 @@
         "webpack-dev-server": "^3.10.3",
         "zone.js": "^0.10.2"
     },
-    "dependencies": {}
+    "dependencies": {
+        "@fortawesome/fontawesome-free": "^5.13.0"
+    }
 }

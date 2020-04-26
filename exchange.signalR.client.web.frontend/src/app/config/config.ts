@@ -5,8 +5,8 @@ export class AppConfig {
     private _config: { [key: string]: string };
     constructor() {
         this._config = {
-            HubUrl: 'https://localhost:5001/hubs/',
-            HunName: 'exchange'
+            HubUrl: 'https://localhost:5001/hubs',
+            HubName: 'exchange'
         };
     }
 
