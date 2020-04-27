@@ -18,60 +18,61 @@ namespace exchange.service
     {
         private readonly ILogger<Worker> _logger;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
-        private readonly IExchangeService _coinbase;
+        private readonly IExchangeService _exchangeService;
 
-        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IExchangeService coinbase)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IExchangeService exchangeService)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
-            _coinbase = coinbase;
+            _exchangeService = exchangeService;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            _coinbase.FeedBroadcast += FeedBroadCast; 
-            _coinbase.ProcessLogBroadcast += ProcessLogBroadcast;
-            await _coinbase.UpdateAccountsAsync();
-            if (_coinbase.Accounts != null && _coinbase.Accounts.Any())
+            _exchangeService.FeedBroadcast += FeedBroadCast; 
+            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
+            await _exchangeService.UpdateAccountsAsync();
+            if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {
-                await _coinbase.UpdateAccountHistoryAsync(_coinbase.Accounts[0].ID);
-                await _coinbase.UpdateAccountHoldsAsync(_coinbase.Accounts[0].ID);
+                await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);
+                await _exchangeService.UpdateAccountHoldsAsync(_exchangeService.Accounts[0].ID);
 
-                _coinbase.UpdateProductsAsync().Wait(cancellationToken);
+                _exchangeService.UpdateProductsAsync().Wait(cancellationToken);
                 List<Product> products = new List<Product>
                 {
-                    _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                    _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
+                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
+                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
+                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
                 };
                 products.RemoveAll(x => x == null);
                 if (products.Any())
                 {
-                    _coinbase.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
-                    _coinbase.UpdateOrdersAsync().Wait(cancellationToken);
-                    _coinbase.UpdateFillsAsync(products[0]).Wait(cancellationToken);
-                    _coinbase.UpdateTickersAsync(products).Wait(cancellationToken);
-                    _coinbase.ChangeFeed(products.ToSubscribeString());
+                    _exchangeService.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
+                    _exchangeService.UpdateOrdersAsync().Wait(cancellationToken);
+                    _exchangeService.UpdateFillsAsync(products[0]).Wait(cancellationToken);
+                    _exchangeService.UpdateTickersAsync(products).Wait(cancellationToken);
+                    _exchangeService.ChangeFeed(products.ToSubscribeString());
                     
-                    _coinbase.StartProcessingFeed();
+                    _exchangeService.StartProcessingFeed();
 
-                    //market order
-                    //buy
-                    Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
-                    Order marketBuyOrderResponse = await _coinbase.PostOrdersAsync(marketOrderBuy);
-                    //sell
-                    Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
-                    Order marketSellOrderResponse = await _coinbase.PostOrdersAsync(marketOrderSell);
-                    //limit order
-                    Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
-                    Order limitOrderResponse = await _coinbase.PostOrdersAsync(limitOrder);
-                    //cancel order
-                    await _coinbase.CancelOrdersAsync(limitOrderResponse);
-                    List<HistoricRate> historicRates =  await _coinbase.UpdateProductHistoricCandlesAsync(products[0], 
-                        DateTime.Now.AddHours(-2).ToUniversalTime(),
-                        DateTime.Now.ToUniversalTime(), 900);//15 minutes
+                    ////market order
+                    ////buy
+                    //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
+                    //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
+                    ////sell
+                    //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
+                    //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
+                    ////limit order
+                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
+                    //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
+                    ////cancel order
+                    //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
+                    //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
+                    //    DateTime.Now.AddHours(-2).ToUniversalTime(),
+                    //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
                 }
-                _logger.LogInformation($"Account Count: {_coinbase.Accounts.Count}");
+                _logger.LogInformation($"Account Count: {_exchangeService.Accounts.Count}");
             }
            
             await base.StartAsync(cancellationToken);
@@ -86,8 +87,8 @@ namespace exchange.service
         {
             if (feed.ProductID == null)
                 return;
-            _coinbase.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
-            await _exchangeHub.Clients.All.NotifyCurrentPrices(_coinbase.CurrentPrices);
+            _exchangeService.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+            await _exchangeHub.Clients.All.NotifyCurrentPrices(_exchangeService.CurrentPrices);
             await _exchangeHub.Clients.All.NotifyInformation(MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
             _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
         }
@@ -96,12 +97,12 @@ namespace exchange.service
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
             List<Product> products = new List<Product>
             {
-                _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                _coinbase.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
+                _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
+                _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
             };
             products.RemoveAll(x => x == null);
-            _coinbase.ChangeFeed(products.ToUnSubscribeString());
-            _coinbase.CloseFeed();
+            _exchangeService.ChangeFeed(products.ToUnSubscribeString());
+            _exchangeService.CloseFeed();
             return base.StopAsync(cancellationToken);
         }
         public override void Dispose()

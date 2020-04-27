@@ -6,18 +6,25 @@ import { NgReduxModule } from "@angular-redux/store";
 import { FormsModule } from "@angular/forms";
 import { HttpClientModule } from "@angular/common/http";
 import { NotificationComponent } from "./components/notification/notification.component";
+import { PriceCardComponent } from "./components/price-card/price-card.component";
 
 @NgModule({
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    CommonModule,
-    FormsModule,
-    NgReduxModule,
-    BrowserAnimationsModule
-  ],
-  exports: [FormsModule, CommonModule, BrowserAnimationsModule, NotificationComponent],
-  providers: [],
-  declarations: [NotificationComponent]
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        CommonModule,
+        FormsModule,
+        NgReduxModule,
+        BrowserAnimationsModule,
+    ],
+    exports: [
+        FormsModule,
+        CommonModule,
+        BrowserAnimationsModule,
+        NotificationComponent,
+        PriceCardComponent,
+    ],
+    providers: [],
+    declarations: [NotificationComponent, PriceCardComponent],
 })
-export class SharedModule { }
+export class SharedModule {}

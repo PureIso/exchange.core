@@ -1,22 +1,18 @@
 .container-bg-custom {
-  background-color: #F3F3F3;
-  height:calc(100vh - 40px);
+    background-color: #f3f3f3;
+    height: calc(100vh - 40px);
 }
 .main-bg-custom {
-  background-color: rgb(149, 158, 168);
+    background-color: rgb(149, 158, 168);
 }
 .sidebar-bg-custom {
-  background-color: rgb(228, 231, 233);
+    background-color: rgb(228, 231, 233);
 }
 
-.nav-item a:hover { 
-  background-color: rgb(149, 158, 168);
+.nav-item a:hover {
+    background-color: rgb(149, 158, 168);
 }
 
-.nav-item a:hover:active { 
-  color: white;
-}
-
-.grid-margin {
-  margin-bottom: 25px;
+.nav-item a:hover:active {
+    color: white;
 }
