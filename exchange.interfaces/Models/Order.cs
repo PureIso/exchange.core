@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Text.Json.Serialization;
 using exchange.core.Enums;
 
 namespace exchange.core.models
@@ -12,19 +13,19 @@ namespace exchange.core.models
         [JsonPropertyName("product_id")]
         public string ProductID { get; set; }
         [JsonPropertyName("side")]
-        public OrderSide Side { get; set; }
+        public string Side { get; set; }
         [JsonPropertyName("stp")]
-        public SelfTradePreventionType SelfTradePrevention { get; set; }
+        public string SelfTradePreventionType { get; set; }
         [JsonPropertyName("fund")]
         public string Fund { get; set; }
         [JsonPropertyName("type")]
-        public OrderType Type { get; set; }
+        public string Type { get; set; }
         [JsonPropertyName("post_only")]
         public bool PostOnly { get; set; }
         [JsonPropertyName("price")]
         public string Price { get; set; }
         [JsonPropertyName("time_in_force")]
-        public TimeInForce TimeInForce { get; set; }
+        public string TimeInForce { get; set; }
         [JsonPropertyName("created_at")]
         public string CreatedAt { get; set; }
         [JsonPropertyName("fill_fees")]

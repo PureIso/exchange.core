@@ -35,7 +35,7 @@ namespace exchange.service
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
                 //cross origin requests
                 services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
-                    builder.WithOrigins("http://localhost:9000")
+                    builder.WithOrigins("http://localhost:9000", "https://localhost:44391")
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
                 services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>(httpClient =>

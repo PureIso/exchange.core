@@ -1,0 +1,7 @@
+{
+    "name": "exchange",
+    "productName": "Exchange",
+    "version": "1.0.0",
+    "description": "Cryptocurrency exchange API (Coinbase)",
+    "main": "main.js"
+}

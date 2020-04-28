@@ -32,6 +32,13 @@ namespace exchange.signalR.client.win.form
             });
         }
 
+        public Task NotifyTechnicalIndicatorInformation(Dictionary<string, string> indicatorInformation)
+        {
+            return Task.Run(() =>
+            {
+            });
+        }
+
         public MainForm()
         {
             InitializeComponent();

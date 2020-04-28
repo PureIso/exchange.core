@@ -92,7 +92,39 @@ namespace exchange.test
         [TestMethod]
         public void UpdateAccountsWithParameter_ShouldReturnAccounts_WhenAccountExists()
         {
-            
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[{{
+                            ""id"": ""71452118-efc7-4cc4-8780-a5e22d4baa53"",
+                            ""currency"": ""BTC"",
+                            ""balance"": ""0.0000000000000000"",
+                            ""available"": ""0.0000000000000000"",
+                            ""hold"": ""0.0000000000000000"",
+                            ""profile_id"": ""75da88c5-05bf-4f54-bc85-5c775bd68254"",
+                            ""trading_enabled"":true
+                            }}]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            //Act
+            subjectUnderTest.UpdateAccountsAsync("71452118-efc7-4cc4-8780-a5e22d4baa53").Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Accounts);
+            Assert.AreEqual(1, subjectUnderTest.Accounts.Count);
+
+            Assert.AreEqual("71452118-efc7-4cc4-8780-a5e22d4baa53", subjectUnderTest.Accounts[0].ID);
+            Assert.AreEqual("BTC", subjectUnderTest.Accounts[0].Currency);
+            Assert.AreEqual((decimal)0.0000000000000000, subjectUnderTest.Accounts[0].Balance.ToDecimal());
+            Assert.AreEqual((decimal)0.0000000000000000, subjectUnderTest.Accounts[0].Available.ToDecimal());
+            Assert.AreEqual((decimal)0.0000000000000000, subjectUnderTest.Accounts[0].Hold.ToDecimal());
         }
         [TestMethod]
         public void UpdateAccountHistory_ShouldReturnAccountHistory_WhenAccountExists()
@@ -232,7 +264,7 @@ namespace exchange.test
         public void PostOrders_ShouldReturnPostedOrder_WhenOrderIsSuccessful()
         {
             //Arrange
-            Order order = new Order {Size = "0.01", Price = "0.100", Side = OrderSide.Buy, ProductID = "BTC-EUR"};
+            Order order = new Order {Size = "0.01", Price = "0.100", Side = OrderSide.Buy.GetStringValue(), ProductID = "BTC-EUR"};
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())

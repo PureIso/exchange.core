@@ -150,24 +150,24 @@ namespace exchange.coinbase
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Post Order Information.");
                 object data;
-                if (order.Type == OrderType.Market || string.IsNullOrEmpty(order.Price))
+                if (order.Type == OrderType.Market.GetStringValue() || string.IsNullOrEmpty(order.Price))
                     data = new
                     {
                         size = order.Size,
-                        side = order.Side.GetStringValue(),
+                        side = order.Side,
                         type = OrderType.Market.GetStringValue(),
                         product_id = order.ProductID,
-                        stp = order.SelfTradePrevention.GetStringValue()
+                        stp = order.SelfTradePreventionType
                     };
                 else
                     data = new
                     {
                         size = order.Size,
                         price = order.Price,
-                        side = order.Side.GetStringValue(),
+                        side = order.Side,
                         type = OrderType.Limit.GetStringValue(),
                         product_id = order.ProductID,
-                        stp = order.SelfTradePrevention.GetStringValue()
+                        stp = order.SelfTradePreventionType
                     };
                 Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
                 {

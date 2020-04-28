@@ -8,5 +8,6 @@ namespace exchange.core.interfaces
     {
         Task NotifyCurrentPrices(Dictionary<string, decimal> currentPrices);
         Task NotifyInformation(MessageType messageType, string message);
+        Task NotifyTechnicalIndicatorInformation(Dictionary<string, string> indicatorInformation);
     }
 }

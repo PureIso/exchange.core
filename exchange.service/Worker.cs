@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using exchange.core.models;
 using exchange.core;
 using exchange.core.Enums;
+using exchange.core.Indicators;
 
 namespace exchange.service
 {
@@ -19,12 +22,14 @@ namespace exchange.service
         private readonly ILogger<Worker> _logger;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
         private readonly IExchangeService _exchangeService;
+        private RelativeStrengthIndex _relativeStrengthIndexIndicator;
 
         public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IExchangeService exchangeService)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
             _exchangeService = exchangeService;
+            _relativeStrengthIndexIndicator = new RelativeStrengthIndex(exchangeService);
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
@@ -56,6 +61,17 @@ namespace exchange.service
                     
                     _exchangeService.StartProcessingFeed();
 
+                    string indicatorDatabaseDirectory = AppDomain.CurrentDomain.BaseDirectory + "indicator_database";
+                    if (!Directory.Exists(indicatorDatabaseDirectory))
+                        Directory.CreateDirectory(indicatorDatabaseDirectory);
+                    string databaseFile = indicatorDatabaseDirectory + "\\indicator.database.json";
+                    if (!File.Exists(databaseFile))
+                        File.Create(databaseFile).Close();
+                    _relativeStrengthIndexIndicator = RelativeStrengthIndex.Load(databaseFile, _exchangeService);
+                    _relativeStrengthIndexIndicator.DatabaseFile = databaseFile;
+                    _relativeStrengthIndexIndicator.DatabaseDirectory = indicatorDatabaseDirectory;
+                    _relativeStrengthIndexIndicator.Product = products[0];
+                    _relativeStrengthIndexIndicator.EnableRelativeStrengthIndexUpdater();
                     ////market order
                     ////buy
                     //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
@@ -90,7 +106,17 @@ namespace exchange.service
             _exchangeService.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
             await _exchangeHub.Clients.All.NotifyCurrentPrices(_exchangeService.CurrentPrices);
             await _exchangeHub.Clients.All.NotifyInformation(MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
-            _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
+            Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+            {
+                ["RSI-15MIN"] = _relativeStrengthIndexIndicator.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1HOUR"] = _relativeStrengthIndexIndicator.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1DAY"] = _relativeStrengthIndexIndicator.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-15MIN"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1HOUR"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1DAY"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+            };
+            await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(indicatorInformation);
+                _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
