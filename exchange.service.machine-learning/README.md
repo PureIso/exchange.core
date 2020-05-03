@@ -31,6 +31,7 @@ Setup and initialise virtual environment:
 virtualenv env --python=python3.6.5
 python -m virtualenv env
 env\\Scripts\\activate.bat
+python.exe -m pip install --upgrade pip
 ```
 
 Installing requirement file in virtual environment:

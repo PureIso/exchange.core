@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from app.Config import Config
+from app.config import Config
 
 
 config = Config()
