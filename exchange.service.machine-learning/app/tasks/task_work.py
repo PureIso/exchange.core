@@ -23,47 +23,6 @@ celery = Celery('application',
 current_training_status = {}
 
 
-class KerasFitCallback(tf.keras.callbacks.Callback):
-    def on_train_batch_end(self, batch, logs=None):
-        if batch % 5 != 0:
-            return
-        current_training_status = {
-            'state': 'ENDING TRAINING',
-            'time': datetime.datetime.now().time(),
-            'batch': batch,
-            'loss': logs['loss'],
-            'epoch': 'N/A',
-            'status': 'Starting Training...'
-        }
-        training.update_state(state="PROGRESS", meta=current_training_status)
-
-    def on_test_batch_end(self, batch, logs=None):
-        if batch % 5 != 0:
-            return
-        current_training_status = {
-            'state': 'ENDING TESTING',
-            'time': datetime.datetime.now().time(),
-            'batch': batch,
-            'loss': logs['loss'],
-            'epoch': 'N/A',
-            'status': 'End Testing...'
-        }
-        training.update_state(state="PROGRESS", meta=current_training_status)
-        print('For batch {}, loss is {:7.2f}.'.format(batch, logs['loss']))
-
-    def on_epoch_end(self, epoch, logs=None):
-        current_training_status = {
-            'state': 'EPOCH TESTING',
-            'time': datetime.datetime.now().time(),
-            'batch': 'N/A',
-            'loss': logs,
-            'epoch': epoch,
-            'status': 'Epoch Testing...'
-        }
-        training.update_state(state="PROGRESS", meta=current_training_status)
-        print('The average loss for epoch {}.'.format(epoch))
-
-
 @celery.task(bind=True)
 def training(self, hourly, save):
     if hourly != None and save != None:
@@ -249,15 +208,12 @@ def training(self, hourly, save):
             x_label_sma_normalized.append(
                 normalize(x_label_sma[index], 0, 1, minValue, maxValue))
 
-        # create a new display dataframe
-        # df = pd.DataFrame({
-        #     'ClosePrice': x_label_sma_normalized,
-        #     'ClosePricePredict': y_label_sma_normalized})
         response = json.dumps({'current': 100,
                                'total': 100,
                                'status': 'Task completed!',
                                'details': str(json.dumps(current_training_status)),
                                'summary': str(regressor.summary()),
+                               'hsitory': str(history),
                                'result': str(json.dumps({
                                    'ClosePrice': x_label_sma_normalized,
                                    'ClosePricePredict': y_label_sma_normalized}))})
@@ -267,3 +223,17 @@ def training(self, hourly, save):
                 "message": 'Invalid input'
             })
     return response
+
+
+class KerasFitCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        current_training_status = {
+            'state': 'EPOCH TESTING',
+            'time': datetime.datetime.now().time(),
+            'batch': 'N/A',
+            'loss': logs,
+            'epoch': epoch,
+            'status': 'Epoch Testing...'
+        }
+        training.update_state(state="PROGRESS", meta=current_training_status)
+        print('The average loss for epoch {}.'.format(epoch))

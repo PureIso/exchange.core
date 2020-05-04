@@ -10,6 +10,7 @@ Long Short Term Memory (LSTM - cells)
 Make sure that you have: python3.6.5
 Task Queue: Celery
 Message Broker for Task Queue: rabbitmq
+Database: sqlite
 Dependancy: Erlang
 
 Upgrade pip
@@ -46,8 +47,9 @@ Backing up packages to requirement file:
 pip freeze --local > requirements.txt
 ```
 
-Start Celery:
+Initialise environment and Start application:
 
 ```shell
-celery -A main worker --loglevel=info
+start.bat
+runner.bat
 ```

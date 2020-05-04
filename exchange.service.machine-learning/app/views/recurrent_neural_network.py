@@ -1,7 +1,7 @@
 import sys
 from app.tasks.task_work import training
 from flask_restful import Resource, reqparse
-from flask import json, Response
+from flask import json, Response, request
 
 
 class RecurrentNeuralNetwork(Resource):
@@ -35,7 +35,7 @@ class RecurrentNeuralNetwork(Resource):
                 message = json.dumps(
                     {"task_id": str(task.task_id),
                      "status": str(task.status),
-                     })
+                     "status url": str(request.url_root + 'api/v1/taskstatus?task_id=' + task.task_id)})
                 response = Response(message,
                                     status=202,  # Status Accepted
                                     mimetype='application/json')

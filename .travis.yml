@@ -2,7 +2,7 @@ matrix:
   include:
     - language: csharp
       mono: none
-      dotnet: 5.0.100-preview.3.20216.6
+      dotnet: 5.0.100
       install:
         - dotnet restore
       script:    
