@@ -26,6 +26,7 @@ The following development process seems to work well for this project.
 
 ## Core Features
 
+- Saving 15 minutes, 1 hour and 1 day trading candles for neural network
 - Worker Service with SignalR broadcast
 - Coinbase Pro Trading
   - Acount Information
@@ -39,24 +40,25 @@ The following development process seems to work well for this project.
   - Product Order Book
   - Product Historic Candles
   - Subscribe to Real-Time Feeds
-
-## TODO
-
-- XML Comments
-- Automatic Trading based on end-user rules
-- Saving 15 minutes, 1 hour and 1 day trading candles for neural network
-- Full Front End in Windows Form .Net 5
-- Alternative Front End with Electron and Angular 9
-  - TensorFlowJS
-  - RNN Trained Shards
-- Binance Trading
-- Unit Test
 - Trading Indication
   - Relative Strength Index
 - Recurrent Neural Network (RNN)
   - Tensorflow
   - Keras
   - Long Short Term Memory (LSTM) model for time series prediction
+
+## TODO
+
+- XML Comments
+- Automatic Trading based on end-user rules
+- Full Front End in Windows Form .Net 5
+- Alternative Front End with Electron and Angular 9
+  - TensorFlowJS
+  - RNN Trained Shards
+- Binance Trading
+- Unit Test
+- Docker implementation
+- Implement prediction API via machine learning Flask APP
 
 ## Technologies
 
@@ -72,6 +74,14 @@ The following development process seems to work well for this project.
 - [Font Awesome](https://fontawesome.com/)
 - [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/) - (Language - Backend)
 - [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0) - (Real-Time web functionality library)
+
+- [Python 3](https://www.python.org/) - (Language - Backend/Machine Learning)
+- [Keras](https://keras.io/) - (Dead Learning Library)
+- [Tensorflow](https://www.tensorflow.org/) - (Artificial Intelligence Library)
+- [Flask](https://flask.palletsprojects.com/en/1.1.x/) - (MicroWeb Framework)
+- [Celery](http://www.celeryproject.org/) - (Distributed Task Queue)
+- [RabbitMQ](https://www.rabbitmq.com/) - (Message Broker)
+- [SQLite](https://sqlite.org/index.html) - (Database Engine)
 
 ## Configuration
 
