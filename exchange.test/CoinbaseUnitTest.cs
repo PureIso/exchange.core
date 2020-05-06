@@ -302,6 +302,126 @@ namespace exchange.test
             Assert.AreEqual("BTC-EUR", orderResult.ProductID);
         }
         [TestMethod]
+        public void CancelOrders_ShouldReturnCancelledOrders_WhenOrdersExists()
+        {
+            //Arrange
+            Product product = new Product { ID = "BTC-EUR" };
+            List<Order> orders = new List<Order>()
+            {
+                new Order {ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45",ProductID = "BTC-EUR"},
+                new Order {ID = "00000000-0000-0000-0000-000000000000",ProductID = "BTC-USD"},
+            };
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[""71ad6d95-c70b-49a5-871d-d5dcc3295c45""]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory) {Orders = orders};
+            //Act
+            List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            //Assert
+            Assert.IsNotNull(removedOrders);
+            Assert.AreEqual(1, removedOrders.Count);
+            Assert.AreEqual(1, subjectUnderTest.Orders.Count);
+        }
+        [TestMethod]
+        public void CancelOrders_ShouldReturnCancelledOrders_WhenOrdersExistsAndItsNonArray()
+        {
+            //Arrange
+            Product product = new Product { ID = "BTC-EUR" };
+            List<Order> orders = new List<Order>()
+            {
+                new Order {ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45",ProductID = "BTC-EUR"},
+                new Order {ID = "00000000-0000-0000-0000-000000000000",ProductID = "BTC-USD"},
+            };
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"""71ad6d95-c70b-49a5-871d-d5dcc3295c45""")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            //Act
+            List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            //Assert
+            Assert.IsNotNull(removedOrders);
+            Assert.AreEqual(1, removedOrders.Count);
+            Assert.AreEqual(1, subjectUnderTest.Orders.Count);
+        }
+        [TestMethod]
+        public void CancelOrder_ShouldReturnCancelledOrders_WhenOrdersExists()
+        {
+            //Arrange
+            Order order = new Order {ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45", ProductID = "BTC-EUR"}; 
+            List<Order> orders = new List<Order>()
+            {
+                new Order {ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45",ProductID = "BTC-EUR"},
+                new Order {ID = "00000000-0000-0000-0000-000000000000",ProductID = "BTC-USD"},
+            };
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[""71ad6d95-c70b-49a5-871d-d5dcc3295c45""]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            //Act
+            List<Order> removedOrders = subjectUnderTest.CancelOrderAsync(order).Result;
+            //Assert
+            Assert.IsNotNull(removedOrders);
+            Assert.AreEqual(1, removedOrders.Count);
+            Assert.AreEqual(1, subjectUnderTest.Orders.Count);
+        }
+        [TestMethod]
+        public void CancelOrder_ShouldReturnCancelledOrders_WhenOrdersExistsAndItsNonArray()
+        {
+            //Arrange
+            Order order = new Order { ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45", ProductID = "BTC-EUR" };
+            List<Order> orders = new List<Order>()
+            {
+                new Order {ID = "71ad6d95-c70b-49a5-871d-d5dcc3295c45",ProductID = "BTC-EUR"},
+                new Order {ID = "00000000-0000-0000-0000-000000000000",ProductID = "BTC-USD"},
+            };
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"""71ad6d95-c70b-49a5-871d-d5dcc3295c45""")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            //Act
+            List<Order> removedOrders = subjectUnderTest.CancelOrderAsync(order).Result;
+            //Assert
+            Assert.IsNotNull(removedOrders);
+            Assert.AreEqual(1, removedOrders.Count);
+            Assert.AreEqual(1, subjectUnderTest.Orders.Count);
+        }
+        [TestMethod]
         public void UpdateProducts_ShouldReturnProducts_WhenProductExists()
         {
             //Arrange

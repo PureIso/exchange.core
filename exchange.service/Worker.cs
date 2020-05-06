@@ -80,10 +80,11 @@ namespace exchange.service
                     //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
                     //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
                     ////limit order
-                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
+                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy.GetStringValue(), Type = OrderType.Limit.GetStringValue(), ProductID = "BTC-EUR", Price = "1000" };
                     //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
-                    ////cancel order
-                    //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
+                    //////cancel order
+                    ////await _exchangeService.CancelOrdersAsync(new Product{ID="BTC-EUR"});
+                    //await _exchangeService.CancelOrderAsync(limitOrderResponse);
                     //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
                     //    DateTime.Now.AddHours(-2).ToUniversalTime(),
                     //    DateTime.Now.ToUniversalTime(), 900);//15 minutes

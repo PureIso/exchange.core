@@ -184,7 +184,7 @@ namespace exchange.coinbase
             return outputOrder;
         }
 
-        public async Task<List<Order>> CancelOrdersAsync(Order order)
+        public async Task<List<Order>> CancelOrderAsync(Order order)
         {
             List<Order> ordersOutput = new List<Order>();
             try
@@ -195,7 +195,87 @@ namespace exchange.coinbase
                 Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders/{order.ID ?? string.Empty}");
                 string json = await _connectionAdapter.RequestAsync(request);
-                ordersOutput = JsonSerializer.Deserialize<List<Order>>(json);
+                if (!json.StartsWith('[') && !json.EndsWith(']'))
+                {
+                    string orderId = JsonSerializer.Deserialize<string>(json);
+                    if (string.IsNullOrEmpty(orderId))
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
+                    int removed = Orders.RemoveAll(x => x.ID == orderId);
+                    ProcessLogBroadcast?.Invoke(MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderId} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput.Add(new Order{ID = orderId });
+                    return ordersOutput;
+                }
+                else
+                {
+                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
+                    if (orderIds == null)
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
+                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
+                    ProcessLogBroadcast?.Invoke(MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderIds} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput = (from id in orderIds select new Order { ID = id })?.ToList();
+                    return ordersOutput;
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return ordersOutput;
+        }
+
+        public async Task<List<Order>> CancelOrdersAsync(Product product)
+        {
+            List<Order> ordersOutput = new List<Order>();
+            try
+            {
+                if (product == null)
+                    return ordersOutput;
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Cancel Orders Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
+                    $"/orders?product_id={product.ID ?? string.Empty}");
+                string json = await _connectionAdapter.RequestAsync(request);
+                if (!json.StartsWith('[') && !json.EndsWith(']'))
+                {
+                    string orderId = JsonSerializer.Deserialize<string>(json);
+                    if (string.IsNullOrEmpty(orderId))
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
+                    int removed = Orders.RemoveAll(x => x.ID == orderId);
+                    ProcessLogBroadcast?.Invoke(MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderId} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput.Add(new Order { ID = orderId });
+                    return ordersOutput;
+                }
+                else
+                {
+                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
+                    if (orderIds == null)
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
+                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
+                    ProcessLogBroadcast?.Invoke(MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderIds} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput = (from id in orderIds select new Order { ID = id })?.ToList();
+                    return ordersOutput;
+                }
             }
             catch (Exception e)
             {

@@ -355,3 +355,4 @@ MigrationBackup/
 env/
 
 .vscode/
+exchange.signalR.client.web.backend/wwwroot/

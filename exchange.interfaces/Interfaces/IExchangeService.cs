@@ -38,7 +38,8 @@ namespace exchange.core.interfaces
         Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId);
         Task<List<Order>> UpdateOrdersAsync(Product product = null);
         Task<Order> PostOrdersAsync(Order order);
-        Task<List<Order>> CancelOrdersAsync(Order order);
+        Task<List<Order>> CancelOrderAsync(Order order);
+        Task<List<Order>> CancelOrdersAsync(Product product);
         Task<List<Product>> UpdateProductsAsync();
         Task<List<Ticker>> UpdateTickersAsync(List<Product> products);
         Task<List<Fill>> UpdateFillsAsync(Product product);
