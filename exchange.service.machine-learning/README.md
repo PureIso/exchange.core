@@ -53,3 +53,15 @@ Initialise environment and Start application:
 start.bat
 runner.bat
 ```
+
+Build docker file:
+
+```shell
+docker build -t exchange.service.machine-learning-service:latest .
+```
+
+Running docker-compose:
+
+```shell
+docker-compose up
+```

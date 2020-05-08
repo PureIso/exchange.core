@@ -1,8 +1,14 @@
-version: '3.4'
+version: "3"
+
 services:
-  device-registry:
-    build: .
-    volumes:
-      - .:/usr/src/app
-    ports:
-      - 5000:80
+    #machine learning web application
+    exchange.service.machine-learning-service:
+        # All files and folders in the currect directory
+        build: .
+        # List directories to mount
+        volumes:
+            - .:/usr/src/app
+        # Application will run on port 5005
+        # Access to directory has to be shared
+        ports:
+            - 5005:5005
