@@ -60,6 +60,13 @@ Build docker file:
 docker build -t exchange.service.machine-learning-service:latest .
 ```
 
+Creating a volume:
+
+```shell
+docker volume create --driver local --opt type=none --opt device=D:\Docker\data\db --opt o=bind mongo_db
+docker volume create --driver local --opt type=none --opt device=D:\Docker\data\configdb --opt o=bind mongo_configdb
+```
+
 Running docker-compose:
 
 ```shell

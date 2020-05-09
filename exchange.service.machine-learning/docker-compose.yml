@@ -1,14 +1,39 @@
 version: "3"
-
 services:
-    #machine learning web application
-    exchange.service.machine-learning-service:
+    #mongo Database
+    exchange.mongoDB:
+        #We need control of the database version
+        image: mongo:4.2
+        container_name: mongoDB
+        # List directories to mount
+        volumes:
+            - //d/Docker/data/db:/data/db
+            - //d/Docker/data/configdb:/data/configdb
+            - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
+        command: bash -c "mongod --port=27017 --dbpath=/data/db --bind_ip=* --auth"
+        ports:
+            - 27017-27019:27017-27019
+
+    #celery
+    celery:
+        container_name: celery
         # All files and folders in the currect directory
         build: .
         # List directories to mount
+        volumes:
+            - .:/usr/src/app
+        command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
+        depends_on:
+            - exchange.mongoDB
+
+    #machine learning web application
+    exchange.service.machine-learning-service:
+        container_name: machine-learning-service
+        build: .    
         volumes:
             - .:/usr/src/app
         # Application will run on port 5005
         # Access to directory has to be shared
         ports:
             - 5005:5005
+        command: python3.6 main.py

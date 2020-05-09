@@ -15,10 +15,13 @@ from keras.layers import Dense, Dropout, LSTM
 from sklearn.model_selection import train_test_split
 from flask import json, Response
 
+
 # set the project root directory as the static folder, you can set others.
+BROKER_BACKEND =  "mongodb://admin:password@exchange.mongoDB:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&ssl=false"
+BROKER_URL =  "mongodb://admin:password@exchange.mongoDB:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&ssl=false",
 celery = Celery('application',
-                broker='amqp://guest:guest@localhost:5672//',
-                backend='db+sqlite:///results.db')
+                broker=BROKER_URL,
+                backend=BROKER_BACKEND)
 
 current_training_status = {}
 
