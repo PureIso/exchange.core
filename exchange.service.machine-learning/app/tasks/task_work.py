@@ -16,13 +16,13 @@ from sklearn.model_selection import train_test_split
 from flask import json, Response
 
 
-# set the project root directory as the static folder, you can set others.
-BROKER_BACKEND =  "mongodb://admin:password@exchange.mongoDB:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&ssl=false"
-BROKER_URL =  "mongodb://admin:password@exchange.mongoDB:27017/?authSource=admin&readPreference=primary&appname=MongoDB%20Compass&ssl=false",
+BROKER_BACKEND =  "mongodb://celery:celery@exchange.mongodb:27017/celery"
+BROKER_URL =  "mongodb://celery:celery@exchange.mongodb:27017/celery",
 celery = Celery('application',
                 broker=BROKER_URL,
-                backend=BROKER_BACKEND)
+                backend=BROKER_BACKEND,broker_use_ssl=False,authsource='celery',authMechanism="SCRAM-SHA-1")
 
+celery.conf.update()
 current_training_status = {}
 
 

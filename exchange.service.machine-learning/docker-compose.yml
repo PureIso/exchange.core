@@ -1,18 +1,31 @@
-version: "3"
+version: "3.7"
+
+volumes:
+    mongo_db:
+        driver: local
+    mongo_configdb:
+        driver: local
+
 services:
     #mongo Database
-    exchange.mongoDB:
-        #We need control of the database version
-        image: mongo:4.2
-        container_name: mongoDB
+    exchange.mongodb:  
+        container_name: mongodb
+        #restart: always
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: celery
+            MONGO_INITDB_ROOT_PASSWORD: celery
+            MONGO_INITDB_DATABASE: celery
         # List directories to mount
         volumes:
-            - //d/Docker/data/db:/data/db
-            - //d/Docker/data/configdb:/data/configdb
-            - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
-        command: bash -c "mongod --port=27017 --dbpath=/data/db --bind_ip=* --auth"
+            - mongo_db:/data/db
+            - mongo_configdb:/data/configdb
+        #    - //d/Docker/data/db:/data/db
+        #    - //d/Docker/data/configdb:/data/configdb
+        #command: bash -c "mongod --port=27017 --dbpath=/data/db --bind_ip=* --auth"
+        #entrypoint: docker-entrypoint.sh
         ports:
             - 27017-27019:27017-27019
+        build: ./docker/mongodb/
 
     #celery
     celery:
@@ -24,7 +37,7 @@ services:
             - .:/usr/src/app
         command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
         depends_on:
-            - exchange.mongoDB
+            - exchange.mongodb
 
     #machine learning web application
     exchange.service.machine-learning-service:
