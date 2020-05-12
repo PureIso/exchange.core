@@ -12,17 +12,13 @@ services:
         container_name: mongodb
         #restart: always
         environment:
-            MONGO_INITDB_ROOT_USERNAME: celery
-            MONGO_INITDB_ROOT_PASSWORD: celery
-            MONGO_INITDB_DATABASE: celery
+            MONGO_INITDB_ROOT_USERNAME: root
+            MONGO_INITDB_ROOT_PASSWORD: root
+            MONGO_INITDB_DATABASE: admin
         # List directories to mount
         volumes:
             - mongo_db:/data/db
             - mongo_configdb:/data/configdb
-        #    - //d/Docker/data/db:/data/db
-        #    - //d/Docker/data/configdb:/data/configdb
-        #command: bash -c "mongod --port=27017 --dbpath=/data/db --bind_ip=* --auth"
-        #entrypoint: docker-entrypoint.sh
         ports:
             - 27017-27019:27017-27019
         build: ./docker/mongodb/

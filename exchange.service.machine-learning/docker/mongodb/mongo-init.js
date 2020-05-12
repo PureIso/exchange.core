@@ -29,7 +29,13 @@ print(db.system.users.find())
  * The admin database includes the following roles for administering the whole system rather than just a single database.
  * These roles include but are not limited to replica set and sharded cluster administrative functions.
  */
+//create the madMen database and connect to it
 
+var db = connect('127.0.0.1:27017/admin'), celery = null;
+print('* Database created');
+db.createUser({user:"celery", pwd:"celery", roles:[{role:"dbOwner",db:"admin"}]})
+var db = connect('127.0.0.1:27017/celery'), celery = null;
+print('* Database created');
 db.createUser({user:"celery", pwd:"celery", roles:[{role:"dbOwner",db:"celery"}, {role:"dbOwner",db:"kombu_default"}]})
 /**
  * Database User Roles

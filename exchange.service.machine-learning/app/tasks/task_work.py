@@ -1,6 +1,5 @@
 import os
 import sys
-
 import datetime
 import pandas as pd
 import numpy as np
@@ -16,13 +15,21 @@ from sklearn.model_selection import train_test_split
 from flask import json, Response
 
 
-BROKER_BACKEND =  "mongodb://celery:celery@exchange.mongodb:27017/celery"
-BROKER_URL =  "mongodb://celery:celery@exchange.mongodb:27017/celery",
-celery = Celery('application',
-                broker=BROKER_URL,
-                backend=BROKER_BACKEND,broker_use_ssl=False,authsource='celery',authMechanism="SCRAM-SHA-1")
-
-celery.conf.update()
+celery = Celery('application')
+celery.conf.update(
+    broker_url="mongodb://celery:celery@exchange.mongodb:27017/celery",
+    result_backend= "mongodb://celery:celery@exchange.mongodb:27017/celery",
+    broker_use_ssl=False,
+    authSource='celery',
+    authMechanism="SCRAM-SHA-1",
+    user = 'celery',
+    password = 'celery',
+    database_name = 'celery',
+    taskmeta_collection = 'celery_taskmeta',
+    groupmeta_collection = 'celery_groupmeta',
+    max_pool_size = 10,
+    options = None
+)
 current_training_status = {}
 
 
@@ -230,9 +237,10 @@ def training(self, hourly, save):
 
 class KerasFitCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
+      #dateobject = datetime.date.today()
         current_training_status = {
             'state': 'EPOCH TESTING',
-            'time': datetime.datetime.now().time(),
+           # 'time':  datetime.datetime.combine(dateobject, datetime.time()),
             'batch': 'N/A',
             'loss': logs,
             'epoch': epoch,
