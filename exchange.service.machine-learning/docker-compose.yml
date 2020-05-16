@@ -2,26 +2,36 @@ version: "3.7"
 
 volumes:
     mongo_db:
+        name: mongo_db
         driver: local
+        driver_opts:
+            device: 'D:\Docker\data\db'
+            o: 'bind'
+            type: 'none'
     mongo_configdb:
+        name: mongo_configdb
         driver: local
-
+        driver_opts:
+            device: 'D:\Docker\data\configdb'
+            o: 'bind'
+            type: 'none'
+            
 services:
     #mongo Database
-    exchange.mongodb:  
+    exchange.mongodb:
+        image: mongo:${MONGO_DB_VERSION}
         container_name: mongodb
-        #restart: always
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: root
-            MONGO_INITDB_ROOT_PASSWORD: root
-            MONGO_INITDB_DATABASE: admin
         # List directories to mount
         volumes:
-            - mongo_db:/data/db
-            - mongo_configdb:/data/configdb
+            - mongo_db:/data/db:rw
+            - mongo_configdb:/data/configdb:rw
+            - ./mongodb/init.sh:/init.sh:rw
+            - ./mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:ro
+        command: [
+            "./init.sh"
+        ]
         ports:
             - 27017-27019:27017-27019
-        build: ./docker/mongodb/
 
     #celery
     celery:
@@ -36,8 +46,8 @@ services:
             - exchange.mongodb
 
     #machine learning web application
-    exchange.service.machine-learning-service:
-        container_name: machine-learning-service
+    exchange.service.mi.service:
+        container_name: machineLearningService
         build: .    
         volumes:
             - .:/usr/src/app
@@ -46,3 +56,5 @@ services:
         ports:
             - 5005:5005
         command: python3.6 main.py
+        depends_on:
+            - exchange.mongodb

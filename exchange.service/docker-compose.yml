@@ -1,0 +1,11 @@
+﻿version: "3.7"
+
+services:
+    #exchange service
+    exchange.service:
+        container_name: exchange-service
+        build: .    
+        ports:
+            - 9000
+            - 
+        command: python3.6 main.py

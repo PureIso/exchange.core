@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\exchange.interfaces\exchange.core.csproj" />
+    <ProjectReference Include="..\exchange.core\exchange.core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

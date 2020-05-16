@@ -5,15 +5,20 @@ VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.service", "exchange.service\exchange.service.csproj", "{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.coinbase", "exchange.core\exchange.coinbase.csproj", "{CFA01642-17F0-4D49-88B5-178F640A9745}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.coinbase", "exchange.coinbase\exchange.coinbase.csproj", "{CFA01642-17F0-4D49-88B5-178F640A9745}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.test", "exchange.test\exchange.test.csproj", "{FCBD979A-A83C-4BC7-AA10-E81E04728427}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client.win.form", "exchange.signalr.client\exchange.signalR.client.win.form.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client.win.form", "exchange.signalR.client.win.form\exchange.signalR.client.win.form.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.core", "exchange.interfaces\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.core", "exchange.core\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client.web.backend", "exchange.signalR.client.web.backend\exchange.signalR.client.web.backend.csproj", "{CE8291D7-E7CF-4027-A353-5E70C09F7D60}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1FD7EC3A-CA77-45DE-A0CB-2C99905DAF7F}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
