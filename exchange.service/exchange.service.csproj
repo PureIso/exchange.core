@@ -3,7 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>dotnet-exchange.service-2B35AD83-C869-4DFB-A173-CB66EDE2C88D</UserSecretsId>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <OutputType>Exe</OutputType>
+    <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
+    <StartupObject>exchange.service.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

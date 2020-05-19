@@ -7,6 +7,7 @@
     <IsPackable>false</IsPackable>
     <SpaRoot>..\exchange.signalR.client.web.frontend\</SpaRoot>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>

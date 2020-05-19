@@ -23,6 +23,12 @@ Running docker-compose:
 docker-compose up
 ```
 
+View output of docker-compose:
+
+```shell
+docker-compose -f docker-compose.yml config
+```
+
 ### Quick Start - Docker Commands
 
 Build docker file:
@@ -36,12 +42,6 @@ Creating a volume:
 ```shell
 docker volume create --driver local --opt type=none --opt device=D:\Docker\data\db --opt o=bind mongo_db
 docker volume create --driver local --opt type=none --opt device=D:\Docker\data\configdb --opt o=bind mongo_configdb
-```
-
-View output of docker-compose:
-
-```shell
-docker-compose -f docker-compose.yml config
 ```
 
 ### Quick Start - Env (Start Flask RESTful and Celery)
