@@ -2,18 +2,32 @@ version: "3.7"
             
 services:
     #main exchange service
-    # exchange.service:   
-    #     container_name: exchange.service
-    #     build:
-    #         context: .
-    #         dockerfile: ./docker/service/Dockerfile
-    #     ports:
-    #         - 5000:5000
-    #         - 5001:5001
-
-    #Angular Backend
-    signalr.backend:
-        container_name: signalr.backend
+    exchange.service:   
+        container_name: exchange.service
         build:
             context: .
-            dockerfile: ./docker/backend/Dockerfile
+            dockerfile: ./docker/service/Dockerfile
+        ports:
+            - 5000:5000
+            - 5001:5001
+
+    #Angular Backend
+    # signalr.web.backend:
+    #     container_name: signalr.web.backend
+    #     build:
+    #         context: .
+    #         dockerfile: ./docker/web.backend/Dockerfile
+    #     ports:
+    #         - 9000:9000
+    #     depends_on:
+    #         -  signalr.web.frontend
+
+    # signalr.web.frontend:
+    #     container_name: signalr.web.frontend
+    #     build:
+    #         context: .
+    #         dockerfile: ./docker/web.frontend/Dockerfile
+    #     ports:
+    #         - 9000:9000
+    #     depends_on:
+    #         -  exchange.service
