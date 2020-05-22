@@ -1,6 +1,5 @@
 #Angular build
-FROM node as nodebuilder
-
+FROM node as base
 # set working directory
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
@@ -13,6 +12,3 @@ WORKDIR /usr/src/app/exchange.signalR.client.web.frontend/
 RUN npm install
 RUN npm audit fix
 #RUN npm run test
-RUN npm run build:dist
-RUN npm run start
-#End Angular build

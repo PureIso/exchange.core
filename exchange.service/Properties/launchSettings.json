@@ -3,7 +3,7 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iis": {
-      "applicationUrl": "http://localhost/exchange.service",
+      "applicationUrl": "http://exchange.service/exchange.service",
       "sslPort": 0
     }
   },

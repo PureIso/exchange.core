@@ -39,7 +39,8 @@ module.exports = {
         contentBase: buildPath,
         historyApiFallback: true,
         port: 9000,
-        stats: "minimal"
+        stats: "minimal",
+        host: '0.0.0.0'
     },
     devtool: "inline-source-map",
     module: {

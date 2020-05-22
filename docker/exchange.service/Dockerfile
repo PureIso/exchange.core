@@ -9,13 +9,12 @@ COPY ["exchange.core/exchange.core.csproj", "exchange.core/"]
 COPY ["exchange.service/exchange.service.csproj", "exchange.service/"]
 COPY ["exchange.test/exchange.test.csproj", "exchange.test/"]
 RUN dotnet restore "exchange.service/exchange.service.csproj"
-RUN dotnet restore "exchange.test/exchange.test.csproj"
+# RUN dotnet restore "exchange.test/exchange.test.csproj"
 COPY . .
 WORKDIR "/src/exchange.test"
-RUN dotnet test "exchange.test.csproj" -c Release
+# RUN dotnet test "exchange.test.csproj" -c Release
 WORKDIR "/src/exchange.service"
 RUN dotnet publish "exchange.service.csproj" -c Release -o /app/publish
 
 FROM base AS final
 COPY --from=build /app/publish ./
-ENTRYPOINT ["dotnet","exchange.service.dll"]

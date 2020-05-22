@@ -9,11 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.coinbase", "exchan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.test", "exchange.test\exchange.test.csproj", "{FCBD979A-A83C-4BC7-AA10-E81E04728427}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client.win.form", "exchange.signalR.client.win.form\exchange.signalR.client.win.form.csproj", "{21F098C5-5536-472B-BF68-227366C2F778}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.core", "exchange.core\exchange.core.csproj", "{E1D3B646-8C92-4690-9C3D-D20E339E86DB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.signalR.client.web.backend", "exchange.signalR.client.web.backend\exchange.signalR.client.web.backend.csproj", "{CE8291D7-E7CF-4027-A353-5E70C09F7D60}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1FD7EC3A-CA77-45DE-A0CB-2C99905DAF7F}"
 	ProjectSection(SolutionItems) = preProject
@@ -39,18 +35,10 @@ Global
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.Build.0 = Release|Any CPU
-		{21F098C5-5536-472B-BF68-227366C2F778}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{21F098C5-5536-472B-BF68-227366C2F778}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{21F098C5-5536-472B-BF68-227366C2F778}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{21F098C5-5536-472B-BF68-227366C2F778}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CE8291D7-E7CF-4027-A353-5E70C09F7D60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CE8291D7-E7CF-4027-A353-5E70C09F7D60}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CE8291D7-E7CF-4027-A353-5E70C09F7D60}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CE8291D7-E7CF-4027-A353-5E70C09F7D60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

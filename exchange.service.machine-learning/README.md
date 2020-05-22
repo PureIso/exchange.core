@@ -44,6 +44,13 @@ docker volume create --driver local --opt type=none --opt device=D:\Docker\data\
 docker volume create --driver local --opt type=none --opt device=D:\Docker\data\configdb --opt o=bind mongo_configdb
 ```
 
+Clean dangling images:
+
+```shell
+docker image prune
+docker-compose down -v
+```
+
 ### Quick Start - Env (Start Flask RESTful and Celery)
 
 Initialise environment and Start application:
