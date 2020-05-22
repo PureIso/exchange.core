@@ -1,19 +1,99 @@
 version: "3.7"
-            
-services:
-    #main exchange service
-    # exchange.service:   
-    #     container_name: exchange.service
-    #     build:
-    #         context: .
-    #         dockerfile: ./docker/service/Dockerfile
-    #     ports:
-    #         - 5000:5000
-    #         - 5001:5001
 
-    #Angular Backend
-    signalr.backend:
-        container_name: signalr.backend
+networks:
+    bridge:
+        driver: bridge
+
+volumes:
+    mongo_db:
+        name: mongo_db
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\data\db'
+            o: 'bind'
+            type: 'none'
+    mongo_configdb:
+        name: mongo_configdb
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\data\configdb'
+            o: 'bind'
+            type: 'none'
+
+services:
+    #mongo Database
+    mongodb:
+        image: mongo:${MONGO_DB_VERSION}
+        container_name: mongodb
+        # List directories to mount
+        volumes:
+            - mongo_db:/data/db:rw
+            - mongo_configdb:/data/configdb:rw
+            - ./exchange.service.machine-learning/mongodb/init.sh:/init.sh:rw
+            - ./exchange.service.machine-learning/mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:ro
+        command: [
+            "./init.sh"
+        ]
+        ports:
+            - 27017-27019:27017-27019
+        networks:
+            bridge:
+    
+    #celery
+    celery:
+        container_name: celery
+        # All files and folders in the currect directory
+        build: 
+            context: .
+            dockerfile: ./docker/service.machine.learning/Dockerfile 
+        # List directories to mount
+        command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
+        depends_on:
+            - mongodb
+        networks:
+            bridge:
+        
+    #machine learning web application
+    service.machine.learning:
+        container_name: service.machine.learning
+        build: 
+            context: .
+            dockerfile: ./docker/service.machine.learning/Dockerfile    
+        # Application will run on port 5005
+        # Access to directory has to be shared
+        ports:
+            - 5005:5005
+        command: python3.6 main.py
+        depends_on:
+            - mongodb
+        networks:
+            bridge:
+
+    #main exchange service
+    exchange.service:   
+        container_name: exchange.service
         build:
             context: .
-            dockerfile: ./docker/backend/Dockerfile
+            dockerfile: ./docker/exchange.service/Dockerfile
+        ports:
+            - 5000:5000
+            - 5001:5001
+        command: dotnet exchange.service.dll
+        networks:
+            bridge:
+
+    signalr.webpack.server.frontend:
+        container_name: signalr.webpack.server.frontend
+        build:
+            context: .
+            dockerfile: ./docker/webpack.server.frontend/Dockerfile
+        ports:
+            - 9000:9000
+        command: npm run start
+        networks:
+            bridge:
+        depends_on:
+            - exchange.service
+        links:
+            - exchange.service
+            

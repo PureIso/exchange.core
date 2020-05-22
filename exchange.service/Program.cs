@@ -23,6 +23,7 @@ namespace exchange.service
             Host.CreateDefaultBuilder(args)
             .ConfigureWebHostDefaults(webBuilder =>
             {
+                webBuilder.UseUrls(new string[] { "http://*:5000/", "https://*:5001/" });
                 webBuilder.UseStartup<Startup>();
             })
             .ConfigureHostConfiguration(configHost =>{
@@ -35,7 +36,7 @@ namespace exchange.service
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
                 //cross origin requests
                 services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
-                    builder.WithOrigins("http://localhost:9000", "https://localhost:44391")
+                    builder.WithOrigins($"http://*:9000/")
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
                 services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>(httpClient =>
