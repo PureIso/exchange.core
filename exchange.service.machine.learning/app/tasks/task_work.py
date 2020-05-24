@@ -17,8 +17,8 @@ from flask import json, Response
 
 celery = Celery('application')
 celery.conf.update(
-    broker_url="mongodb://celery:celery@exchange.mongodb:27017/celery",
-    result_backend= "mongodb://celery:celery@exchange.mongodb:27017/celery",
+    broker_url="mongodb://celery:celery@service.mongodb:27017/celery",
+    result_backend= "mongodb://celery:celery@service.mongodb:27017/celery",
     broker_use_ssl=False,
     authSource='celery',
     authMechanism="SCRAM-SHA-1",

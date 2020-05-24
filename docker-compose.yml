@@ -22,15 +22,15 @@ volumes:
 
 services:
     #mongo Database
-    mongodb:
+    service.mongodb:
         image: mongo:${MONGO_DB_VERSION}
         container_name: mongodb
         # List directories to mount
         volumes:
             - mongo_db:/data/db:rw
             - mongo_configdb:/data/configdb:rw
-            - ./exchange.service.machine-learning/mongodb/init.sh:/init.sh:rw
-            - ./exchange.service.machine-learning/mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:ro
+            - ./docker/mongodb/init.sh:/init.sh:rw
+            - ./docker/mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:ro
         command: [
             "./init.sh"
         ]
@@ -49,7 +49,7 @@ services:
         # List directories to mount
         command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
         depends_on:
-            - mongodb
+            - service.mongodb
         networks:
             bridge:
         
@@ -65,7 +65,7 @@ services:
             - 5005:5005
         command: python3.6 main.py
         depends_on:
-            - mongodb
+            - service.mongodb
         networks:
             bridge:
 
@@ -82,11 +82,12 @@ services:
         networks:
             bridge:
 
+    #frontend
     signalr.webpack.server.frontend:
         container_name: signalr.webpack.server.frontend
         build:
             context: .
-            dockerfile: ./docker/webpack.server.frontend/Dockerfile
+            dockerfile: ./docker/signalr.webpack.server.frontend/Dockerfile
         ports:
             - 9000:9000
         command: npm run start
