@@ -27,6 +27,8 @@ View output of docker-compose:
 
 ```shell
 docker-compose -f docker-compose.yml config
+docker-compose down -v
+docker-compose down -v && docker-compose up --build
 ```
 
 ### Quick Start - Docker Commands
@@ -48,7 +50,6 @@ Clean dangling images:
 
 ```shell
 docker image prune
-docker-compose down -v
 ```
 
 ### Quick Start - Env (Start Flask RESTful and Celery)

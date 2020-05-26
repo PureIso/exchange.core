@@ -1,6 +1,7 @@
 ﻿using exchange.service.hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace exchange.service
 {
@@ -10,6 +11,10 @@ namespace exchange.service
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
             app.UseCors(builder =>
             {
                 builder.WithOrigins($"http://localhost:9000")

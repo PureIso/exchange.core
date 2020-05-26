@@ -33,6 +33,12 @@ namespace exchange.service
             .ConfigureServices((hostContext, services) => {
                 IConfiguration configuration = hostContext.Configuration;
                 ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
+                if (!string.IsNullOrEmpty(configuration["COINBASE_API_KEY"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_PASSPHRASE"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_SECRET"]))
+                {
+                    exchangeSettings.APIKey = configuration["COINBASE_API_KEY"];
+                    exchangeSettings.PassPhrase = configuration["COINBASE_API_PASSPHRASE"];
+                    exchangeSettings.Secret = configuration["COINBASE_API_SECRET"];
+                }
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
                 //cross origin requests
                 services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
