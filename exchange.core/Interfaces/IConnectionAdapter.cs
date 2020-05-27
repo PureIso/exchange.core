@@ -15,6 +15,8 @@ namespace exchange.core.Interfaces
         Task<string> WebSocketReceiveAsync(); 
         Task<bool> WebSocketCloseAsync();
         Task<string> RequestAsync(IRequest request);
+        Task<string> RequestUnsignedAsync(IRequest request);
+        Task<string> RequestAsync(IRequest request, bool sign);
 
         bool IsWebSocketConnected();
         void Dispose();

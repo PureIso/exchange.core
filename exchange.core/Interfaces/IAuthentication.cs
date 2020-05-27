@@ -9,6 +9,7 @@ namespace exchange.core.Interfaces
         string EndpointUrl { get; }
         Uri WebSocketUri { get; }
         IAuthenticationSignature ComputeSignature(IRequest request);
+        string ComputeSignature(string message);
         string HashString(string prehashString, byte[] secret);
     }
 }

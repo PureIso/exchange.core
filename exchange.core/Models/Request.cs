@@ -9,8 +9,10 @@ namespace exchange.core.models
     {
         #region Properties
         public string Method { get; }
+        public string RequestQuery { get; set; }
         public string RequestBody { get; set; }
         public string RequestUrl { get; set; }
+        public string RequestSignature { get; set; }
         public long TimeStamp { get; set; }
         public Uri AbsoluteUri { get; set; }
         #endregion
@@ -22,6 +24,11 @@ namespace exchange.core.models
             AbsoluteUri = new Uri(new Uri(endpointUrl), RequestUrl);
             TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
         }
+        public string Compose()
+        {
+            return string.Format("{0}{1}{2}", RequestUrl, RequestQuery, RequestSignature);
+        }
+
         public StringContent GetRequestBody(string contentType = "application/json")
         {
             return !string.IsNullOrEmpty(RequestBody) ? new StringContent(RequestBody, Encoding.UTF8, contentType) : null;

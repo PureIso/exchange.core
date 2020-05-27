@@ -23,6 +23,12 @@ namespace exchange.core
             return (long)(dateTime - UnixEpoch).TotalSeconds;
         }
 
+        public static string GenerateDateTimeOffsetToUnixTimeMilliseconds(this DateTime baseDateTime)
+        {
+            DateTimeOffset dtOffset = new DateTimeOffset(baseDateTime);
+            return dtOffset.ToUnixTimeMilliseconds().ToString();
+        }
+
         public static decimal ToDecimal(this string value)
         {
             return decimal.TryParse(value, out decimal decimalValue) ? decimalValue : 0;

@@ -45,6 +45,21 @@ namespace exchange.core.models
             };
             return authenticationSignature;
         }
+
+        public string ComputeSignature(string message)
+        {
+            string timestamp =
+                $"{(string.IsNullOrWhiteSpace(message) ? "?" : "&")}timestamp={DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds()}";
+            message += timestamp;
+            byte[] key = Encoding.UTF8.GetBytes(_secret);
+            string stringHash;
+            using (HMACSHA256 hmac = new HMACSHA256(key))
+            {
+                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+                stringHash = BitConverter.ToString(hash).Replace("-", "");
+            }
+            return $"{timestamp}&signature={stringHash}";
+        }
         #endregion
 
         #region Private Methods

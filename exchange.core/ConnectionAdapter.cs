@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
 using exchange.core.Interfaces;
 using exchange.core.models;
 using System.Net.Http;
@@ -120,6 +121,92 @@ namespace exchange.core
                 _ioSemaphoreSlim.Release();
             }
         }
+        //public static async Task<int> TimeServerAsync(IRequest exchange)
+        //{
+        //    ExchangeRequest request = new ExchangeRequest
+        //    {
+        //        Method = "GET",
+        //        RequestUrl = "/api/v1/time"
+        //    };
+        //    string json = await exchange.RequestUnsignedAsync(request);
+        //    JObject jObject = JObject.Parse(json);
+        //    if (jObject["serverTime"] == null)
+        //        return 5000;
+        //    JToken balancesToken = jObject["serverTime"];
+        //    long serverTime = balancesToken.Value<long>() + 1000;
+        //    int delay = (int)(long.Parse(Utilities.Extensions.GenerateTimeStamp(DateTime.Now.ToUniversalTime())) - serverTime);
+        //    return delay;
+        //}
+        public async Task<string> RequestAsync(IRequest request, bool sign)
+        {
+            //Limit the waiting time for a request
+            if (await _ioRequestSemaphoreSlim.WaitAsync(1000))
+                try
+                {
+                    Uri absoluteUri;
+                    if (sign)
+                    {
+                        request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
+                        string composedUrl = request.Compose();
+                        absoluteUri = new Uri(new Uri(Authentication.EndpointUrl), composedUrl);
+                    }
+                    else
+                    {
+                        request.RequestSignature = null;
+                        string composedUrl = request.Compose();
+                        absoluteUri = new Uri(new Uri(Authentication.EndpointUrl), composedUrl);
+                    }
+
+                    //int serverTimeDelay = TimeServerAsync(request)
+                    //if (serverTimeDelay > 0)
+                    //    await Task.Delay(serverTimeDelay);
+
+                    using (HttpClient httpClient = new HttpClient())
+                    {
+                        HttpResponseMessage response;
+                        httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
+                        switch (request.Method)
+                        {
+                            case "GET":
+                                response = await httpClient.GetAsync(absoluteUri);
+                                break;
+                            case "POST":
+                                response = await httpClient.PostAsync(absoluteUri, new StringContent(""));
+                                break;
+                            case "DELETE":
+                                response = await httpClient.DeleteAsync(absoluteUri);
+                                break;
+                            default:
+                                response = null;
+                                break;
+                        }
+
+                        if (response != null)
+                        {
+                            string contentBody = await response.Content.ReadAsStringAsync();
+                            HttpStatusCode statusCode = response.StatusCode;
+                            bool isSuccess = response.IsSuccessStatusCode;
+                            if (!isSuccess)
+                            {
+                                return null;
+                            }
+
+                            return contentBody;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
+                finally
+                {
+                    _ioRequestSemaphoreSlim.Release();
+                }
+
+            return null;
+        }
+
         public virtual bool IsWebSocketConnected()
         {
             return ClientWebSocket != null && ClientWebSocket.State == WebSocketState.Open;
@@ -181,6 +268,52 @@ namespace exchange.core
                 _ioRequestSemaphoreSlim.Release();
             }
         }
+
+        public async Task<string> RequestUnsignedAsync(IRequest request)
+        {
+            try
+            {
+                string composedUrl = request.Compose();
+                Uri absoluteUri = new Uri(new Uri(Authentication.EndpointUrl), composedUrl);
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    HttpResponseMessage response;
+                    httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
+                    switch (request.Method)
+                    {
+                        case "GET":
+                            response = await httpClient.GetAsync(absoluteUri);
+                            break;
+                        case "POST":
+                            response = await httpClient.PostAsync(absoluteUri, new StringContent(""));
+                            break;
+                        case "DELETE":
+                            response = await httpClient.DeleteAsync(absoluteUri);
+                            break;
+                        default:
+                            response = null;
+                            break;
+                    }
+
+                    if (response != null)
+                    {
+                        string contentBody = await response.Content.ReadAsStringAsync();
+                        HttpStatusCode statusCode = response.StatusCode;
+                        bool isSuccess = response.IsSuccessStatusCode;
+                        if (!isSuccess)
+                        {
+                            return null;
+                        }
+                        return contentBody;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return null;
+        }
+
         #endregion
     }
 }

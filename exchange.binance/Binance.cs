@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using exchange.core.Enums;
 using exchange.core.interfaces;
+using exchange.core.Interfaces;
 using exchange.core.models;
 using exchange.core.Models;
 
@@ -10,8 +12,18 @@ namespace exchange.binance
 {
     public class Binance : IExchangeService, IDisposable
     {
+        #region Fields
+
+        private readonly IConnectionAdapter _connectionAdapter;
+
+        #endregion
+
+        #region Events
         public Action<Feed> FeedBroadcast { get; set; }
         public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        #endregion
+
+        #region Public Properties
         public Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
@@ -23,9 +35,43 @@ namespace exchange.binance
         public Product SelectedProduct { get; set; }
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
-        public Task<List<Account>> UpdateAccountsAsync(string accountId = "")
+        #endregion
+
+        public Binance(IConnectionAdapter connectionAdapter)
         {
-            throw new NotImplementedException();
+            CurrentPrices = new Dictionary<string, decimal>();
+            Tickers = new List<Ticker>();
+            Accounts = new List<Account>();
+            AccountHistories = new List<AccountHistory>();
+            AccountHolds = new List<AccountHold>();
+            Products = new List<Product>();
+            HistoricRates = new List<HistoricRate>();
+            Fills = new List<Fill>();
+            Orders = new List<Order>();
+            OrderBook = new OrderBook();
+            SelectedProduct = new Product();
+            _connectionAdapter = connectionAdapter;
+        }
+
+        public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
+        {
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Account Information.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/api/v3/account?");
+                request.RequestQuery = "recvWindow=5000";
+                string json = await _connectionAdapter.RequestAsync(request);
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                //check if we do not have any error messages
+                Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return Accounts;
         }
 
         public Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
