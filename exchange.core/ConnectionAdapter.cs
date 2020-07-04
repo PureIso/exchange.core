@@ -4,10 +4,13 @@ using System.Net;
 using exchange.core.Interfaces;
 using exchange.core.models;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using exchange.core.Models;
 
 namespace exchange.core
 {
@@ -121,22 +124,7 @@ namespace exchange.core
                 _ioSemaphoreSlim.Release();
             }
         }
-        //public static async Task<int> TimeServerAsync(IRequest exchange)
-        //{
-        //    ExchangeRequest request = new ExchangeRequest
-        //    {
-        //        Method = "GET",
-        //        RequestUrl = "/api/v1/time"
-        //    };
-        //    string json = await exchange.RequestUnsignedAsync(request);
-        //    JObject jObject = JObject.Parse(json);
-        //    if (jObject["serverTime"] == null)
-        //        return 5000;
-        //    JToken balancesToken = jObject["serverTime"];
-        //    long serverTime = balancesToken.Value<long>() + 1000;
-        //    int delay = (int)(long.Parse(Utilities.Extensions.GenerateTimeStamp(DateTime.Now.ToUniversalTime())) - serverTime);
-        //    return delay;
-        //}
+        
         public async Task<string> RequestAsync(IRequest request, bool sign)
         {
             //Limit the waiting time for a request
@@ -225,93 +213,129 @@ namespace exchange.core
             try
             {
                 await _ioRequestSemaphoreSlim.WaitAsync();
-                IAuthenticationSignature authenticationSignature = Authentication.ComputeSignature(request);
-                StringContent requestBody = request.GetRequestBody();
-                HttpClient.DefaultRequestHeaders.Clear();
-                //The api key as a string.
-                HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", Authentication.ApiKey);
-                //The passphrase you specified when creating the API key.
-                HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", Authentication.Passphrase);
-                //The base64-encoded signature (see Signing a Message).
-                HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
-                // A timestamp for your request.
-                HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
-                //user-agent header
-                HttpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
-                HttpResponseMessage response = null;
+                StringContent requestBody = new StringContent("");
+                HttpResponseMessage response;
+                Uri absoluteUri = null;
+                if (string.IsNullOrEmpty(Authentication.Passphrase))
+                { 
+                    bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(),out long currentTimeStamp);
+                    if (successfulParse)
+                    {
+                        const int receiveWindow = 5000;
+                        long serverTimeLong = 1000;
+                        long serverTimeLongDifference = 5000;
+                        bool delayTime = true;
+                        int attempt = 5;
+                        while (delayTime && attempt > 0)
+                        {
+                            Request timestampRequest = new Request(Authentication.EndpointUrl, "GET", $"/api/v1/time");
+                            string timestampRequestJson = await RequestUnsignedAsync(timestampRequest);
+                            ServerTime serverTime = JsonSerializer.Deserialize<ServerTime>(timestampRequestJson); 
+                            serverTimeLong = serverTime.ServerTimeLong + 1000; 
+                            serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
+                            if (currentTimeStamp < serverTimeLong && serverTimeLongDifference <= receiveWindow)
+                                delayTime = false;
+                            else
+                            {
+                                attempt--;
+                                await Task.Delay(1000);
+                            }
+                        }
+
+                        if (serverTimeLongDifference < 0) serverTimeLongDifference = 0;
+                        if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
+                        await Task.Delay((int)serverTimeLongDifference);
+                        // process request
+                        request.RequestQuery = $"timestamp={currentTimeStamp}"; 
+                        request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
+                        request.RequestQuery = null;
+                        absoluteUri = request.ComposeRequestUriAbsolute(Authentication.EndpointUrl);
+                        HttpClient.DefaultRequestHeaders.Clear();
+                        HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
+                        HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));//ACCEPT header
+                    }
+                }
+                else
+                {
+                    IAuthenticationSignature authenticationSignature = Authentication.ComputeSignature(request);
+                    requestBody = request.GetRequestBody();
+                    absoluteUri = request.AbsoluteUri;
+                    HttpClient.DefaultRequestHeaders.Clear();
+                    //The api key as a string.
+                    HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-KEY", Authentication.ApiKey);
+                    //The passphrase you specified when creating the API key.
+                    HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-PASSPHRASE", Authentication.Passphrase);
+                    //The base64-encoded signature (see Signing a Message).
+                    HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-SIGN", authenticationSignature.Signature);
+                    // A timestamp for your request.
+                    HttpClient.DefaultRequestHeaders.Add("CB-ACCESS-TIMESTAMP", authenticationSignature.Timestamp);
+                    //user-agent header
+                    HttpClient.DefaultRequestHeaders.Add("User-Agent", "sefbkn.github.io");
+                }
+
                 switch (request.Method)
                 {
                     case "GET":
-                        if (requestBody != null)
-                            response = await HttpClient.PostAsync(request.AbsoluteUri, requestBody);
-                        else
-                            response = await HttpClient.GetAsync(request.AbsoluteUri);
+                        response = await HttpClient.GetAsync(absoluteUri);
                         break;
                     case "POST":
-                        if (requestBody != null)
-                            response = await HttpClient.PostAsync(request.AbsoluteUri, requestBody);
+                        response = await HttpClient.PostAsync(absoluteUri, requestBody);
                         break;
                     case "DELETE":
-                        response = await HttpClient.DeleteAsync(request.AbsoluteUri);
+                        response = await HttpClient.DeleteAsync(absoluteUri);
                         break;
                     default:
                         throw new NotImplementedException("The supplied HTTP method is not supported: " +
-                                                            request.Method);
+                                                          request.Method);
                 }
+
                 if (response == null)
-                    throw new Exception($"null response from RequestAsync \r\n URI:{request.AbsoluteUri} \r\n:Request Body:{requestBody}");
+                    throw new Exception(
+                        $"null response from RequestAsync \r\n URI:{request.AbsoluteUri} \r\n:Request Body:{requestBody}");
                 return await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
             }
             finally
             {
                 await Task.Delay(500);
                 _ioRequestSemaphoreSlim.Release();
             }
+
+            return null;
         }
 
         public async Task<string> RequestUnsignedAsync(IRequest request)
         {
             try
             {
-                string composedUrl = request.Compose();
-                Uri absoluteUri = new Uri(new Uri(Authentication.EndpointUrl), composedUrl);
-                using (HttpClient httpClient = new HttpClient())
+                HttpResponseMessage response = null; 
+                HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
+                switch (request.Method)
                 {
-                    HttpResponseMessage response;
-                    httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
-                    switch (request.Method)
-                    {
-                        case "GET":
-                            response = await httpClient.GetAsync(absoluteUri);
-                            break;
-                        case "POST":
-                            response = await httpClient.PostAsync(absoluteUri, new StringContent(""));
-                            break;
-                        case "DELETE":
-                            response = await httpClient.DeleteAsync(absoluteUri);
-                            break;
-                        default:
-                            response = null;
-                            break;
-                    }
-
-                    if (response != null)
-                    {
-                        string contentBody = await response.Content.ReadAsStringAsync();
-                        HttpStatusCode statusCode = response.StatusCode;
-                        bool isSuccess = response.IsSuccessStatusCode;
-                        if (!isSuccess)
-                        {
-                            return null;
-                        }
-                        return contentBody;
-                    }
+                    case "GET":
+                        response = await HttpClient.GetAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
+                        break;
+                    case "POST":
+                        response = await HttpClient.PostAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl), new StringContent(""));
+                        break;
+                    case "DELETE":
+                        response = await HttpClient.DeleteAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
+                        break;
+                    default:
+                        response = null;
+                        break;
                 }
+                if (response == null)
+                    throw new Exception($"null response from RequestUnsignedAsync \r\n URI:{request.ComposeRequestUriAbsolute(Authentication.EndpointUrl)}");
+                return await response.Content.ReadAsStringAsync();
             }
-            catch (Exception ex)
+            finally
             {
+                await Task.Delay(500);
             }
-            return null;
         }
 
         #endregion

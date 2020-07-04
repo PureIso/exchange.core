@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\exchange.binance\exchange.binance.csproj" />
     <ProjectReference Include="..\exchange.coinbase\exchange.coinbase.csproj" />
     <ProjectReference Include="..\exchange.core\exchange.core.csproj" />
   </ItemGroup>

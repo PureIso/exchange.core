@@ -20,5 +20,6 @@ namespace exchange.core.Interfaces
         StringContent GetRequestBody(string contentType = "application/json");
 
         string Compose();
+        Uri ComposeRequestUriAbsolute(string endpointUrl);
     }
 }

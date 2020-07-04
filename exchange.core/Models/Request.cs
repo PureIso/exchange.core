@@ -26,7 +26,13 @@ namespace exchange.core.models
         }
         public string Compose()
         {
-            return string.Format("{0}{1}{2}", RequestUrl, RequestQuery, RequestSignature);
+            string composedString = $"{RequestUrl}{RequestQuery}{RequestSignature}".Replace("??", "?");
+            return composedString;
+        }
+
+        public Uri ComposeRequestUriAbsolute(string endpointUrl)
+        {
+            return new Uri(new Uri(endpointUrl), Compose().Replace("??","?"));
         }
 
         public StringContent GetRequestBody(string contentType = "application/json")

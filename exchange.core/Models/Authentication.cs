@@ -26,6 +26,8 @@ namespace exchange.core.models
         public Authentication(string apiKey, string passphrase, string secret, string endpointUrl, string webSocketUri)
         {
             ApiKey = apiKey;
+            if (passphrase == "PASSPHRASE")
+                passphrase = null;
             Passphrase = passphrase;
             EndpointUrl = endpointUrl;
             WebSocketUri = new Uri(webSocketUri);
@@ -48,9 +50,6 @@ namespace exchange.core.models
 
         public string ComputeSignature(string message)
         {
-            string timestamp =
-                $"{(string.IsNullOrWhiteSpace(message) ? "?" : "&")}timestamp={DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds()}";
-            message += timestamp;
             byte[] key = Encoding.UTF8.GetBytes(_secret);
             string stringHash;
             using (HMACSHA256 hmac = new HMACSHA256(key))
@@ -58,7 +57,8 @@ namespace exchange.core.models
                 byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
                 stringHash = BitConverter.ToString(hash).Replace("-", "");
             }
-            return $"{timestamp}&signature={stringHash}";
+            string signature = $"{message}&signature={stringHash}";
+            return signature;
         }
         #endregion
 

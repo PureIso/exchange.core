@@ -9,6 +9,7 @@ using exchange.core.Interfaces;
 using exchange.coinbase;
 using exchange.core.interfaces;
 using exchange.core;
+using exchange.binance;
 
 namespace exchange.service
 {
@@ -33,12 +34,12 @@ namespace exchange.service
             .ConfigureServices((hostContext, services) => {
                 IConfiguration configuration = hostContext.Configuration;
                 ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
-                if (!string.IsNullOrEmpty(configuration["COINBASE_API_KEY"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_PASSPHRASE"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_SECRET"]))
-                {
-                    exchangeSettings.APIKey = configuration["COINBASE_API_KEY"];
-                    exchangeSettings.PassPhrase = configuration["COINBASE_API_PASSPHRASE"];
-                    exchangeSettings.Secret = configuration["COINBASE_API_SECRET"];
-                }
+                //if (!string.IsNullOrEmpty(configuration["COINBASE_API_KEY"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_PASSPHRASE"]) && !string.IsNullOrEmpty(configuration["COINBASE_API_SECRET"]))
+                //{
+                //    exchangeSettings.APIKey = configuration["COINBASE_API_KEY"];
+                //    exchangeSettings.PassPhrase = configuration["COINBASE_API_PASSPHRASE"];
+                //    exchangeSettings.Secret = configuration["COINBASE_API_SECRET"];
+                //}
                 services.AddSingleton<IExchangeSettings>(exchangeSettings);
                 //cross origin requests
                 services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
@@ -48,13 +49,16 @@ namespace exchange.service
                 services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>(httpClient =>
                 {
                     if (exchangeSettings.Uri != null)
-                        httpClient.BaseAddress = new Uri(exchangeSettings.Uri);
+                        httpClient.BaseAddress = new Uri(exchangeSettings.EndpointUrl);
                 });
                 services.AddSignalR();
-                services.AddSingleton<IExchangeService, Coinbase>();
+                //services.AddSingleton<IExchangeService, Coinbase>();
+                services.AddSingleton<IExchangeService, Binance>();
                 services.AddHostedService<Worker>();
              })
-            .ConfigureAppConfiguration((hostContext, configApp) =>{
+            .ConfigureAppConfiguration((hostContext, configApp) =>
+            {
+                string f = Directory.GetCurrentDirectory();
                 configApp.SetBasePath(Directory.GetCurrentDirectory());
                 configApp.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
                 configApp.AddCommandLine(args);

@@ -19,6 +19,7 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Public Properties
+        public ServerTime ServerTime { get; set; }
         Dictionary<string, decimal> CurrentPrices { get; set; }
         List<Ticker> Tickers { get; set; }
         List<Account> Accounts { get; set; }
@@ -33,6 +34,8 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Methods
+
+        Task<ServerTime> UpdateTimeServerAsync();
         Task<List<Account>> UpdateAccountsAsync(string accountId="");
         Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId);
         Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId);

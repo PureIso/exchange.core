@@ -34,6 +34,11 @@ namespace exchange.core
             return decimal.TryParse(value, out decimal decimalValue) ? decimalValue : 0;
         }
 
+        public static long ToLong(this string value)
+        {
+            return long.TryParse(value, out long longValue) ? longValue : 0;
+        }
+
         public static DateTime ToDateTime(this string value)
         {
             if (DateTime.TryParse(value, out DateTime dateTimeValue))

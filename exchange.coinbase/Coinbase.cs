@@ -25,6 +25,7 @@ namespace exchange.coinbase
 
         public Action<Feed> FeedBroadcast { get; set; }
         public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public ServerTime ServerTime { get; set; }
 
         #endregion
 
@@ -63,6 +64,11 @@ namespace exchange.coinbase
         #region Public Methods
 
         #region Trading
+
+        public Task<ServerTime> UpdateTimeServerAsync()
+        {
+            throw new NotImplementedException();
+        }
 
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {

@@ -24,6 +24,7 @@ namespace exchange.binance
         #endregion
 
         #region Public Properties
+        public ServerTime ServerTime { get; set; }
         public Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
@@ -50,21 +51,27 @@ namespace exchange.binance
             Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
+            ServerTime = new ServerTime(0);
             _connectionAdapter = connectionAdapter;
         }
-
+        public async Task<ServerTime> UpdateTimeServerAsync()
+        {
+            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                $"/api/v1/time");
+            string json = await _connectionAdapter.RequestUnsignedAsync(request);
+            ServerTime = JsonSerializer.Deserialize<ServerTime>(json);
+            return ServerTime;
+        }
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Account Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/api/v3/account?");
-                request.RequestQuery = "recvWindow=5000";
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?");
                 string json = await _connectionAdapter.RequestAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
-                Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+                //Accounts = JsonSerializer.Deserialize<List<Account>>(json);
             }
             catch (Exception e)
             {
