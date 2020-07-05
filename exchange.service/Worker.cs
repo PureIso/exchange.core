@@ -37,7 +37,10 @@ namespace exchange.service
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
             _exchangeService.FeedBroadcast += FeedBroadCast; 
             _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
-            await _exchangeService.UpdateAccountsAsync();
+           // await _exchangeService.UpdateAccountsAsync();
+            await _exchangeService.UpdateBinanceAccountAsync();
+
+
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {
                 await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);

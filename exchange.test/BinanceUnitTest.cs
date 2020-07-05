@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using exchange.binance;
 using exchange.coinbase;
 using exchange.core;
+using exchange.core.models;
+using exchange.core.Models;
 using exchange.service;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -22,6 +24,7 @@ namespace exchange.test
         #region Fields
         private ExchangeSettings _exchangeSettings;
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
+        private Request _request;
         #endregion
 
         [TestInitialize()]
@@ -36,6 +39,7 @@ namespace exchange.test
                 Uri = "wss://stream.binance.com:9443"
             };
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+            _request = new Request(_exchangeSettings.EndpointUrl, "GET", "");
         }
 
         [TestMethod]
@@ -66,24 +70,39 @@ namespace exchange.test
         public void UpdateAccounts_ShouldReturnAccounts_WhenAccountExists()
         {
             //Arrange
+            //Arrange
             _httpMessageHandlerMock
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent($@"{{""serverTime"":1592395836992}}")
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""makerCommission"": 10,""takerCommission"": 10,""buyerCommission"": 0,""sellerCommission"": 0,
+                        ""canTrade"": true,""canWithdraw"": true,""canDeposit"": true,""updateTime"": 1561284536404,""accountType"": ""MARGIN"",
+                        ""balances"": [
+                        {{""asset"": ""BTC"",""free"": ""0.00000000"",""locked"": ""0.00000000""}},
+                        {{""asset"": ""LTC"",""free"": ""0.00000000"",""locked"": ""0.00000000""}},
+                        {{""asset"": ""ETH"",""free"": ""0.00000000"",""locked"": ""0.00000000""}}],
+                        ""permissions"": [""SPOT""]}}")
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
             Binance subjectUnderTest = new Binance(connectionFactory);
             //Act
-            subjectUnderTest.UpdateTimeServerAsync().Wait();
-            //Assert
-            Assert.IsNotNull(subjectUnderTest.ServerTime);
-            Assert.AreEqual(1592395836992, subjectUnderTest.ServerTime.ServerTimeLong);
-            Assert.IsTrue(subjectUnderTest.ServerTime.GetDelay() > 0);
+            subjectUnderTest.UpdateBinanceAccountAsync().Wait();
+            Assert.IsNotNull(subjectUnderTest.BinanceAccount);
         }
     }
 }

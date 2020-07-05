@@ -35,6 +35,7 @@ namespace exchange.core.interfaces
 
         #region Methods
 
+        Task<BinanceAccount> UpdateBinanceAccountAsync();
         Task<ServerTime> UpdateTimeServerAsync();
         Task<List<Account>> UpdateAccountsAsync(string accountId="");
         Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId);

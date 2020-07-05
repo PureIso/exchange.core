@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using exchange.core;
 using exchange.core.Enums;
 using exchange.core.interfaces;
 using exchange.core.Interfaces;
@@ -28,6 +29,7 @@ namespace exchange.binance
         public Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
+        public BinanceAccount BinanceAccount { get; set; }
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
@@ -62,23 +64,40 @@ namespace exchange.binance
             ServerTime = JsonSerializer.Deserialize<ServerTime>(json);
             return ServerTime;
         }
-        public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
+
+        public async Task<BinanceAccount> UpdateBinanceAccountAsync()
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Account Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?");
-                string json = await _connectionAdapter.RequestAsync(request);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
-                //check if we do not have any error messages
-                //Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+                bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(), out long currentTimeStamp);
+                if (successfulParse)
+                {
+                    ServerTime serverTime = await UpdateTimeServerAsync();
+                    long serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
+                    if (serverTimeLongDifference < 0) serverTimeLongDifference = 5000;
+                    if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
+                    await Task.Delay((int)serverTimeLongDifference);
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?")
+                    {
+                        RequestQuery = $"timestamp={currentTimeStamp}"
+                    };
+                    string json = await _connectionAdapter.RequestAsync(request);
+                    ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                    //check if we do not have any error messages
+                    BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
+                }
             }
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
                     $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
-            return Accounts;
+            return BinanceAccount;
+        }
+        public Task<List<Account>> UpdateAccountsAsync(string accountId = "")
+        {
+            throw new NotImplementedException();
         }
 
         public Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)

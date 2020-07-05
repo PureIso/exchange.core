@@ -65,6 +65,11 @@ namespace exchange.coinbase
 
         #region Trading
 
+        public Task<BinanceAccount> UpdateBinanceAccountAsync()
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<ServerTime> UpdateTimeServerAsync()
         {
             throw new NotImplementedException();

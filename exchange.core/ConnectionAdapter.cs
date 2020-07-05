@@ -208,52 +208,22 @@ namespace exchange.core
         }
 
         #region Private Methods
-        public async Task<string> RequestAsync(IRequest request)
+        public virtual async Task<string> RequestAsync(IRequest request)
         {
             try
             {
                 await _ioRequestSemaphoreSlim.WaitAsync();
                 StringContent requestBody = new StringContent("");
                 HttpResponseMessage response;
-                Uri absoluteUri = null;
+                Uri absoluteUri;
                 if (string.IsNullOrEmpty(Authentication.Passphrase))
-                { 
-                    bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(),out long currentTimeStamp);
-                    if (successfulParse)
-                    {
-                        const int receiveWindow = 5000;
-                        long serverTimeLong = 1000;
-                        long serverTimeLongDifference = 5000;
-                        bool delayTime = true;
-                        int attempt = 5;
-                        while (delayTime && attempt > 0)
-                        {
-                            Request timestampRequest = new Request(Authentication.EndpointUrl, "GET", $"/api/v1/time");
-                            string timestampRequestJson = await RequestUnsignedAsync(timestampRequest);
-                            ServerTime serverTime = JsonSerializer.Deserialize<ServerTime>(timestampRequestJson); 
-                            serverTimeLong = serverTime.ServerTimeLong + 1000; 
-                            serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
-                            if (currentTimeStamp < serverTimeLong && serverTimeLongDifference <= receiveWindow)
-                                delayTime = false;
-                            else
-                            {
-                                attempt--;
-                                await Task.Delay(1000);
-                            }
-                        }
-
-                        if (serverTimeLongDifference < 0) serverTimeLongDifference = 0;
-                        if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
-                        await Task.Delay((int)serverTimeLongDifference);
-                        // process request
-                        request.RequestQuery = $"timestamp={currentTimeStamp}"; 
-                        request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
-                        request.RequestQuery = null;
-                        absoluteUri = request.ComposeRequestUriAbsolute(Authentication.EndpointUrl);
-                        HttpClient.DefaultRequestHeaders.Clear();
-                        HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
-                        HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));//ACCEPT header
-                    }
+                {
+                    request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
+                    request.RequestQuery = null;
+                    absoluteUri = request.ComposeRequestUriAbsolute(Authentication.EndpointUrl);
+                    HttpClient.DefaultRequestHeaders.Clear();
+                    HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
+                    HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));//ACCEPT header
                 }
                 else
                 {
@@ -307,7 +277,7 @@ namespace exchange.core
             return null;
         }
 
-        public async Task<string> RequestUnsignedAsync(IRequest request)
+        public virtual async Task<string> RequestUnsignedAsync(IRequest request)
         {
             try
             {
