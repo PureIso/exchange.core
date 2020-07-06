@@ -18,6 +18,13 @@ The project is more so to experiment with various technologies and see how far i
 - Dependancy Injection with Adapter Pattern
 - Extension Methods
 
+## Exchange API Documentations
+
+The following links are the exchange API documents
+
+- [Binance](https://binance-docs.github.io/apidocs/spot/en/#change-log) - Binance SPOT API Documentation
+- [Coinbase](https://docs.pro.coinbase.com/) - Coinbase API Documentation
+
 ## Development Process
 
 The following development process seems to work well for this project.
@@ -26,8 +33,11 @@ The following development process seems to work well for this project.
 
 ## Core Features
 
+- Docker implementation
 - Saving 15 minutes, 1 hour and 1 day trading candles for neural network
 - Worker Service with SignalR broadcast
+- Binance Trading
+  - Acount Information
 - Coinbase Pro Trading
   - Acount Information
   - Account History
@@ -51,13 +61,10 @@ The following development process seems to work well for this project.
 
 - XML Comments
 - Automatic Trading based on end-user rules
-- Full Front End in Windows Form .Net 5
-- Alternative Front End with Electron and Angular 9
+- Front End with Electron and Angular 9
   - TensorFlowJS
   - RNN Trained Shards
-- Binance Trading
 - Unit Test
-- Docker implementation
 - Implement prediction API via machine learning Flask APP
 
 ## Technologies
@@ -74,7 +81,6 @@ The following development process seems to work well for this project.
 - [Font Awesome](https://fontawesome.com/)
 - [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/) - (Language - Backend)
 - [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0) - (Real-Time web functionality library)
-
 - [Python 3](https://www.python.org/) - (Language - Backend/Machine Learning)
 - [Keras](https://keras.io/) - (Dead Learning Library)
 - [Tensorflow](https://www.tensorflow.org/) - (Artificial Intelligence Library)

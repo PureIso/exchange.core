@@ -39,7 +39,7 @@ namespace exchange.service
             _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
            // await _exchangeService.UpdateAccountsAsync();
             await _exchangeService.UpdateBinanceAccountAsync();
-
+            await _exchangeService.UpdateExchangeInfoAsync();
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {

@@ -70,6 +70,11 @@ namespace exchange.coinbase
             throw new NotImplementedException();
         }
 
+        public Task<ExchangeInfo> UpdateExchangeInfoAsync()
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<ServerTime> UpdateTimeServerAsync()
         {
             throw new NotImplementedException();

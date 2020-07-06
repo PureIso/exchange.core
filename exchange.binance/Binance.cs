@@ -30,6 +30,7 @@ namespace exchange.binance
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
         public BinanceAccount BinanceAccount { get; set; }
+        public ExchangeInfo ExchangeInfo { get; set; }
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
@@ -63,6 +64,23 @@ namespace exchange.binance
             string json = await _connectionAdapter.RequestUnsignedAsync(request);
             ServerTime = JsonSerializer.Deserialize<ServerTime>(json);
             return ServerTime;
+        }
+
+        public async Task<ExchangeInfo> UpdateExchangeInfoAsync()
+        {
+            try
+            {
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/api/v1/exchangeInfo");
+                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                ExchangeInfo = JsonSerializer.Deserialize<ExchangeInfo>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return ExchangeInfo;
         }
 
         public async Task<BinanceAccount> UpdateBinanceAccountAsync()

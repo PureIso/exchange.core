@@ -1,8 +1,5 @@
-matrix:
-   include:
-     - language: csharp
-       mono: none
-       install:
-         - dotnet restore exchange.test/exchange.test.csproj
-       script:
-         - dotnet test exchange.test/exchange.test.csproj
+language: csharp
+install:
+ - dotnet restore exchange.test/exchange.test.csproj
+script:
+ - dotnet test exchange.test/exchange.test.csproj
