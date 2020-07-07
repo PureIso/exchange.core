@@ -3,12 +3,12 @@ addons:
   snaps:
   - name: dotnet-sdk
     classic: true
-    channel: latest/beta
+    channel: 5.0/beta
 sudo: required
 language: csharp
 mono: none
 script:
-  - sudo snap install dotnet-sdk --channel=5.0/beta --classic
+  - sudo snap alias dotnet-sdk.dotnet dotnet
   - dotnet --version
   - dotnet restore exchange.test/exchange.test.csproj
   - dotnet test exchange.test/exchange.test.csproj
