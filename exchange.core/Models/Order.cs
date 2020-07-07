@@ -38,6 +38,6 @@ namespace exchange.core.models
         public string Status { get; set; }
         [JsonPropertyName("settled")]
         public bool Settled { get; set; }
-        public int Quantity { get; set; }
+        public decimal Quantity { get; set; }
     }
 }

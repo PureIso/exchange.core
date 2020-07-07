@@ -680,7 +680,7 @@ namespace exchange.test
             Assert.IsTrue(success);
         }
         [TestMethod]
-        [Timeout(500)]
+        [Timeout(1000)]
         public void WebSocketProcessFeed_ShouldReturnFeed()
         {
             //Arrange

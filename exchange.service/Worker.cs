@@ -36,15 +36,16 @@ namespace exchange.service
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
             _exchangeService.FeedBroadcast += FeedBroadCast; 
-            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
-           // await _exchangeService.UpdateAccountsAsync();
+            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast; 
+            //await _exchangeService.UpdateAccountsAsync();
             await _exchangeService.UpdateBinanceAccountAsync();
             await _exchangeService.UpdateExchangeInfoAsync();
+            await _exchangeService.UpdateProductOrderBookAsync(new Product {ID = "BTCEUR"},20);
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {
-                await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);
-                await _exchangeService.UpdateAccountHoldsAsync(_exchangeService.Accounts[0].ID);
+                //await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);
+                //await _exchangeService.UpdateAccountHoldsAsync(_exchangeService.Accounts[0].ID);
 
                 _exchangeService.UpdateProductsAsync().Wait(cancellationToken);
                 List<Product> products = new List<Product>

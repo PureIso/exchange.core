@@ -53,12 +53,25 @@ namespace exchange.core
                 return orders;
             foreach (ArrayList array in arrayLists)
             {
-                Order order = new Order()
+                Order order = new Order();
+                switch (array.Count)
                 {
-                    Price = ((JsonElement)array[0]).GetString(),
-                    Size = ((JsonElement)array[1]).GetString(),
-                    Quantity = ((JsonElement)array[2]).GetInt32()
-                };
+                    case 2:
+                        order = new Order
+                        {
+                            Price = ((JsonElement)array[0]).GetString(),
+                            Quantity = decimal.Parse(((JsonElement)array[1]).GetString())
+                        };
+                        break;
+                    case 3:
+                        order = new Order
+                        {
+                            Price = ((JsonElement)array[0]).GetString(),
+                            Size = ((JsonElement)array[1]).GetString(),
+                            Quantity = ((JsonElement)array[2]).GetInt32()
+                        };
+                        break;
+                }
                 orders.Add(order);
             }
             return orders;

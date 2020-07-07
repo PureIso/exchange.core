@@ -78,7 +78,7 @@ namespace exchange.binance
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+                    $"Method: UpdateExchangeInfoAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return ExchangeInfo;
         }
@@ -163,9 +163,42 @@ namespace exchange.binance
             throw new NotImplementedException();
         }
 
-        public Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
+        public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
-            throw new NotImplementedException();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Order Book.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/depth?")
+                {
+                    RequestQuery = $"symbol={product.ID}&limit={level}"
+                };
+                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
+                //check if we do not have any error messages
+                OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return OrderBook;
+
+            //if (string.IsNullOrWhiteSpace(json))
+            //    return OrderBook;
+            //JObject jObject = JObject.Parse(json);
+            //if (jObject["bids"] == null || jObject["asks"] == null)
+            //    return OrderBook;
+            //JToken bids = jObject["bids"];
+            //JToken asks = jObject["asks"];
+            //if (bids is JArray && asks is JArray)
+            //    OrderBook = new OrderBook
+            //    {
+            //        //Symbol = symbol.ToUpper(),
+            //        Buys = bids.Select(BidAskOrder.FromJToken).Take(15).ToList(),
+            //        Sells = asks.Select(BidAskOrder.FromJToken).Take(15).ToList()
+            //    };
+            //return OrderBook;
         }
 
         public Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime,
