@@ -1,5 +1,14 @@
+dist: xenial
+addons:
+  snaps:
+  - name: dotnet-sdk
+    classic: true
+    channel: latest/beta
+sudo: required
 language: csharp
-install:
- - dotnet restore exchange.test/exchange.test.csproj
+mono: none
 script:
- - dotnet test exchange.test/exchange.test.csproj
+  - sudo snap install dotnet-sdk --channel=5.0/beta --classic
+  - dotnet --version
+  - dotnet restore exchange.test/exchange.test.csproj
+  - dotnet test exchange.test/exchange.test.csproj
