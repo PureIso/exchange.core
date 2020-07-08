@@ -77,6 +77,46 @@ namespace exchange.core
             return orders;
         }
 
+        public static List<HistoricRate> ToHistoricCandleList(this ArrayList[] arrayLists)
+        {
+            List<HistoricRate> historicRates = new List<HistoricRate>();
+            if (arrayLists == null)
+                return historicRates;
+            DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            foreach (ArrayList array in arrayLists)
+            {
+                HistoricRate historicRate = new HistoricRate();
+                switch (array.Count)
+                {
+                    case 12:
+                        historicRate = new HistoricRate
+                        {
+                            //1499040000000,      // Open time
+                            //"0.01634790",       // Open
+                            //"0.80000000",       // High
+                            //"0.01575800",       // Low
+                            //"0.01577100",       // Close
+                            //"148976.11427815",  // Volume
+
+                            //1499644799999,      // Close time
+                            //"2434.19055334",    // Quote asset volume
+                            //308,                // Number of trades
+                            //"1756.87402397",    // Taker buy base asset volume
+                            //"17928899.62484339" // Ignore.
+                            DateAndTime = start.AddMilliseconds(((JsonElement)array[0]).GetInt64()).ToLocalTime(),
+                            Open = decimal.Parse(((JsonElement)array[1]).GetString()),
+                            High = decimal.Parse(((JsonElement)array[2]).GetString()),
+                            Low = decimal.Parse(((JsonElement)array[3]).GetString()),
+                            Close = decimal.Parse(((JsonElement)array[4]).GetString()),
+                            Volume = decimal.Parse(((JsonElement)array[5]).GetString()),
+                        };
+                        break;
+                }
+                historicRates.Add(historicRate);
+            }
+            return historicRates;
+        }
+
         public static List<HistoricRate> ToHistoricRateList(this ArrayList[] arrayLists)
         {
             List<HistoricRate> historicRates = new List<HistoricRate>();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -183,28 +184,31 @@ namespace exchange.binance
                     $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return OrderBook;
-
-            //if (string.IsNullOrWhiteSpace(json))
-            //    return OrderBook;
-            //JObject jObject = JObject.Parse(json);
-            //if (jObject["bids"] == null || jObject["asks"] == null)
-            //    return OrderBook;
-            //JToken bids = jObject["bids"];
-            //JToken asks = jObject["asks"];
-            //if (bids is JArray && asks is JArray)
-            //    OrderBook = new OrderBook
-            //    {
-            //        //Symbol = symbol.ToUpper(),
-            //        Buys = bids.Select(BidAskOrder.FromJToken).Take(15).ToList(),
-            //        Sells = asks.Select(BidAskOrder.FromJToken).Take(15).ToList()
-            //    };
-            //return OrderBook;
         }
 
-        public Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime,
+        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime,
             int granularity = 86400)
         {
-            throw new NotImplementedException();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Historic Candles.");
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v1/klines?")
+                {
+                    RequestQuery =
+                        $"symbol={product.ID.ToUpper()}&interval=5m&startTime={startingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&endTime={endingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
+                };
+                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
+                //check if we do not have any error messages
+                ArrayList[] arrayListOfHistory = JsonSerializer.Deserialize<ArrayList[]>(json);
+                HistoricRates = arrayListOfHistory.ToHistoricCandleList();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return HistoricRates;
         }
 
         public Task<bool> CloseFeed()

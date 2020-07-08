@@ -42,6 +42,10 @@ namespace exchange.service
             await _exchangeService.UpdateExchangeInfoAsync();
             await _exchangeService.UpdateProductOrderBookAsync(new Product {ID = "BTCEUR"},20);
 
+            List<HistoricRate> historicRates = await _exchangeService.UpdateProductHistoricCandlesAsync(new Product { ID = "BTCEUR" },
+                DateTime.Now.AddHours(-2).ToUniversalTime(),
+                DateTime.Now.ToUniversalTime(), 900);//15 minutes
+
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {
                 //await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);

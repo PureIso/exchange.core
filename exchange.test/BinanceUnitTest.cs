@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +19,6 @@ namespace exchange.test
         #region Fields
         private ExchangeSettings _exchangeSettings;
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
-        private Request _request;
         #endregion
 
         [TestInitialize]
@@ -33,7 +33,6 @@ namespace exchange.test
                 Uri = "wss://stream.binance.com:9443"
             };
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            _request = new Request(_exchangeSettings.EndpointUrl, "GET", "");
         }
 
         [TestMethod]
@@ -245,6 +244,41 @@ namespace exchange.test
             Assert.AreEqual(20, subjectUnderTest.OrderBook.Asks.ToOrderList().Count);
             Assert.AreEqual((decimal)8241.75000000, subjectUnderTest.OrderBook.Bids.ToOrderList()[0].Price.ToDecimal());
             Assert.AreEqual((decimal)0.00488100, subjectUnderTest.OrderBook.Asks.ToOrderList()[0].Quantity);
+        }
+
+        [TestMethod]
+        public void UpdateProductHistoricCandles_ShouldReturnOrderBook_WhenAccountExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[
+                    [1594131000000,""8244.44000000"",""8247.71000000"",""8234.56000000"",""8247.53000000"",""0.57541000"",1594131299999,""4743.74677830"",29,""0.51348500"",""4233.45949059"",""0""],
+                    [1594131300000,""8251.92000000"",""8263.73000000"",""8235.49000000"",""8261.31000000"",""0.73944300"",1594131599999,""6104.99268016"",73,""0.44151600"",""3646.66755442"",""0""],
+                    [1594131600000,""8258.99000000"",""8266.70000000"",""8253.56000000"",""8265.01000000"",""0.21730200"",1594131899999,""1795.04159624"",61,""0.12557200"",""1037.27246541"",""0""]]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Binance subjectUnderTest = new Binance(connectionFactory);
+            Product product = new Product
+            {
+                ID = "BTCEUR"
+            };
+            DateTime startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+            DateTime endingDateTime = startingDateTime.AddMonths(6).ToUniversalTime();
+            //Act
+            subjectUnderTest.UpdateProductHistoricCandlesAsync(product, startingDateTime, endingDateTime).Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.HistoricRates);
+            Assert.AreEqual(3, subjectUnderTest.HistoricRates.Count);
+            Assert.AreEqual((decimal)8234.56000000, subjectUnderTest.HistoricRates[0].Low);
+            Assert.AreEqual((decimal)0.57541000, subjectUnderTest.HistoricRates[0].Volume);
         }
     }
 }
