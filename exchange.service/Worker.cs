@@ -41,10 +41,11 @@ namespace exchange.service
             await _exchangeService.UpdateBinanceAccountAsync();
             await _exchangeService.UpdateExchangeInfoAsync();
             await _exchangeService.UpdateProductOrderBookAsync(new Product {ID = "BTCEUR"},20);
-
-            List<HistoricRate> historicRates = await _exchangeService.UpdateProductHistoricCandlesAsync(new Product { ID = "BTCEUR" },
+            await _exchangeService.UpdateProductHistoricCandlesAsync(new Product { ID = "BTCEUR" },
                 DateTime.Now.AddHours(-2).ToUniversalTime(),
-                DateTime.Now.ToUniversalTime(), 900);//15 minutes
+                DateTime.Now.ToUniversalTime(), 900);//15 minutes unused TODO
+            await _exchangeService.UpdateTickersAsync(new List<Product>{ new Product { ID = "BTCEUR" } , new Product { ID = "ETHBTC" } });
+
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using exchange.core;
@@ -66,7 +67,6 @@ namespace exchange.binance
             ServerTime = JsonSerializer.Deserialize<ServerTime>(json);
             return ServerTime;
         }
-
         public async Task<ExchangeInfo> UpdateExchangeInfoAsync()
         {
             try
@@ -83,7 +83,6 @@ namespace exchange.binance
             }
             return ExchangeInfo;
         }
-
         public async Task<BinanceAccount> UpdateBinanceAccountAsync()
         {
             try
@@ -118,45 +117,72 @@ namespace exchange.binance
         {
             throw new NotImplementedException();
         }
-
         public Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
             throw new NotImplementedException();
         }
-
         public Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
             throw new NotImplementedException();
         }
-
         public Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
             throw new NotImplementedException();
         }
-
         public Task<Order> PostOrdersAsync(Order order)
         {
             throw new NotImplementedException();
         }
-
         public Task<List<Order>> CancelOrderAsync(Order order)
         {
             throw new NotImplementedException();
         }
-
         public Task<List<Order>> CancelOrdersAsync(Product product)
         {
             throw new NotImplementedException();
         }
-
         public Task<List<Product>> UpdateProductsAsync()
         {
             throw new NotImplementedException();
         }
-
-        public Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
+        public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
-            throw new NotImplementedException();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Update Tickers Information.");
+                if (products == null || !products.Any())
+                    return Tickers;
+                if (Tickers == null)
+                    Tickers = new List<Ticker>();
+                //Get price of all products
+                foreach (Product product in products)
+                {
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                        $"/api/v3/ticker/price") {RequestQuery = $"?symbol={product.ID}"};
+                    string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                    if (string.IsNullOrEmpty(json))
+                        return Tickers;
+                    Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
+                    Tickers?.RemoveAll(x => x.ProductID == product.ID);
+                    if (ticker == null)
+                        continue;
+                    ticker.ProductID = product.ID;
+                    Tickers.Add(ticker);
+                }
+
+                foreach (Ticker ticker in Tickers)
+                {
+                    if (decimal.TryParse(ticker.Price, out decimal decimalPrice))
+                        CurrentPrices[ticker.ProductID] = decimalPrice;
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateTickersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return Tickers;
         }
 
         public Task<List<Fill>> UpdateFillsAsync(Product product)

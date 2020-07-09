@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -245,7 +246,6 @@ namespace exchange.test
             Assert.AreEqual((decimal)8241.75000000, subjectUnderTest.OrderBook.Bids.ToOrderList()[0].Price.ToDecimal());
             Assert.AreEqual((decimal)0.00488100, subjectUnderTest.OrderBook.Asks.ToOrderList()[0].Quantity);
         }
-
         [TestMethod]
         public void UpdateProductHistoricCandles_ShouldReturnOrderBook_WhenAccountExists()
         {
@@ -279,6 +279,37 @@ namespace exchange.test
             Assert.AreEqual(3, subjectUnderTest.HistoricRates.Count);
             Assert.AreEqual((decimal)8234.56000000, subjectUnderTest.HistoricRates[0].Low);
             Assert.AreEqual((decimal)0.57541000, subjectUnderTest.HistoricRates[0].Volume);
+        }
+        [TestMethod]
+        public void UpdateTickers_ShouldReturnProductsAndTickers_WhenProductsAndTickersExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""symbol"":""BTCEUR"",""price"":""8287.76000000""}}")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Binance subjectUnderTest = new Binance(connectionFactory);
+            List<Product> products = new List<Product>
+            {
+                new Product {ID = "BTCEUR"},
+            };
+            //Act
+            subjectUnderTest.UpdateTickersAsync(products).Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Tickers);
+            Assert.AreEqual(1, subjectUnderTest.Tickers.Count);
+            Assert.AreEqual("BTCEUR", subjectUnderTest.Tickers[0].ProductID);
+            Assert.AreEqual((decimal)8287.76000000, subjectUnderTest.Tickers[0].Price.ToDecimal());
+            Assert.IsNotNull(subjectUnderTest.CurrentPrices);
+            Assert.AreEqual(subjectUnderTest.CurrentPrices[subjectUnderTest.Tickers[0].ProductID], subjectUnderTest.Tickers[0].Price.ToDecimal());
         }
     }
 }
