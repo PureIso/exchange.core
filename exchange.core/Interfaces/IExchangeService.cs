@@ -26,6 +26,7 @@ namespace exchange.core.interfaces
         List<Product> Products { get; set; }
         List<HistoricRate> HistoricRates { get; set; }
         List<Fill> Fills { get; set; }
+        List<BinanceFill> BinanceFill { get; set; }
         List<Order> Orders { get; set; }
         OrderBook OrderBook { get; set; }
         Product SelectedProduct { get; set; } 
@@ -48,6 +49,7 @@ namespace exchange.core.interfaces
         Task<List<Product>> UpdateProductsAsync();
         Task<List<Ticker>> UpdateTickersAsync(List<Product> products);
         Task<List<Fill>> UpdateFillsAsync(Product product);
+        Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product);
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
         Task<bool> CloseFeed();

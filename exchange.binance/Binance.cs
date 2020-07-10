@@ -36,6 +36,7 @@ namespace exchange.binance
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
+        public List<BinanceFill> BinanceFill { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
@@ -131,7 +132,13 @@ namespace exchange.binance
         }
         public Task<Order> PostOrdersAsync(Order order)
         {
-            throw new NotImplementedException();
+
+            Log?.Invoke(string.Format("[Order Placed]  ID:{0} Price:{1} Side:{2} Size:{3}",
+                symbol, limitPrice, orderSide, orderSize));
+            List<Fill> filled = await _orderClient.PlaceOrder(orderSize, limitPrice, orderSide, orderType, symbol);
+            OnOrderPlaced?.Invoke(this, filled);
+            if (filled != null && filled.Any()) await UpdateAccounts();
+            return filled;
         }
         public Task<List<Order>> CancelOrderAsync(Order order)
         {
@@ -188,6 +195,40 @@ namespace exchange.binance
         public Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product)
+        {
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
+                bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(), out long currentTimeStamp);
+                if (successfulParse)
+                {
+                    ServerTime serverTime = await UpdateTimeServerAsync();
+                    long serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
+                    if (serverTimeLongDifference < 0) serverTimeLongDifference = 5000;
+                    if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
+                    await Task.Delay((int)serverTimeLongDifference);
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl,
+                        "GET",
+                        $"/api/v3/myTrades?")
+                    {
+                        RequestQuery =
+                            $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}&limit=10"
+                    };
+                    string json = await _connectionAdapter.RequestAsync(request);
+                    if (!string.IsNullOrEmpty(json))
+                        BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
+                    ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return BinanceFill;
         }
 
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)

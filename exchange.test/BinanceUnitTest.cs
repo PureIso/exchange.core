@@ -311,5 +311,54 @@ namespace exchange.test
             Assert.IsNotNull(subjectUnderTest.CurrentPrices);
             Assert.AreEqual(subjectUnderTest.CurrentPrices[subjectUnderTest.Tickers[0].ProductID], subjectUnderTest.Tickers[0].Price.ToDecimal());
         }
+        [TestMethod]
+        public void UpdateBinanceFills_ShouldReturnFills_WhenFillsExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[{{
+                            ""symbol"": ""BNBBTC"",
+                            ""id"": 28457,
+                            ""orderId"": 100234,
+                            ""orderListId"": -1, //Unless OCO, the value will always be -1
+                            ""price"": ""4.00000100"",
+                            ""qty"": ""12.00000000"",
+                            ""quoteQty"": ""48.000012"",
+                            ""commission"": ""10.10000000"",
+                            ""commissionAsset"": ""BNB"",
+                            ""time"": 1499865549590,
+                            ""isBuyer"": true,
+                            ""isMaker"": false,
+                            ""isBestMatch"": true
+                            }}]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Binance subjectUnderTest = new Binance(connectionFactory);
+            Product product = new Product {ID = "BTCEUR"};
+            //Act
+            subjectUnderTest.UpdateBinanceFillsAsync(product).Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Fills);
+            Assert.AreEqual(1, subjectUnderTest.Fills.Count);
+            Assert.AreEqual(product.ID, subjectUnderTest.Fills[0].ProductID);
+        }
     }
 }

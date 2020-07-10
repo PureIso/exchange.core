@@ -45,14 +45,13 @@ namespace exchange.service
                 DateTime.Now.AddHours(-2).ToUniversalTime(),
                 DateTime.Now.ToUniversalTime(), 900);//15 minutes unused TODO
             await _exchangeService.UpdateTickersAsync(new List<Product>{ new Product { ID = "BTCEUR" } , new Product { ID = "ETHBTC" } });
-
+            await _exchangeService.UpdateFillsAsync(new Product { ID = "BTCEUR" });
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {
                 //await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);
                 //await _exchangeService.UpdateAccountHoldsAsync(_exchangeService.Accounts[0].ID);
-
-                _exchangeService.UpdateProductsAsync().Wait(cancellationToken);
+                //_exchangeService.UpdateProductsAsync().Wait(cancellationToken);
                 List<Product> products = new List<Product>
                 {
                     _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
@@ -62,29 +61,29 @@ namespace exchange.service
                 products.RemoveAll(x => x == null);
                 if (products.Any())
                 {
-                    _exchangeService.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
-                    _exchangeService.UpdateOrdersAsync().Wait(cancellationToken);
-                    _exchangeService.UpdateFillsAsync(products[0]).Wait(cancellationToken);
-                    _exchangeService.UpdateTickersAsync(products).Wait(cancellationToken);
-                    _exchangeService.ChangeFeed(products.ToSubscribeString());
-                    
-                    _exchangeService.StartProcessingFeed();
+                    //_exchangeService.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
+                    //_exchangeService.UpdateOrdersAsync().Wait(cancellationToken);
+                    //_exchangeService.UpdateFillsAsync(products[0]).Wait(cancellationToken);
+                    //_exchangeService.UpdateTickersAsync(products).Wait(cancellationToken);
+                    //_exchangeService.ChangeFeed(products.ToSubscribeString());
 
-                    string indicatorDatabaseDirectory = AppDomain.CurrentDomain.BaseDirectory + "indicator_database";
-                    if (!Directory.Exists(indicatorDatabaseDirectory))
-                        Directory.CreateDirectory(indicatorDatabaseDirectory);
-                    string databaseFile = indicatorDatabaseDirectory + "\\indicator.database.json";
-                    if (!File.Exists(databaseFile))
-                        File.Create(databaseFile).Close();
-                    _relativeStrengthIndexIndicator = RelativeStrengthIndex.Load(databaseFile, _exchangeService);
-                    _relativeStrengthIndexIndicator.DatabaseFile = databaseFile;
-                    _relativeStrengthIndexIndicator.DatabaseDirectory = indicatorDatabaseDirectory;
-                    _relativeStrengthIndexIndicator.Product = products[0];
-                    _relativeStrengthIndexIndicator.EnableRelativeStrengthIndexUpdater();
-                    ////market order
-                    ////buy
-                    //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
-                    //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
+                    //_exchangeService.StartProcessingFeed();
+
+                    //string indicatorDatabaseDirectory = AppDomain.CurrentDomain.BaseDirectory + "indicator_database";
+                    //if (!Directory.Exists(indicatorDatabaseDirectory))
+                    //    Directory.CreateDirectory(indicatorDatabaseDirectory);
+                    //string databaseFile = indicatorDatabaseDirectory + "\\indicator.database.json";
+                    //if (!File.Exists(databaseFile))
+                    //    File.Create(databaseFile).Close();
+                    //_relativeStrengthIndexIndicator = RelativeStrengthIndex.Load(databaseFile, _exchangeService);
+                    //_relativeStrengthIndexIndicator.DatabaseFile = databaseFile;
+                    //_relativeStrengthIndexIndicator.DatabaseDirectory = indicatorDatabaseDirectory;
+                    //_relativeStrengthIndexIndicator.Product = products[0];
+                    //_relativeStrengthIndexIndicator.EnableRelativeStrengthIndexUpdater();
+                    //market order
+                    //buy
+                    Order marketOrderBuy = new Order { Size = "0.1", Side = OrderSide.Buy.GetStringValue(), Type = OrderType.Market.GetStringValue(), ProductID = "BTCEUR" };
+                    Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
                     ////sell
                     //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
                     //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
@@ -94,7 +93,7 @@ namespace exchange.service
                     //////cancel order
                     ////await _exchangeService.CancelOrdersAsync(new Product{ID="BTC-EUR"});
                     //await _exchangeService.CancelOrderAsync(limitOrderResponse);
-                    //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
+                    //List<HistoricRate> historicRates = await _exchangeService.UpdateProductHistoricCandlesAsync(products[0],
                     //    DateTime.Now.AddHours(-2).ToUniversalTime(),
                     //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
                 }

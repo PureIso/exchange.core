@@ -39,6 +39,7 @@ namespace exchange.coinbase
         public List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
+        public List<BinanceFill> BinanceFill { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
@@ -378,6 +379,11 @@ namespace exchange.coinbase
             }
 
             return Fills;
+        }
+
+        public Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
