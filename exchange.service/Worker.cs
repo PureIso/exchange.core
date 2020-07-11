@@ -14,6 +14,8 @@ using exchange.core.models;
 using exchange.core;
 using exchange.core.Enums;
 using exchange.core.Indicators;
+using exchange.core.Models;
+using OrderSide = exchange.core.Enums.OrderSide;
 
 namespace exchange.service
 {
@@ -45,7 +47,13 @@ namespace exchange.service
                 DateTime.Now.AddHours(-2).ToUniversalTime(),
                 DateTime.Now.ToUniversalTime(), 900);//15 minutes unused TODO
             await _exchangeService.UpdateTickersAsync(new List<Product>{ new Product { ID = "BTCEUR" } , new Product { ID = "ETHBTC" } });
-            await _exchangeService.UpdateFillsAsync(new Product { ID = "BTCEUR" });
+            //await _exchangeService.UpdateFillsAsync(new Product { ID = "BTCEUR" });
+            BinanceOrder binanceOrder = new BinanceOrder();
+            binanceOrder.OrderType = OrderType.Market;
+            binanceOrder.OrderSide = OrderSide.Buy;
+            binanceOrder.OrderSize = (decimal)0.1;
+            binanceOrder.Symbol = "BNBBTC";
+            List<BinanceFill> r  = await _exchangeService.BinancePostOrdersAsync(binanceOrder);
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {

@@ -130,23 +130,94 @@ namespace exchange.binance
         {
             throw new NotImplementedException();
         }
+
         public Task<Order> PostOrdersAsync(Order order)
         {
+            throw new NotImplementedException();
+        }
 
-            Log?.Invoke(string.Format("[Order Placed]  ID:{0} Price:{1} Side:{2} Size:{3}",
-                symbol, limitPrice, orderSide, orderSize));
-            List<Fill> filled = await _orderClient.PlaceOrder(orderSize, limitPrice, orderSide, orderType, symbol);
-            OnOrderPlaced?.Invoke(this, filled);
-            if (filled != null && filled.Any()) await UpdateAccounts();
-            return filled;
+        public async Task<List<BinanceFill>> BinancePostOrdersAsync(BinanceOrder order)
+        {
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Post Order Information.");
+                bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(), out long currentTimeStamp);
+                if (successfulParse)
+                {
+                    ServerTime serverTime = await UpdateTimeServerAsync();
+                    long serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
+                    if (serverTimeLongDifference < 0) serverTimeLongDifference = 5000;
+                    if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
+                    await Task.Delay((int)serverTimeLongDifference);
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST",
+                        $"/api/v3/order?");
+                    if (order.OrderType == OrderType.Market)
+                        request.RequestQuery = $"timestamp={currentTimeStamp}&symbol={order.Symbol.ToUpper()}" +
+                                               $"&side={order.OrderSide.ToString().ToUpper()}" +
+                                               $"&type={order.OrderType.ToString().ToUpper()}&quantity={order.OrderSize}";
+                    else
+                        request.RequestQuery = $"timestamp={currentTimeStamp}&symbol={order.Symbol.ToUpper()}" +
+                                               $"&side={order.OrderSide.ToString().ToUpper()}&type={order.OrderType.ToString().ToUpper()}" +
+                                               $"&quantity={order.OrderSize}&price={ order.LimitPrice}&timeInForce=GTC";
+                    string json = await _connectionAdapter.RequestAsync(request);
+                    BinanceFill binanceFill = JsonSerializer.Deserialize<BinanceFill>(json);
+                    ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                    //check if we do not have any error messages
+                    if(BinanceFill == null)
+                        BinanceFill = new List<BinanceFill>();
+                    BinanceFill.Add(binanceFill);
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return BinanceFill;
         }
         public Task<List<Order>> CancelOrderAsync(Order order)
         {
             throw new NotImplementedException();
         }
+
         public Task<List<Order>> CancelOrdersAsync(Product product)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<List<BinanceOrder>> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
+        {
+            List<BinanceOrder> binanceOrders = new List<BinanceOrder>();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
+                bool successfulParse = long.TryParse(DateTime.Now.ToUniversalTime().GenerateDateTimeOffsetToUnixTimeMilliseconds(), out long currentTimeStamp);
+                if (successfulParse)
+                {
+                    ServerTime serverTime = await UpdateTimeServerAsync();
+                    long serverTimeLongDifference = serverTime.ServerTimeLong - currentTimeStamp;
+                    if (serverTimeLongDifference < 0) serverTimeLongDifference = 5000;
+                    if (serverTimeLongDifference > 5000) serverTimeLongDifference = 5000;
+                    await Task.Delay((int)serverTimeLongDifference);
+                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl,
+                        "DELETE",
+                        $"/api/v3/order?")
+                    {
+                        RequestQuery =
+                            $"symbol={binanceOrder.Symbol}&orderId={binanceOrder.ID}&timestamp={serverTime.ServerTimeLong}&limit=10"
+                    };
+                    string json = await _connectionAdapter.RequestAsync(request);
+                    if (!string.IsNullOrEmpty(json))
+                        binanceOrders = JsonSerializer.Deserialize<List<BinanceOrder>>(json);
+                    ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return binanceOrders;
         }
         public Task<List<Product>> UpdateProductsAsync()
         {

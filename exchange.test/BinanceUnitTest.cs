@@ -6,7 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance;
 using exchange.core;
+using exchange.core.Enums;
 using exchange.core.models;
+using exchange.core.Models;
 using exchange.service;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -317,7 +319,7 @@ namespace exchange.test
             //Arrange
             _httpMessageHandlerMock
                 .Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v1/time")), ItExpr.IsAny<CancellationToken>())
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -327,7 +329,7 @@ namespace exchange.test
                 .Verifiable();
             _httpMessageHandlerMock
                 .Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/myTrades?")), ItExpr.IsAny<CancellationToken>())
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -336,7 +338,7 @@ namespace exchange.test
                             ""symbol"": ""BNBBTC"",
                             ""id"": 28457,
                             ""orderId"": 100234,
-                            ""orderListId"": -1, //Unless OCO, the value will always be -1
+                            ""orderListId"": -1,
                             ""price"": ""4.00000100"",
                             ""qty"": ""12.00000000"",
                             ""quoteQty"": ""48.000012"",
@@ -352,13 +354,56 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
             Binance subjectUnderTest = new Binance(connectionFactory);
-            Product product = new Product {ID = "BTCEUR"};
+            Product product = new Product {ID = "BNBBTC" };
             //Act
             subjectUnderTest.UpdateBinanceFillsAsync(product).Wait();
             //Assert
-            Assert.IsNotNull(subjectUnderTest.Fills);
-            Assert.AreEqual(1, subjectUnderTest.Fills.Count);
-            Assert.AreEqual(product.ID, subjectUnderTest.Fills[0].ProductID);
+            Assert.IsNotNull(subjectUnderTest.BinanceFill);
+            Assert.AreEqual(1, subjectUnderTest.BinanceFill.Count);
+            Assert.AreEqual(product.ID, subjectUnderTest.BinanceFill[0].ID);
+        }
+        [TestMethod]
+        public void BinancePostOrders_ShouldReturnFills_WhenFillsExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v1/time")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/order")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""symbol"":""BNBBTC"",""orderId"":156,
+                            ""orderListId"":-1,""clientOrderId"":""Ovu4oRzIuBmzR7YKnZjQDg"",
+                            ""transactTime"":1594418218604,""price"":""0.00000000"",""origQty"":""0.10000000"",
+                            ""executedQty"":""0.10000000"",""cummulativeQuoteQty"":""0.00016933"",
+                            ""status"":""FILLED"",""timeInForce"":""GTC"",""type"":""MARKET"",
+                            ""side"":""BUY"",""fills"":[{{""price"":""0.00169330"",""qty"":""0.10000000"",
+                            ""commission"":""0.00000000"",""commissionAsset"":""BNB"",""tradeId"":72}}]}}")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Binance subjectUnderTest = new Binance(connectionFactory);
+            BinanceOrder binanceOrder = new BinanceOrder();
+            binanceOrder.OrderType = OrderType.Market;
+            binanceOrder.OrderSide = OrderSide.Buy;
+            binanceOrder.OrderSize = (decimal)0.1;
+            binanceOrder.Symbol = "BNBBTC";
+            //Act
+            List<BinanceFill> r = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
+            //Assert
+            Assert.IsNotNull(r);
         }
     }
 }

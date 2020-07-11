@@ -404,6 +404,16 @@ namespace exchange.coinbase
             return OrderBook;
         }
 
+        public Task<List<BinanceFill>> BinancePostOrdersAsync(BinanceOrder order)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<BinanceOrder>> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product,
             DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
         {
