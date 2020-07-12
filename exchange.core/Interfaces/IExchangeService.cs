@@ -51,8 +51,8 @@ namespace exchange.core.interfaces
         Task<List<Fill>> UpdateFillsAsync(Product product);
         Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product);
         Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2);
-        Task<List<BinanceFill>> BinancePostOrdersAsync(BinanceOrder order);
-        Task<List<BinanceOrder>> BinanceCancelOrdersAsync(BinanceOrder binanceOrder);
+        Task<BinanceOrder> BinancePostOrdersAsync(BinanceOrder order);
+        Task<BinanceOrder> BinanceCancelOrdersAsync(BinanceOrder binanceOrder);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400);
         Task<bool> CloseFeed();
         bool ChangeFeed(string message);

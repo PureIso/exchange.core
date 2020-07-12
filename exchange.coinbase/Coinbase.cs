@@ -404,12 +404,12 @@ namespace exchange.coinbase
             return OrderBook;
         }
 
-        public Task<List<BinanceFill>> BinancePostOrdersAsync(BinanceOrder order)
+        public Task<BinanceOrder> BinancePostOrdersAsync(BinanceOrder order)
         {
             throw new NotImplementedException();
         }
 
-        public Task<List<BinanceOrder>> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
+        public Task<BinanceOrder> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
         {
             throw new NotImplementedException();
         }

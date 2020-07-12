@@ -53,7 +53,16 @@ namespace exchange.service
             binanceOrder.OrderSide = OrderSide.Buy;
             binanceOrder.OrderSize = (decimal)0.1;
             binanceOrder.Symbol = "BNBBTC";
-            List<BinanceFill> r  = await _exchangeService.BinancePostOrdersAsync(binanceOrder);
+            BinanceOrder r  = await _exchangeService.BinancePostOrdersAsync(binanceOrder);
+
+            BinanceOrder binanceOrder2 = new BinanceOrder();
+            binanceOrder2.OrderType = OrderType.Limit;
+            binanceOrder2.OrderSide = OrderSide.Buy;
+            binanceOrder2.OrderSize = (decimal)0.1;
+            binanceOrder2.LimitPrice = (decimal)0.0010000;
+            binanceOrder2.Symbol = "BNBBTC"; 
+            BinanceOrder r2 = await _exchangeService.BinancePostOrdersAsync(binanceOrder2);
+            await _exchangeService.BinanceCancelOrdersAsync(r2);
 
             if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
             {

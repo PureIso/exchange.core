@@ -59,7 +59,6 @@ namespace exchange.test
             //Assert
             Assert.IsNotNull(subjectUnderTest.ServerTime);
             Assert.AreEqual(1592395836992, subjectUnderTest.ServerTime.ServerTimeLong);
-            Assert.IsTrue(subjectUnderTest.ServerTime.GetDelay() > 0);
         }
 
         [TestMethod]
@@ -401,7 +400,7 @@ namespace exchange.test
             binanceOrder.OrderSize = (decimal)0.1;
             binanceOrder.Symbol = "BNBBTC";
             //Act
-            List<BinanceFill> r = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
+            BinanceOrder r = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
             //Assert
             Assert.IsNotNull(r);
         }
