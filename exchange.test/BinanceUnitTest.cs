@@ -362,7 +362,7 @@ namespace exchange.test
             Assert.AreEqual(product.ID, subjectUnderTest.BinanceFill[0].ID);
         }
         [TestMethod]
-        public void BinancePostOrders_ShouldReturnFills_WhenFillsExists()
+        public void BinancePostOrders_ShouldReturnBinanceOrder()
         {
             //Arrange
             _httpMessageHandlerMock
@@ -400,9 +400,49 @@ namespace exchange.test
             binanceOrder.OrderSize = (decimal)0.1;
             binanceOrder.Symbol = "BNBBTC";
             //Act
-            BinanceOrder r = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
+            BinanceOrder binanceOrderResult = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
             //Assert
-            Assert.IsNotNull(r);
+            Assert.IsNotNull(binanceOrderResult);
+        }
+        [TestMethod]
+        public void BinanceCancelOrders_ShouldReturnBinanceOrder()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v1/time")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/order")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""symbol"":""BNBBTC"",""origClientOrderId"":""IplSV4jLgOQVYO6o9UCeAv"",
+                            ""orderId"":171,""orderListId"":-1,""clientOrderId"":""qpYlufBkQXlPI3bgSzHZE3"",
+                            ""price"":""0.00100000"",""origQty"":""0.10000000"",""executedQty"":""0.00000000"",
+                            ""cummulativeQuoteQty"":""0.00000000"",""status"":""CANCELED"",""timeInForce"":""GTC"",
+                            ""type"":""LIMIT"",""side"":""BUY""}}")}))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
+            Binance subjectUnderTest = new Binance(connectionFactory);
+            BinanceOrder binanceOrder = new BinanceOrder();
+            binanceOrder.OrderType = OrderType.Market;
+            binanceOrder.OrderSide = OrderSide.Buy;
+            binanceOrder.OrderSize = (decimal)0.1;
+            binanceOrder.Symbol = "BNBBTC";
+            //Act
+            BinanceOrder binanceOrderResult = subjectUnderTest.BinanceCancelOrdersAsync(binanceOrder).Result;
+            //Assert
+            Assert.IsNotNull(binanceOrderResult);
         }
     }
 }
