@@ -38,6 +38,12 @@ The following development process seems to work well for this project.
 - Worker Service with SignalR broadcast
 - Binance Trading
   - Acount Information
+  - List Orders
+  - Post Orders
+  - Product Information
+  - Ticker Information
+  - Fill Information
+  - Product Historic Candles
 - Coinbase Pro Trading
   - Acount Information
   - Account History
@@ -112,5 +118,4 @@ Start the exchange.service.
 
 ## License
 
-[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
-[MIT](https://choosealicense.com/licenses/mit/)
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](https://choosealicense.com/licenses/mit/)
