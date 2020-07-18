@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using exchange.core.interfaces;
 using exchange.core.models;
+using exchange.core.Models;
 
 namespace exchange.core.Indicators
 {
@@ -208,8 +209,13 @@ namespace exchange.core.Indicators
             while (startingDateTime.Date < now)
             {
                 DateTime endingDateTime = startingDateTime.AddMonths(6).ToUniversalTime();
+                HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                historicCandlesSearch.Symbol = Product.ID;
+                historicCandlesSearch.StartingDateTime = startingDateTime;
+                historicCandlesSearch.EndingDateTime = endingDateTime;
+                historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(Product, startingDateTime, endingDateTime, granularity);
+                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTime = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
@@ -339,7 +345,13 @@ namespace exchange.core.Indicators
             {
                 DateTime endingDateTime = startingDateTime.AddDays(6).ToUniversalTime();
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(Product, startingDateTime, endingDateTime, granularity);
+                HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                historicCandlesSearch.Symbol = Product.ID;
+                historicCandlesSearch.StartingDateTime = startingDateTime;
+                historicCandlesSearch.EndingDateTime = endingDateTime;
+                historicCandlesSearch.Granularity = (Granularity)granularity;
+                //Get the latest historic data
+                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTimeHourly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
@@ -468,7 +480,13 @@ namespace exchange.core.Indicators
             {
                 DateTime endingDateTime = startingDateTime.AddDays(3).ToUniversalTime();
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(Product, startingDateTime, endingDateTime, granularity);
+                HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                historicCandlesSearch.Symbol = Product.ID;
+                historicCandlesSearch.StartingDateTime = startingDateTime;
+                historicCandlesSearch.EndingDateTime = endingDateTime;
+                historicCandlesSearch.Granularity = (Granularity)granularity;
+                //Get the latest historic data
+                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTimeQuarterly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);

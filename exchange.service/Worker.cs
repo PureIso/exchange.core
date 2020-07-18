@@ -37,86 +37,9 @@ namespace exchange.service
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            _exchangeService.FeedBroadcast += FeedBroadCast; 
-            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast; 
-            //await _exchangeService.UpdateAccountsAsync();
-            await _exchangeService.UpdateBinanceAccountAsync();
-            await _exchangeService.UpdateExchangeInfoAsync();
-            await _exchangeService.UpdateProductOrderBookAsync(new Product {ID = "BTCEUR"},20);
-            await _exchangeService.UpdateProductHistoricCandlesAsync(new Product { ID = "BTCEUR" },
-                DateTime.Now.AddHours(-2).ToUniversalTime(),
-                DateTime.Now.ToUniversalTime(), 900);//15 minutes unused TODO
-            await _exchangeService.UpdateTickersAsync(new List<Product>{ new Product { ID = "BTCEUR" } , new Product { ID = "ETHBTC" } });
-            //await _exchangeService.UpdateFillsAsync(new Product { ID = "BTCEUR" });
-            BinanceOrder binanceOrder = new BinanceOrder();
-            binanceOrder.OrderType = OrderType.Market;
-            binanceOrder.OrderSide = OrderSide.Buy;
-            binanceOrder.OrderSize = (decimal)0.1;
-            binanceOrder.Symbol = "BNBBTC";
-            BinanceOrder r  = await _exchangeService.BinancePostOrdersAsync(binanceOrder);
-
-            BinanceOrder binanceOrder2 = new BinanceOrder();
-            binanceOrder2.OrderType = OrderType.Limit;
-            binanceOrder2.OrderSide = OrderSide.Buy;
-            binanceOrder2.OrderSize = (decimal)0.1;
-            binanceOrder2.LimitPrice = (decimal)0.0010000;
-            binanceOrder2.Symbol = "BNBBTC"; 
-            BinanceOrder r2 = await _exchangeService.BinancePostOrdersAsync(binanceOrder2);
-            await _exchangeService.BinanceCancelOrdersAsync(r2);
-
-            if (_exchangeService.Accounts != null && _exchangeService.Accounts.Any())
-            {
-                //await _exchangeService.UpdateAccountHistoryAsync(_exchangeService.Accounts[0].ID);
-                //await _exchangeService.UpdateAccountHoldsAsync(_exchangeService.Accounts[0].ID);
-                //_exchangeService.UpdateProductsAsync().Wait(cancellationToken);
-                List<Product> products = new List<Product>
-                {
-                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
-                    _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
-                };
-                products.RemoveAll(x => x == null);
-                if (products.Any())
-                {
-                    //_exchangeService.UpdateProductOrderBookAsync(products[0]).Wait(cancellationToken);
-                    //_exchangeService.UpdateOrdersAsync().Wait(cancellationToken);
-                    //_exchangeService.UpdateFillsAsync(products[0]).Wait(cancellationToken);
-                    //_exchangeService.UpdateTickersAsync(products).Wait(cancellationToken);
-                    //_exchangeService.ChangeFeed(products.ToSubscribeString());
-
-                    //_exchangeService.StartProcessingFeed();
-
-                    //string indicatorDatabaseDirectory = AppDomain.CurrentDomain.BaseDirectory + "indicator_database";
-                    //if (!Directory.Exists(indicatorDatabaseDirectory))
-                    //    Directory.CreateDirectory(indicatorDatabaseDirectory);
-                    //string databaseFile = indicatorDatabaseDirectory + "\\indicator.database.json";
-                    //if (!File.Exists(databaseFile))
-                    //    File.Create(databaseFile).Close();
-                    //_relativeStrengthIndexIndicator = RelativeStrengthIndex.Load(databaseFile, _exchangeService);
-                    //_relativeStrengthIndexIndicator.DatabaseFile = databaseFile;
-                    //_relativeStrengthIndexIndicator.DatabaseDirectory = indicatorDatabaseDirectory;
-                    //_relativeStrengthIndexIndicator.Product = products[0];
-                    //_relativeStrengthIndexIndicator.EnableRelativeStrengthIndexUpdater();
-                    //market order
-                    //buy
-                    Order marketOrderBuy = new Order { Size = "0.1", Side = OrderSide.Buy.GetStringValue(), Type = OrderType.Market.GetStringValue(), ProductID = "BTCEUR" };
-                    Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
-                    ////sell
-                    //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
-                    //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
-                    ////limit order
-                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy.GetStringValue(), Type = OrderType.Limit.GetStringValue(), ProductID = "BTC-EUR", Price = "1000" };
-                    //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
-                    //////cancel order
-                    ////await _exchangeService.CancelOrdersAsync(new Product{ID="BTC-EUR"});
-                    //await _exchangeService.CancelOrderAsync(limitOrderResponse);
-                    //List<HistoricRate> historicRates = await _exchangeService.UpdateProductHistoricCandlesAsync(products[0],
-                    //    DateTime.Now.AddHours(-2).ToUniversalTime(),
-                    //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
-                }
-                _logger.LogInformation($"Account Count: {_exchangeService.Accounts.Count}");
-            }
-           
+            _exchangeService.FeedBroadcast += FeedBroadCast;
+            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
+            await _exchangeService.InitAsync();
             await base.StartAsync(cancellationToken);
         }
 
@@ -160,6 +83,7 @@ namespace exchange.service
         public override void Dispose()
         {
             _logger.LogInformation($"Worker disposed at: {DateTime.Now}");
+            _exchangeService.Dispose();
             base.Dispose();
         }
 

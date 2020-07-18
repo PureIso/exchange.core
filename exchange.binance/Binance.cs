@@ -288,8 +288,7 @@ namespace exchange.binance
             return OrderBook;
         }
 
-        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product, DateTime startingDateTime, DateTime endingDateTime,
-            int granularity = 86400)
+        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             try
             {
@@ -297,7 +296,7 @@ namespace exchange.binance
                 Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v1/klines?")
                 {
                     RequestQuery =
-                        $"symbol={product.ID.ToUpper()}&interval=5m&startTime={startingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&endTime={endingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
+                        $"symbol={historicCandlesSearch.Symbol}&interval=5m&startTime={historicCandlesSearch.StartingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
                 };
                 string json = await _connectionAdapter.RequestUnsignedAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
@@ -344,6 +343,29 @@ namespace exchange.binance
             SelectedProduct = null;
             // Suppress finalization.
             GC.SuppressFinalize(this);
+        }
+
+        public async Task<bool> InitAsync()
+        {
+            try
+            {
+                await UpdateBinanceAccountAsync();
+                await UpdateExchangeInfoAsync();
+                await UpdateProductOrderBookAsync(new Product { ID = "BTCEUR" }, 20);
+                HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                historicCandlesSearch.Symbol = "BTCEUR";
+                historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
+                historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
+                historicCandlesSearch.Granularity = (Granularity)900;
+                await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                await UpdateTickersAsync(new List<Product> { new Product { ID = "BTCEUR" }, new Product { ID = "ETHBTC" } });
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return false;
         }
     }
 }

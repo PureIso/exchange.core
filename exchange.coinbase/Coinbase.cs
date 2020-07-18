@@ -520,6 +520,64 @@ namespace exchange.coinbase
             // Suppress finalization.
             GC.SuppressFinalize(this);
         }
+
+        public async Task<bool> InitAsync()
+        {
+            try
+            {
+                await UpdateAccountsAsync();
+                if (Accounts != null && Accounts.Any())
+                {
+                    await UpdateAccountHistoryAsync(Accounts[0].ID);
+                    await UpdateAccountHoldsAsync(Accounts[0].ID);
+                    UpdateProductsAsync().Wait();
+                    
+                    List<Product> products = new List<Product>
+                    {
+                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
+                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
+                        Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
+                    };
+                    products.RemoveAll(x => x == null);
+                    if (products.Any())
+                    {
+                        UpdateProductOrderBookAsync(products[0]).Wait();
+                        UpdateOrdersAsync().Wait();
+                        UpdateFillsAsync(products[0]).Wait();
+                        UpdateTickersAsync(products).Wait();
+                        ChangeFeed(products.ToSubscribeString());
+                        StartProcessingFeed();
+
+                        ////market order
+                        ////buy
+                        //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
+                        //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
+                        ////sell
+                        //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
+                        //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
+                        ////limit order
+                        //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
+                        //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
+                        ////cancel order
+                        //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
+                        //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
+                        //    DateTime.Now.AddHours(-2).ToUniversalTime(),
+                        //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return false;
+        }
+
+        public Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }

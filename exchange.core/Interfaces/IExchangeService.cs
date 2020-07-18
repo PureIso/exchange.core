@@ -1,5 +1,5 @@
-﻿using exchange.core.models;
-using System;
+﻿using System;
+using exchange.core.models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using exchange.core.Enums;
@@ -18,5 +18,18 @@ namespace exchange.core.interfaces
         Action<MessageType, string> ProcessLogBroadcast { get; set; }
         #endregion
 
+        #region Properties
+        Dictionary<string, decimal> CurrentPrices { get; set; }
+        List<Product> Products { get; set; }
+        #endregion
+
+        #region Methods
+        Task<bool> InitAsync();
+        Task<bool> CloseFeed();
+        bool ChangeFeed(string message);
+        Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch);
+        #endregion
+
+        public void Dispose();
     }
 }

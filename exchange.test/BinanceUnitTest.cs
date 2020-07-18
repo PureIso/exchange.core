@@ -267,14 +267,12 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
             Binance subjectUnderTest = new Binance(connectionFactory);
-            Product product = new Product
-            {
-                ID = "BTCEUR"
-            };
-            DateTime startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
-            DateTime endingDateTime = startingDateTime.AddMonths(6).ToUniversalTime();
+            HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+            historicCandlesSearch.Symbol = "BTCEUR";
+            historicCandlesSearch.StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+            historicCandlesSearch.EndingDateTime = historicCandlesSearch.StartingDateTime.AddMonths(6).ToUniversalTime();
             //Act
-            subjectUnderTest.UpdateProductHistoricCandlesAsync(product, startingDateTime, endingDateTime).Wait();
+            subjectUnderTest.UpdateProductHistoricCandlesAsync(historicCandlesSearch).Wait();
             //Assert
             Assert.IsNotNull(subjectUnderTest.HistoricRates);
             Assert.AreEqual(3, subjectUnderTest.HistoricRates.Count);
