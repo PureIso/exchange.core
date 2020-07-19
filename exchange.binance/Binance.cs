@@ -44,7 +44,7 @@ namespace exchange.binance
         public List<AccountHold> AccountHolds { get; set; }
         #endregion
 
-        public Binance(IConnectionAdapter connectionAdapter)
+        public Binance()
         {
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
@@ -58,7 +58,6 @@ namespace exchange.binance
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
-            _connectionAdapter = connectionAdapter;
         }
         public async Task<ServerTime> UpdateTimeServerAsync()
         {
@@ -345,7 +344,7 @@ namespace exchange.binance
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync()
+        public async Task<bool> InitAsync(IConnectionAdapter connectionAdapter)
         {
             try
             {
@@ -366,6 +365,11 @@ namespace exchange.binance
                     $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return false;
+        }
+
+        public Task<bool> InitIndicatorsAsync()
+        {
+            throw new NotImplementedException();
         }
     }
 }

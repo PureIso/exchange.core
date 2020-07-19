@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using exchange.core.Enums;
 using exchange.core.Models;
+using exchange.core.Interfaces;
 
 namespace exchange.core.interfaces
 {
@@ -24,7 +25,8 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Methods
-        Task<bool> InitAsync();
+        Task<bool> InitAsync(IConnectionAdapter connectionAdapter);
+        Task<bool> InitIndicatorsAsync();
         Task<bool> CloseFeed();
         bool ChangeFeed(string message);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch);

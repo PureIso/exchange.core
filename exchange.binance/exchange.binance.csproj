@@ -8,4 +8,8 @@
     <ProjectReference Include="..\exchange.core\exchange.core.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exist $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin mkdir $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin&#xD;&#xA;xcopy $(TargetDir)$(TargetName).* $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin /Y" />
+  </Target>
+
 </Project>

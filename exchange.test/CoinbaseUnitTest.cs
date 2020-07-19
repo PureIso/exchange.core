@@ -19,21 +19,12 @@ namespace exchange.test
     public class CoinbaseUnitTest
     {
         #region Fields
-        private ExchangeSettings _exchangeSettings;
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
         #endregion
 
         [TestInitialize()]
         public void Initialize()
         {
-            _exchangeSettings = new ExchangeSettings
-            {
-                APIKey = "api_key",
-                PassPhrase = "pass_phrase",
-                Secret = "NiWaGaqmhB3lgI/tQmm/gQ==",
-                EndpointUrl = "https://api.pro.coinbase.com",
-                Uri = "wss://ws-feed.gdax.com"
-            };
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         }
 
@@ -69,8 +60,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateAccountsAsync().Wait();
             //Assert
@@ -112,8 +103,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateAccountsAsync("71452118-efc7-4cc4-8780-a5e22d4baa53").Wait();
             //Assert
@@ -154,8 +145,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateAccountHistoryAsync("100").Wait();
             //Assert
@@ -190,8 +181,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateAccountHoldsAsync("82dcd140-c3c7-4507-8de4-2c529cd1a28f").Wait();
             //Assert
@@ -250,8 +241,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateOrdersAsync().Wait();
             //Assert
@@ -292,8 +283,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             Order orderResult = subjectUnderTest.PostOrdersAsync(order).Result;
             //Assert
@@ -322,8 +313,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory) {Orders = orders};
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase() {Orders = orders};
             //Act
             List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
             //Assert
@@ -352,8 +343,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase() { Orders = orders };
             //Act
             List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
             //Assert
@@ -382,8 +373,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase() { Orders = orders };
             //Act
             List<Order> removedOrders = subjectUnderTest.CancelOrderAsync(order).Result;
             //Assert
@@ -412,8 +403,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory) { Orders = orders };
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase() { Orders = orders };
             //Act
             List<Order> removedOrders = subjectUnderTest.CancelOrderAsync(order).Result;
             //Assert
@@ -451,8 +442,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             subjectUnderTest.UpdateProductsAsync().Wait();
             //Assert
@@ -475,8 +466,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             List<Product> products = new List<Product>
             {
                 new Product
@@ -543,8 +534,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -581,8 +572,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -617,8 +608,8 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient, _exchangeSettings);
-            Coinbase subjectUnderTest = new Coinbase(connectionFactory);
+            ConnectionAdapter connectionFactory = new ConnectionAdapter(httpClient);
+            Coinbase subjectUnderTest = new Coinbase();
             Product product = new Product
             {
                 ID = "BTC-EUR",
@@ -667,14 +658,14 @@ namespace exchange.test
                 },
             };
             HttpClient httpClient = new HttpClient();
-            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient, _exchangeSettings);
+            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString()))
                 .ReturnsAsync($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}");
             connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
             connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync())
                 .Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
 
-            Coinbase subjectUnderTest = new Coinbase(connectionFactoryMock.Object);
+            Coinbase subjectUnderTest = new Coinbase();
             //Act
             bool success = subjectUnderTest.ChangeFeed(products.ToSubscribeString());
             Assert.IsTrue(success);
@@ -685,7 +676,7 @@ namespace exchange.test
         {
             //Arrange
             HttpClient httpClient = new HttpClient();
-            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient, _exchangeSettings);
+            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
             connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync())
                 .Returns(Task.FromResult($@"{{
@@ -739,7 +730,7 @@ namespace exchange.test
                                             ""trade_id"":25684403,
                                             ""last_size"":""0.00133587""
                                             }}"));  // will be returned on 3rd invocation
-            Coinbase subjectUnderTest = new Coinbase(connectionFactoryMock.Object);
+            Coinbase subjectUnderTest = new Coinbase();
             bool eventRaised = false;
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);

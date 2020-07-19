@@ -16,6 +16,9 @@ using exchange.core.Enums;
 using exchange.core.Indicators;
 using exchange.core.Models;
 using OrderSide = exchange.core.Enums.OrderSide;
+using exchange.service.Plugins;
+using System.Reflection;
+using exchange.core.Interfaces;
 
 namespace exchange.service
 {
@@ -23,23 +26,37 @@ namespace exchange.service
     {
         private readonly ILogger<Worker> _logger;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
-        private readonly IExchangeService _exchangeService;
+        private IConnectionAdapter _connectionAdapter;
         private RelativeStrengthIndex _relativeStrengthIndexIndicator;
+        private ExchangePluginService _exchangePluginService;
 
-        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IExchangeService exchangeService)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IConnectionAdapter connectionAdapter)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
-            _exchangeService = exchangeService;
-            _relativeStrengthIndexIndicator = new RelativeStrengthIndex(exchangeService);
+            //Load available plugins
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            if (string.IsNullOrEmpty(directoryName))
+                return;
+            string pluginDirectory = Path.Combine(directoryName, "plugin");
+            if (!Directory.Exists(pluginDirectory))
+                Directory.CreateDirectory(pluginDirectory);
+            _exchangePluginService = new ExchangePluginService(pluginDirectory);
+            //_relativeStrengthIndexIndicator = new RelativeStrengthIndex(exchangeService);
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            _exchangeService.FeedBroadcast += FeedBroadCast;
-            _exchangeService.ProcessLogBroadcast += ProcessLogBroadcast;
-            await _exchangeService.InitAsync();
+            if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
+            {
+                foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
+                {
+                    abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
+                    abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
+                    await abstractExchangePlugin.InitAsync(_connectionAdapter);
+                }
+            }        
             await base.StartAsync(cancellationToken);
         }
 
@@ -52,8 +69,8 @@ namespace exchange.service
         {
             if (feed.ProductID == null)
                 return;
-            _exchangeService.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
-            await _exchangeHub.Clients.All.NotifyCurrentPrices(_exchangeService.CurrentPrices);
+            //_exchangeService.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+            //await _exchangeHub.Clients.All.NotifyCurrentPrices(_exchangeService.CurrentPrices);
             await _exchangeHub.Clients.All.NotifyInformation(MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
             Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
             {
@@ -70,20 +87,19 @@ namespace exchange.service
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
-            List<Product> products = new List<Product>
+            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
-                _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                _exchangeService.Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
-            };
-            products.RemoveAll(x => x == null);
-            _exchangeService.ChangeFeed(products.ToUnSubscribeString());
-            _exchangeService.CloseFeed();
+                abstractExchangePlugin.CloseFeed();
+            }
             return base.StopAsync(cancellationToken);
         }
         public override void Dispose()
         {
             _logger.LogInformation($"Worker disposed at: {DateTime.Now}");
-            _exchangeService.Dispose();
+            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
+            {
+                abstractExchangePlugin.Dispose();
+            }
             base.Dispose();
         }
 

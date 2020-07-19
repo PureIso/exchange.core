@@ -46,7 +46,7 @@ namespace exchange.coinbase
 
         #endregion
 
-        public Coinbase(IConnectionAdapter connectionAdapter)
+        public Coinbase()
         {
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
@@ -59,7 +59,6 @@ namespace exchange.coinbase
             Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
-            _connectionAdapter = connectionAdapter;
         }
 
         #region Public Methods
@@ -521,7 +520,7 @@ namespace exchange.coinbase
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync()
+        public async Task<bool> InitAsync(IConnectionAdapter connectionAdapter)
         {
             try
             {
@@ -575,6 +574,11 @@ namespace exchange.coinbase
         }
 
         public Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> InitIndicatorsAsync()
         {
             throw new NotImplementedException();
         }

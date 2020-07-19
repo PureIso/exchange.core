@@ -31,14 +31,14 @@ namespace exchange.core
         public Action<Feed> FeedBroadCast { get; set; }
         #endregion
 
-        public ConnectionAdapter(HttpClient httpClient, IExchangeSettings exchangeSettings)
+        public ConnectionAdapter(HttpClient httpClient)
         {
-            Authentication = new Authentication(
-                exchangeSettings.APIKey,
-                exchangeSettings.PassPhrase,
-                exchangeSettings.Secret,
-                exchangeSettings.EndpointUrl,
-                exchangeSettings.Uri);
+            //Authentication = new Authentication(
+            //    exchangeSettings.APIKey,
+            //    exchangeSettings.PassPhrase,
+            //    exchangeSettings.Secret,
+            //    exchangeSettings.EndpointUrl,
+            //    exchangeSettings.Uri);
             HttpClient = httpClient;
             ClientWebSocket = new ClientWebSocket();
             _ioSemaphoreSlim = new SemaphoreSlim(1,1);
