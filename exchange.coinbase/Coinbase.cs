@@ -17,7 +17,7 @@ namespace exchange.coinbase
     {
         #region Fields
 
-        private readonly IConnectionAdapter _connectionAdapter;
+        private IConnectionAdapter _connectionAdapter;
 
         #endregion
 
@@ -43,6 +43,7 @@ namespace exchange.coinbase
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
+        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         #endregion
 
@@ -520,7 +521,7 @@ namespace exchange.coinbase
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync(IConnectionAdapter connectionAdapter)
+        public async Task<bool> InitAsync()
         {
             try
             {
@@ -578,9 +579,15 @@ namespace exchange.coinbase
             throw new NotImplementedException();
         }
 
-        public Task<bool> InitIndicatorsAsync()
+        public bool InitIndicatorsAsync()
         {
             throw new NotImplementedException();
+        }
+
+        public bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
+        {
+            _connectionAdapter = connectionAdapter;
+            return true;
         }
         #endregion
     }

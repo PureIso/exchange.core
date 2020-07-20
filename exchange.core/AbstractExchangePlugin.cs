@@ -20,6 +20,7 @@ namespace exchange.core
         public virtual Action<MessageType, string> ProcessLogBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public virtual Dictionary<string, decimal> CurrentPrices { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public virtual List<Product> Products { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public virtual bool ChangeFeed(string message)
         {
@@ -36,12 +37,17 @@ namespace exchange.core
             throw new NotImplementedException();
         }
 
-        public virtual Task<bool> InitAsync(IConnectionAdapter connectionAdapter)
+        public virtual Task<bool> InitAsync()
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> InitIndicatorsAsync()
+        public virtual bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool InitIndicatorsAsync()
         {
             throw new NotImplementedException();
         }

@@ -15,6 +15,7 @@ namespace exchange.core.interfaces
     public interface IExchangeService
     {
         #region Actions
+        Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         Action<Feed> FeedBroadcast { get; set; }
         Action<MessageType, string> ProcessLogBroadcast { get; set; }
         #endregion
@@ -25,8 +26,9 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Methods
-        Task<bool> InitAsync(IConnectionAdapter connectionAdapter);
-        Task<bool> InitIndicatorsAsync();
+        Task<bool> InitAsync();
+        bool InitConnectionAdapter(IConnectionAdapter connectionAdapter);
+        bool InitIndicatorsAsync();
         Task<bool> CloseFeed();
         bool ChangeFeed(string message);
         Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch);

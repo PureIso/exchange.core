@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using exchange.core;
 using exchange.core.Enums;
+using exchange.core.Indicators;
 using exchange.core.interfaces;
 using exchange.core.Interfaces;
 using exchange.core.models;
@@ -17,7 +18,7 @@ namespace exchange.binance
     {
         #region Fields
 
-        private readonly IConnectionAdapter _connectionAdapter;
+        private IConnectionAdapter _connectionAdapter;
 
         #endregion
 
@@ -42,6 +43,7 @@ namespace exchange.binance
         public Product SelectedProduct { get; set; }
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
+        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         #endregion
 
         public Binance()
@@ -344,7 +346,7 @@ namespace exchange.binance
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync(IConnectionAdapter connectionAdapter)
+        public async Task<bool> InitAsync()
         {
             try
             {
@@ -367,9 +369,16 @@ namespace exchange.binance
             return false;
         }
 
-        public Task<bool> InitIndicatorsAsync()
+        public bool InitIndicatorsAsync()
         {
-            throw new NotImplementedException();
+            RelativeStrengthIndex r = new RelativeStrengthIndex();
+            return true;
+        }
+
+        public bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
+        {
+            _connectionAdapter = connectionAdapter;
+            return true;
         }
     }
 }

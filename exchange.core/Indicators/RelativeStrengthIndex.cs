@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Timers;
+using exchange.core.Enums;
 using exchange.core.interfaces;
 using exchange.core.models;
 using exchange.core.Models;
@@ -19,7 +20,6 @@ namespace exchange.core.Indicators
 
         #region Fields
         private readonly Timer _updater;
-        private readonly IExchangeService _exchangeService;
         private object _ioLock = new object();
         #endregion
 
@@ -92,10 +92,11 @@ namespace exchange.core.Indicators
         public string DatabaseDirectory { get; set; }
         #endregion
 
-        public RelativeStrengthIndex(IExchangeService exchangeService)
+        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public Func<HistoricCandlesSearch, Task<List<HistoricRate>>> UpdateProductHistoricCandles { get; set; }
+        public RelativeStrengthIndex()
         {
             _updater = new Timer();
-            _exchangeService = exchangeService;
         }
 
         #region Public Methods
@@ -126,24 +127,22 @@ namespace exchange.core.Indicators
                 File.WriteAllText(DatabaseFile, json);
             }
         }
-        public static RelativeStrengthIndex Load(string fileName, IExchangeService exchangeService)
+        public static RelativeStrengthIndex Load(string fileName)
         {
             try
             {
                 string json = File.ReadAllText(fileName);
                 RelativeStrengthIndex indicator = JsonSerializer.Deserialize<RelativeStrengthIndex>(json);
                 if (indicator == null)
-                    return new RelativeStrengthIndex(exchangeService);
+                    return new RelativeStrengthIndex();
                 indicator.DatabaseFile = fileName;
                 return indicator;
             }
             catch
             {
-                return new RelativeStrengthIndex(exchangeService);
+                return new RelativeStrengthIndex();
             }
         }
-
-
         private void RelativeStrengthIndexUpdateHandlerAsync(object source, ElapsedEventArgs e)
         {
             Task.WhenAll(
@@ -215,7 +214,7 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.EndingDateTime = endingDateTime;
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTime = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
@@ -351,7 +350,7 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.EndingDateTime = endingDateTime;
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTimeHourly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
@@ -486,7 +485,7 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.EndingDateTime = endingDateTime;
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
-                List<HistoricRate> result = await _exchangeService.UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                 if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
                 {
                     HistoricChartLastDateTimeQuarterly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);

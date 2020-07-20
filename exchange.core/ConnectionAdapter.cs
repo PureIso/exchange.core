@@ -17,8 +17,8 @@ namespace exchange.core
     public class ConnectionAdapter : IConnectionAdapter
     {
         #region Properties
-        public Authentication Authentication { get; }
-        public HttpClient HttpClient { get; }
+        public Authentication Authentication { get; set; }
+        public HttpClient HttpClient { get; set; }
         public ClientWebSocket ClientWebSocket { get; }
         #endregion
 
@@ -31,6 +31,12 @@ namespace exchange.core
         public Action<Feed> FeedBroadCast { get; set; }
         #endregion
 
+        public ConnectionAdapter()
+        {
+            ClientWebSocket = new ClientWebSocket();
+            _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
+            _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
+        }
         public ConnectionAdapter(HttpClient httpClient)
         {
             //Authentication = new Authentication(
