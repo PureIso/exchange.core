@@ -7,7 +7,7 @@ namespace exchange.core.Interfaces
 {
     public interface IConnectionAdapter
     {
-        Authentication Authentication { get; } 
+        Authentication Authentication { get; set; } 
         HttpClient HttpClient { get; }
         ClientWebSocket ClientWebSocket { get; }
 
@@ -19,5 +19,6 @@ namespace exchange.core.Interfaces
 
         bool IsWebSocketConnected();
         void Dispose();
+        bool Validate();
     }
 }

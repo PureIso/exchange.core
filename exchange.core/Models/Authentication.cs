@@ -9,20 +9,18 @@ namespace exchange.core.models
     public class Authentication : IAuthentication
     {
 
-        #region Fields
-
-        private readonly string _secret;
-
-        #endregion
-
         #region Properties
 
-        public string ApiKey { get; }
-        public string Passphrase { get; }
-        public string EndpointUrl { get; }
-        public Uri WebSocketUri { get; }
+        public string ApiKey { get; set; }
+        public string Secret { get; set; }
+        public string Passphrase { get; set; }
+        public string EndpointUrl { get; set; }
+        public Uri WebSocketUri { get; set; }
         #endregion
 
+        public Authentication()
+        {
+        }
         public Authentication(string apiKey, string passphrase, string secret, string endpointUrl, string webSocketUri)
         {
             ApiKey = apiKey;
@@ -31,7 +29,7 @@ namespace exchange.core.models
             Passphrase = passphrase;
             EndpointUrl = endpointUrl;
             WebSocketUri = new Uri(webSocketUri);
-            _secret = secret;
+            Secret = secret;
         }
         #region Public Methods
         public IAuthenticationSignature ComputeSignature(IRequest request)
@@ -39,7 +37,7 @@ namespace exchange.core.models
             request.TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
             string timestamp = request.TimeStamp.ToString(CultureInfo.InvariantCulture);
             string prehash = timestamp + request.Method + request.RequestUrl + request.RequestBody;
-            byte[] data = Convert.FromBase64String(_secret);
+            byte[] data = Convert.FromBase64String(Secret);
             AuthenticationSignature authenticationSignature = new AuthenticationSignature
             {
                 Signature = HashString(prehash, data),
@@ -50,7 +48,7 @@ namespace exchange.core.models
 
         public string ComputeSignature(string message)
         {
-            byte[] key = Encoding.UTF8.GetBytes(_secret);
+            byte[] key = Encoding.UTF8.GetBytes(Secret);
             string stringHash;
             using (HMACSHA256 hmac = new HMACSHA256(key))
             {

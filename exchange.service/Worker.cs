@@ -50,8 +50,9 @@ namespace exchange.service
                 {
                     abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
-                    await abstractExchangePlugin.InitAsync();
                     abstractExchangePlugin.InitConnectionAdapter(_connectionAdapter);
+                    await abstractExchangePlugin.InitAsync();
+                    _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
             }        
             await base.StartAsync(cancellationToken);
@@ -59,6 +60,7 @@ namespace exchange.service
 
         private async void ProcessLogBroadcast(MessageType messageType, string message)
         {
+            _logger.LogInformation($"Log Broadcast: [Type: {messageType.GetStringValue()} , Message: {message}]");
             await _exchangeHub.Clients.All.NotifyInformation(messageType,message);
         }
 

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -8,8 +8,14 @@
     <ProjectReference Include="..\exchange.core\exchange.core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="binance.config.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if not exist $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin mkdir $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin&#xD;&#xA;xcopy $(TargetDir)$(TargetName).* $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin /Y" />
+    <Exec Command="if not exist $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin mkdir $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin&#xD;&#xA;xcopy $(TargetDir)$(TargetName).* $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin /Y&#xD;&#xA;xcopy $(TargetDir)binance.config.ini $(SolutionDir)exchange.service\bin\Debug\net5.0\plugin /Y" />
   </Target>
 
 </Project>

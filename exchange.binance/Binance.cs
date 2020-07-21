@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using exchange.core;
 using exchange.core.Enums;
@@ -14,27 +17,30 @@ using exchange.core.Models;
 
 namespace exchange.binance
 {
-    public class Binance : IExchangeService, IDisposable
+    
+    public class Binance : AbstractExchangePlugin, IDisposable
     {
         #region Fields
 
         private IConnectionAdapter _connectionAdapter;
-
+        private object _ioLock;
         #endregion
 
         #region Events
-        public Action<Feed> FeedBroadcast { get; set; }
-        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public override Action<Feed> FeedBroadcast { get; set; }
+        public override Action<MessageType, string> ProcessLogBroadcast { get; set; }
         #endregion
 
         #region Public Properties
+        public Authentication _authentication;
+        public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
-        public Dictionary<string, decimal> CurrentPrices { get; set; }
+        public override Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
         public BinanceAccount BinanceAccount { get; set; }
         public ExchangeInfo ExchangeInfo { get; set; }
-        public List<Product> Products { get; set; }
+        public override List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
@@ -43,11 +49,106 @@ namespace exchange.binance
         public Product SelectedProduct { get; set; }
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
-        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         #endregion
+
+        public void LoadINI(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    if (_authentication == null)
+                        _authentication = new Authentication();
+                    string line;
+                    StreamReader streamReader = new StreamReader(filePath);
+                    while((line = streamReader.ReadLine()) != null)
+                    {
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        line = line.ToLower();
+                        if (line.StartsWith("uri="))
+                        {
+                            line = line.Replace("uri=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.WebSocketUri = new Uri(line);
+                        }
+                        else if (line.StartsWith("key="))
+                        {
+                            line = line.Replace("key=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.ApiKey = line;
+                        }
+                        else if (line.StartsWith("secret="))
+                        {
+                            line = line.Replace("secret=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.Secret = line;
+                        }
+                        else if (line.StartsWith("endpoint="))
+                        {
+                            line = line.Replace("endpoint=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.EndpointUrl = line;
+                        }
+                    }
+                    _connectionAdapter.Authentication = _authentication;
+                }
+            }
+            catch
+            {
+            }
+        }
+        private void Save()
+        {
+            try
+            {
+                lock (_ioLock)
+                {
+                    if (string.IsNullOrEmpty(FileName))
+                    {
+                        string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                        FileName = Path.Combine(directoryName, "binance.json");
+                        if (!File.Exists(FileName))
+                            File.Create(FileName).Close();
+                    }
+                    BinanceSettings binanceSettings = new BinanceSettings();
+                    binanceSettings.Accounts = Accounts;
+                    binanceSettings.BinanceAccount = BinanceAccount;
+                    binanceSettings.CurrentPrices = CurrentPrices;
+                    binanceSettings.ExchangeInfo = ExchangeInfo;
+                    binanceSettings.ServerTime = ServerTime;
+                    binanceSettings.Tickers = Tickers;
+                    string json = JsonSerializer.Serialize(binanceSettings, new JsonSerializerOptions() { WriteIndented = true });
+                    File.WriteAllText(FileName, json);
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: Save\r\nException Stack Trace: {e.StackTrace}");
+            }
+        }
+        public static BinanceSettings Load(string fileName)
+        {
+            try
+            {
+                string json = File.ReadAllText(fileName);
+                return JsonSerializer.Deserialize<BinanceSettings>(json);
+            }
+            catch
+            {
+
+            }
+            return default;
+        }
 
         public Binance()
         {
+            base.ApplicationName = "Binance Exchange";
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             Accounts = new List<Account>();
@@ -60,6 +161,7 @@ namespace exchange.binance
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
+            _ioLock = new object();
         }
         public async Task<ServerTime> UpdateTimeServerAsync()
         {
@@ -77,6 +179,7 @@ namespace exchange.binance
                     $"/api/v1/exchangeInfo");
                 string json = await _connectionAdapter.RequestUnsignedAsync(request);
                 ExchangeInfo = JsonSerializer.Deserialize<ExchangeInfo>(json);
+                Save();
             }
             catch (Exception e)
             {
@@ -289,7 +392,7 @@ namespace exchange.binance
             return OrderBook;
         }
 
-        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             try
             {
@@ -313,22 +416,12 @@ namespace exchange.binance
             return HistoricRates;
         }
 
-        public Task<bool> CloseFeed()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ChangeFeed(string message)
-        {
-            throw new NotImplementedException();
-        }
-
         public void StartProcessingFeed()
         {
             throw new NotImplementedException();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             _connectionAdapter?.Dispose();
             CurrentPrices = null;
@@ -346,10 +439,12 @@ namespace exchange.binance
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync()
+        public override async Task<bool> InitAsync()
         {
             try
             {
+                if (!_connectionAdapter.Validate())
+                    return false;
                 await UpdateBinanceAccountAsync();
                 await UpdateExchangeInfoAsync();
                 await UpdateProductOrderBookAsync(new Product { ID = "BTCEUR" }, 20);
@@ -360,6 +455,7 @@ namespace exchange.binance
                 historicCandlesSearch.Granularity = (Granularity)900;
                 await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                 await UpdateTickersAsync(new List<Product> { new Product { ID = "BTCEUR" }, new Product { ID = "ETHBTC" } });
+                return true;
             }
             catch (Exception e)
             {
@@ -369,15 +465,18 @@ namespace exchange.binance
             return false;
         }
 
-        public bool InitIndicatorsAsync()
+        public override bool InitIndicatorsAsync()
         {
             RelativeStrengthIndex r = new RelativeStrengthIndex();
             return true;
         }
 
-        public bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
+        public override bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
         {
             _connectionAdapter = connectionAdapter;
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string fileName = Path.Combine(directoryName, "binance.config.ini");
+            LoadINI(fileName);
             return true;
         }
     }

@@ -10,45 +10,50 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using exchange.core.Enums;
 using exchange.core.Models;
+using System.IO;
+using System.Reflection;
+using exchange.core.Indicators;
 
 namespace exchange.coinbase
 {
-    public class Coinbase : IExchangeService, IDisposable
+    public class Coinbase : AbstractExchangePlugin, IDisposable
     {
         #region Fields
 
         private IConnectionAdapter _connectionAdapter;
-
+        private object _ioLock;
         #endregion
 
         #region Events
 
-        public Action<Feed> FeedBroadcast { get; set; }
-        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public override Action<Feed> FeedBroadcast { get; set; }
+        public override Action<MessageType, string> ProcessLogBroadcast { get; set; }
         public ServerTime ServerTime { get; set; }
 
         #endregion
+        public Authentication _authentication;
 
         #region Public Properties
-
-        public Dictionary<string, decimal> CurrentPrices { get; set; }
+        public string FileName { get; set; }
+        public override Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
-        public List<Product> Products { get; set; }
+        public override List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
-        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public override Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
 
         #endregion
 
         public Coinbase()
         {
+            ApplicationName = "Coinbase Exchange";
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             Accounts = new List<Account>();
@@ -60,6 +65,106 @@ namespace exchange.coinbase
             Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
+            _ioLock = new object();
+        }
+
+        public void LoadINI(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    if (_authentication == null)
+                        _authentication = new Authentication();
+                    string line;
+                    StreamReader streamReader = new StreamReader(filePath);
+                    while ((line = streamReader.ReadLine()) != null)
+                    {
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        line = line.ToLower();
+                        if (line.StartsWith("uri="))
+                        {
+                            line = line.Replace("uri=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.WebSocketUri = new Uri(line);
+                        }
+                        else if (line.StartsWith("key="))
+                        {
+                            line = line.Replace("key=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.ApiKey = line;
+                        }
+                        else if (line.StartsWith("secret="))
+                        {
+                            line = line.Replace("secret=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.Secret = line;
+                        }
+                        else if (line.StartsWith("endpoint="))
+                        {
+                            line = line.Replace("endpoint=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.EndpointUrl = line;
+                        }
+                        else if (line.StartsWith("passphrase="))
+                        {
+                            line = line.Replace("passphrase=", "").Trim();
+                            if (string.IsNullOrEmpty(line))
+                                continue;
+                            _authentication.Passphrase = line;
+                        }
+                    }
+                    _connectionAdapter.Authentication = _authentication;
+                }
+            }
+            catch
+            {
+            }
+        }
+        private void Save()
+        {
+            try
+            {
+                lock (_ioLock)
+                {
+                    if (string.IsNullOrEmpty(FileName))
+                    {
+                        string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                        FileName = Path.Combine(directoryName, "coinbase.json");
+                        if (!File.Exists(FileName))
+                            File.Create(FileName).Close();
+                    }
+                    CoinbaseSettings coinbaseSettings = new CoinbaseSettings();
+                    coinbaseSettings.Accounts = Accounts;
+                    coinbaseSettings.CurrentPrices = CurrentPrices;
+                    coinbaseSettings.Tickers = Tickers;
+                    string json = JsonSerializer.Serialize(coinbaseSettings, new JsonSerializerOptions() { WriteIndented = true });
+                    File.WriteAllText(FileName, json);
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: Save\r\nException Stack Trace: {e.StackTrace}");
+            }
+        }
+        public static CoinbaseSettings Load(string fileName)
+        {
+            try
+            {
+                string json = File.ReadAllText(fileName);
+                return JsonSerializer.Deserialize<CoinbaseSettings>(json);
+            }
+            catch
+            {
+
+            }
+            return default;
         }
 
         #region Public Methods
@@ -441,7 +546,7 @@ namespace exchange.coinbase
 
         #region Feed
 
-        public bool ChangeFeed(string message)
+        public override bool ChangeFeed(string message)
         {
             Feed feed = null;
             try
@@ -485,7 +590,7 @@ namespace exchange.coinbase
             });
         }
 
-        public async Task<bool> CloseFeed()
+        public override async Task<bool> CloseFeed()
         {
             bool isClosed = false;
             try
@@ -503,7 +608,7 @@ namespace exchange.coinbase
 
         #endregion
 
-        public void Dispose()
+        public override void Dispose()
         {
             _connectionAdapter?.Dispose();
             CurrentPrices = null;
@@ -521,10 +626,12 @@ namespace exchange.coinbase
             GC.SuppressFinalize(this);
         }
 
-        public async Task<bool> InitAsync()
+        public override async Task<bool> InitAsync()
         {
             try
             {
+                if (!_connectionAdapter.Validate())
+                    return false;
                 await UpdateAccountsAsync();
                 if (Accounts != null && Accounts.Any())
                 {
@@ -574,19 +681,22 @@ namespace exchange.coinbase
             return false;
         }
 
-        public Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        public override Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             throw new NotImplementedException();
         }
-
-        public bool InitIndicatorsAsync()
+        public override bool InitIndicatorsAsync()
         {
-            throw new NotImplementedException();
+            RelativeStrengthIndex r = new RelativeStrengthIndex();
+            return true;
         }
 
-        public bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
+        public override bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
         {
             _connectionAdapter = connectionAdapter;
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string fileName = Path.Combine(directoryName, "binance.config.ini");
+            LoadINI(fileName);
             return true;
         }
         #endregion

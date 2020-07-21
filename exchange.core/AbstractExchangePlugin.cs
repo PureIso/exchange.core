@@ -16,11 +16,11 @@ namespace exchange.core
         public virtual string Description { get; set; }
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
-        public virtual Action<Feed> FeedBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public virtual Action<MessageType, string> ProcessLogBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public virtual Dictionary<string, decimal> CurrentPrices { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public virtual List<Product> Products { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public virtual Action<Feed> FeedBroadcast { get; set; }
+        public virtual Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
+        public virtual List<Product> Products { get; set; }
+        public virtual Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
 
         public virtual bool ChangeFeed(string message)
         {

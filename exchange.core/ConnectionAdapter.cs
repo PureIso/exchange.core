@@ -39,12 +39,6 @@ namespace exchange.core
         }
         public ConnectionAdapter(HttpClient httpClient)
         {
-            //Authentication = new Authentication(
-            //    exchangeSettings.APIKey,
-            //    exchangeSettings.PassPhrase,
-            //    exchangeSettings.Secret,
-            //    exchangeSettings.EndpointUrl,
-            //    exchangeSettings.Uri);
             HttpClient = httpClient;
             ClientWebSocket = new ClientWebSocket();
             _ioSemaphoreSlim = new SemaphoreSlim(1,1);
@@ -151,6 +145,8 @@ namespace exchange.core
                 StringContent requestBody = new StringContent("");
                 HttpResponseMessage response;
                 Uri absoluteUri;
+                if (!Validate())
+                    throw new Exception($"Invalid Authentication.");
                 if (string.IsNullOrEmpty(Authentication.Passphrase))
                 {
                     request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
@@ -216,6 +212,8 @@ namespace exchange.core
         {
             try
             {
+                if (!Validate())
+                    throw new Exception($"Invalid Authentication.");
                 HttpResponseMessage response = null; 
                 HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
                 switch (request.Method)
@@ -241,6 +239,11 @@ namespace exchange.core
             {
                 await Task.Delay(500);
             }
+        }
+
+        public bool Validate()
+        {
+            return Authentication != null && !string.IsNullOrEmpty(Authentication.ApiKey) && !string.IsNullOrEmpty(Authentication.Secret) && !string.IsNullOrEmpty(Authentication.EndpointUrl);
         }
 
         #endregion
