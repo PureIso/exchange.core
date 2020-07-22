@@ -1,6 +1,6 @@
 ﻿using exchange.core.Interfaces;
 
-namespace exchange.core.models
+namespace exchange.core.implementations
 {
     public struct AuthenticationSignature : IAuthenticationSignature
     {

@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text.Json;
 using exchange.core.Models;
 
-namespace exchange.core
+namespace exchange.core.helpers
 {
     public static class Extensions
     {
@@ -18,9 +18,9 @@ namespace exchange.core
         /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
-        public static long ToUnixTimestamp(this DateTime dateTime)
+        public static decimal ToUnixTimestamp(this DateTime dateTime)
         {
-            return (long)(dateTime - UnixEpoch).TotalSeconds;
+            return (decimal)(dateTime - UnixEpoch).TotalSeconds;
         }
 
         public static string GenerateDateTimeOffsetToUnixTimeMilliseconds(this DateTime baseDateTime)

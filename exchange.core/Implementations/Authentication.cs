@@ -1,10 +1,11 @@
-﻿using exchange.core.Interfaces;
+﻿using exchange.core.helpers;
+using exchange.core.Interfaces;
 using System;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace exchange.core.models
+namespace exchange.core.implementations
 {
     public class Authentication : IAuthentication
     {
@@ -34,8 +35,8 @@ namespace exchange.core.models
         #region Public Methods
         public IAuthenticationSignature ComputeSignature(IRequest request)
         {
-            request.TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
-            string timestamp = request.TimeStamp.ToString(CultureInfo.InvariantCulture);
+            request.TimeStamp = (long)DateTime.UtcNow.ToUnixTimestamp();
+            string timestamp = DateTime.UtcNow.ToUnixTimestamp().ToString(CultureInfo.InvariantCulture);
             string prehash = timestamp + request.Method + request.RequestUrl + request.RequestBody;
             byte[] data = Convert.FromBase64String(Secret);
             AuthenticationSignature authenticationSignature = new AuthenticationSignature
@@ -48,6 +49,8 @@ namespace exchange.core.models
 
         public string ComputeSignature(string message)
         {
+            if (string.IsNullOrEmpty(message))
+                return null;
             byte[] key = Encoding.UTF8.GetBytes(Secret);
             string stringHash;
             using (HMACSHA256 hmac = new HMACSHA256(key))

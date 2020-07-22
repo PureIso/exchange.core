@@ -22,6 +22,11 @@ namespace exchange.core.Indicators
         private object _ioLock = new object();
         #endregion
 
+        public Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public Func<HistoricCandlesSearch, Task<List<HistoricRate>>> UpdateProductHistoricCandles { get; set; }
+
+
         #region Properties
         [JsonPropertyName("relative_index_daily")]
         public decimal RelativeIndexDaily { get; set; }
@@ -91,8 +96,7 @@ namespace exchange.core.Indicators
         public string DatabaseDirectory { get; set; }
         #endregion
 
-        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
-        public Func<HistoricCandlesSearch, Task<List<HistoricRate>>> UpdateProductHistoricCandles { get; set; }
+        
         public RelativeStrengthIndex()
         {
             _updater = new Timer();
@@ -152,8 +156,7 @@ namespace exchange.core.Indicators
         private void SaveAnalyticData(string filePath, string data)
         {
             File.AppendAllText(filePath, data);
-        }
-        
+        }     
         private async void ProcessHistoryChartDownload()
         {
             string fileName = DatabaseDirectory + "\\coinbase_btc_eur_historic_data.csv";
@@ -288,6 +291,17 @@ namespace exchange.core.Indicators
             HistoricChartPreviousHistoricRateLow = previousHistoricRate.Low;
             HistoricChartPreviousHistoricRateHigh = previousHistoricRate.High;
             HistoricChartPreviousHistoricRateVolume = previousHistoricRate.Volume;
+
+            Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+            {
+                ["RSI-15MIN"] = RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1HOUR"] = RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1DAY"] = RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-15MIN"] = HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1HOUR"] = HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1DAY"] = HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+            };
+            TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
             Save();
         }
         private async void ProcessHistoryHourlyChartDownload()
@@ -424,6 +438,17 @@ namespace exchange.core.Indicators
             HistoricChartPreviousHistoricRateLowHourly = previousHistoricRate.Low;
             HistoricChartPreviousHistoricRateHighHourly = previousHistoricRate.High;
             HistoricChartPreviousHistoricRateVolumeHourly = previousHistoricRate.Volume;
+
+            Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+            {
+                ["RSI-15MIN"] = RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1HOUR"] = RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1DAY"] = RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-15MIN"] = HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1HOUR"] = HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1DAY"] = HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+            };
+            TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
             Save();
         }
         private async void ProcessHistoryQuarterlyChartDownload()
@@ -558,6 +583,17 @@ namespace exchange.core.Indicators
             HistoricChartPreviousHistoricRateLowQuarterly = previousHistoricRate.Low; 
             HistoricChartPreviousHistoricRateHighQuarterly = previousHistoricRate.High;
             HistoricChartPreviousHistoricRateVolumeQuarterly = previousHistoricRate.Volume;
+
+            Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+            {
+                ["RSI-15MIN"] = RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1HOUR"] = RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                ["RSI-1DAY"] = RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-15MIN"] = HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1HOUR"] = HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                ["OPEN-1DAY"] = HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+            };
+            TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
             Save();
         }
         #endregion

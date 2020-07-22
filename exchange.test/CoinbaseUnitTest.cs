@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using exchange.coinbase;
 using exchange.core;
 using exchange.core.Enums;
+using exchange.core.helpers;
+using exchange.core.implementations;
 using exchange.core.models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;

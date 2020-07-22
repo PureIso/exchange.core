@@ -1,4 +1,5 @@
-﻿using System;
+﻿using exchange.core.helpers;
+using System;
 using System.Text.Json.Serialization;
 
 namespace exchange.core.Models

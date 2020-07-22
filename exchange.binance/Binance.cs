@@ -9,6 +9,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using exchange.core;
 using exchange.core.Enums;
+using exchange.core.helpers;
+using exchange.core.implementations;
 using exchange.core.Indicators;
 using exchange.core.interfaces;
 using exchange.core.Interfaces;
@@ -26,21 +28,14 @@ namespace exchange.binance
         private object _ioLock;
         #endregion
 
-        #region Events
-        public override Action<Feed> FeedBroadcast { get; set; }
-        public override Action<MessageType, string> ProcessLogBroadcast { get; set; }
-        #endregion
-
         #region Public Properties
         public Authentication _authentication;
         public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
-        public override Dictionary<string, decimal> CurrentPrices { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
         public BinanceAccount BinanceAccount { get; set; }
         public ExchangeInfo ExchangeInfo { get; set; }
-        public override List<Product> Products { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
@@ -65,7 +60,6 @@ namespace exchange.binance
                     {
                         if (string.IsNullOrEmpty(line))
                             continue;
-                        line = line.ToLower();
                         if (line.StartsWith("uri="))
                         {
                             line = line.Replace("uri=", "").Trim();
@@ -214,24 +208,6 @@ namespace exchange.binance
         {
             throw new NotImplementedException();
         }
-        public Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
-        {
-            throw new NotImplementedException();
-        }
-        public Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
-        {
-            throw new NotImplementedException();
-        }
-        public Task<List<Order>> UpdateOrdersAsync(Product product = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Order> PostOrdersAsync(Order order)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<BinanceOrder> BinancePostOrdersAsync(BinanceOrder order)
         {
             BinanceOrder binanceOrder = null;
@@ -260,16 +236,6 @@ namespace exchange.binance
             }
             return binanceOrder;
         }
-        public Task<List<Order>> CancelOrderAsync(Order order)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<Order>> CancelOrdersAsync(Product product)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<BinanceOrder> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
         {
             try
@@ -294,10 +260,6 @@ namespace exchange.binance
                     $"Method: BinanceCancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return binanceOrder;
-        }
-        public Task<List<Product>> UpdateProductsAsync()
-        {
-            throw new NotImplementedException();
         }
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
@@ -338,12 +300,6 @@ namespace exchange.binance
 
             return Tickers;
         }
-
-        public Task<List<Fill>> UpdateFillsAsync(Product product)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product)
         {
             try
@@ -369,7 +325,6 @@ namespace exchange.binance
             }
             return BinanceFill;
         }
-
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             try
@@ -391,7 +346,6 @@ namespace exchange.binance
             }
             return OrderBook;
         }
-
         public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             try
@@ -405,8 +359,11 @@ namespace exchange.binance
                 string json = await _connectionAdapter.RequestUnsignedAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
-                ArrayList[] arrayListOfHistory = JsonSerializer.Deserialize<ArrayList[]>(json);
-                HistoricRates = arrayListOfHistory.ToHistoricCandleList();
+                if(json.StartsWith("[") && json.EndsWith("]"))
+                {
+                    ArrayList[] arrayListOfHistory = JsonSerializer.Deserialize<ArrayList[]>(json);
+                    HistoricRates = arrayListOfHistory.ToHistoricCandleList();
+                }
             }
             catch (Exception e)
             {
@@ -415,12 +372,10 @@ namespace exchange.binance
             }
             return HistoricRates;
         }
-
         public void StartProcessingFeed()
         {
             throw new NotImplementedException();
         }
-
         public override void Dispose()
         {
             _connectionAdapter?.Dispose();
@@ -438,7 +393,6 @@ namespace exchange.binance
             // Suppress finalization.
             GC.SuppressFinalize(this);
         }
-
         public override async Task<bool> InitAsync()
         {
             try
@@ -464,13 +418,11 @@ namespace exchange.binance
             }
             return false;
         }
-
         public override bool InitIndicatorsAsync()
         {
             RelativeStrengthIndex r = new RelativeStrengthIndex();
             return true;
         }
-
         public override bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
         {
             _connectionAdapter = connectionAdapter;

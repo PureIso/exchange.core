@@ -16,6 +16,7 @@ using exchange.core.Enums;
 using exchange.service.Plugins;
 using System.Reflection;
 using exchange.core.Interfaces;
+using exchange.core.helpers;
 
 namespace exchange.service
 {
@@ -50,12 +51,18 @@ namespace exchange.service
                 {
                     abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
+                    abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
                     abstractExchangePlugin.InitConnectionAdapter(_connectionAdapter);
                     await abstractExchangePlugin.InitAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
             }        
             await base.StartAsync(cancellationToken);
+        }
+
+        private async void TechnicalIndicatorInformationBroadcast(Dictionary<string, string> indicatorInformation)
+        {
+            await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(indicatorInformation);
         }
 
         private async void ProcessLogBroadcast(MessageType messageType, string message)
@@ -68,20 +75,9 @@ namespace exchange.service
         {
             if (feed.ProductID == null)
                 return;
-            //_exchangeService.CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
-            //await _exchangeHub.Clients.All.NotifyCurrentPrices(_exchangeService.CurrentPrices);
+            await _exchangeHub.Clients.All.NotifyCurrentPrices(feed.CurrentPrices);
             await _exchangeHub.Clients.All.NotifyInformation(MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
-            //Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
-            //{
-            //    ["RSI-15MIN"] = _relativeStrengthIndexIndicator.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
-            //    ["RSI-1HOUR"] = _relativeStrengthIndexIndicator.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
-            //    ["RSI-1DAY"] = _relativeStrengthIndexIndicator.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
-            //    ["OPEN-15MIN"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
-            //    ["OPEN-1HOUR"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
-            //    ["OPEN-1DAY"] = _relativeStrengthIndexIndicator.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
-            //};
-            //await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(indicatorInformation);
-            //    _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
+            _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {

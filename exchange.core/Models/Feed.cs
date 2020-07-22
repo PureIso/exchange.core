@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace exchange.core.models
 {
@@ -26,5 +27,6 @@ namespace exchange.core.models
         public string BestBid { get; set; }
         [JsonPropertyName("best_ask")]
         public string BestAsk { get; set; }
+        public Dictionary<string, decimal> CurrentPrices { get; set; }
     }
 }

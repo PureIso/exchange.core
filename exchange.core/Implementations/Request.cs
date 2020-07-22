@@ -1,9 +1,10 @@
-﻿using exchange.core.Interfaces;
+﻿using exchange.core.helpers;
+using exchange.core.Interfaces;
 using System;
 using System.Net.Http;
 using System.Text;
 
-namespace exchange.core.models
+namespace exchange.core.implementations
 {
     public class Request : IRequest
     {
@@ -22,7 +23,7 @@ namespace exchange.core.models
             Method = method;
             RequestUrl = requestUrl;
             AbsoluteUri = new Uri(new Uri(endpointUrl), RequestUrl);
-            TimeStamp = DateTime.UtcNow.ToUnixTimestamp();
+            TimeStamp = (int)DateTime.UtcNow.ToUnixTimestamp();
         }
         public string Compose()
         {

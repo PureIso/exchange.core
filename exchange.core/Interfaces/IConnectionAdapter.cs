@@ -2,6 +2,7 @@
 using System.Net.WebSockets;
 using exchange.core.models;
 using System.Threading.Tasks;
+using exchange.core.implementations;
 
 namespace exchange.core.Interfaces
 {

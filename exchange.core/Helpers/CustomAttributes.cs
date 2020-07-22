@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace exchange.core
+namespace exchange.core.helpers
 {
     /// <summary>
     /// This attribute is used to represent a string value
