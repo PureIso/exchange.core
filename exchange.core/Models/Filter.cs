@@ -12,5 +12,11 @@ namespace exchange.core.Models
         public string MaxPrice { get; set; }
         [JsonPropertyName("tickSize")]
         public string TickSize { get; set; }
+        [JsonPropertyName("multiplierUp")]
+        public string MultiplierUp { get; set; }
+        [JsonPropertyName("multiplierDown")]
+        public string MultiplierDown { get; set; }
+        [JsonPropertyName("avgPriceMins")]
+        public int AveragePriceMin { get; set; }
     }
 }

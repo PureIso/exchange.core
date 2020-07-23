@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase;
@@ -10,6 +11,7 @@ using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.models;
+using exchange.core.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -28,7 +30,7 @@ namespace exchange.test
         public void Initialize()
         {
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            _connectionAdaptor = new ConnectionAdapter
+            _connectionAdaptor = new ConnectionAdapter()
             {
                 Authentication = new Authentication("api_key", "passphrase", "NiWaGaqmhB3lgI/tQmm/gQ==", "https://api.pro.coinbase.com", "wss://ws-feed.gdax.com")
             };
@@ -647,7 +649,11 @@ namespace exchange.test
             DateTime startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
             DateTime endingDateTime = startingDateTime.AddMonths(6).ToUniversalTime();
             //Act
-            subjectUnderTest.UpdateProductHistoricCandlesAsync(product, startingDateTime, endingDateTime).Wait();
+            HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+            historicCandlesSearch.Symbol = "BTC-EUR";
+            historicCandlesSearch.StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+            historicCandlesSearch.EndingDateTime = historicCandlesSearch.StartingDateTime.AddMonths(6).ToUniversalTime();
+            subjectUnderTest.UpdateProductHistoricCandlesAsync(historicCandlesSearch).Wait();
             //Assert
             Assert.IsNotNull(subjectUnderTest.HistoricRates);
             Assert.AreEqual(2, subjectUnderTest.HistoricRates.Count);
@@ -683,11 +689,12 @@ namespace exchange.test
                 },
             };
             HttpClient httpClient = new HttpClient();
+            ClientWebSocket clientWebSocket = new ClientWebSocket();
             Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
-            connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString()))
+            connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString(), clientWebSocket))
                 .ReturnsAsync($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}");
-            connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
-            connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync())
+            connectionFactoryMock.Setup(x => x.IsWebSocketConnected(clientWebSocket)).Returns(true);
+            connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync(clientWebSocket))
                 .Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
 
             Coinbase subjectUnderTest = new Coinbase();
@@ -704,8 +711,9 @@ namespace exchange.test
             //Arrange
             HttpClient httpClient = new HttpClient();
             Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
-            connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
-            connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync())
+            ClientWebSocket clientWebSocket = new ClientWebSocket();
+            connectionFactoryMock.Setup(x => x.IsWebSocketConnected(clientWebSocket)).Returns(true);
+            connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync(clientWebSocket))
                 .Returns(Task.FromResult($@"{{
                                             ""type"":""ticker"",
                                             ""sequence"":7000000000,

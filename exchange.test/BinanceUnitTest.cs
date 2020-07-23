@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance;
@@ -29,7 +30,7 @@ namespace exchange.test
         public void Initialize()
         {
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            _connectionAdaptor = new ConnectionAdapter
+            _connectionAdaptor = new ConnectionAdapter()
             {
                 Authentication = new Authentication("api_key", "passphrase", "NiWaGaqmhB3lgI/tQmm/gQ==", "https://api.binance.com", "wss://stream.binance.com:9443")
             };

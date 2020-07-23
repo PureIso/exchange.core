@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -26,14 +28,15 @@ namespace exchange.binance
 
         private IConnectionAdapter _connectionAdapter;
         private object _ioLock;
+        private ClientWebSocket _clientWebSocket;
         #endregion
 
         #region Public Properties
         public Authentication _authentication;
         public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
-        public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
+        public List<Ticker> Tickers { get; set; }
         public BinanceAccount BinanceAccount { get; set; }
         public ExchangeInfo ExchangeInfo { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
@@ -110,7 +113,7 @@ namespace exchange.binance
                             File.Create(FileName).Close();
                     }
                     BinanceSettings binanceSettings = new BinanceSettings();
-                    binanceSettings.Accounts = Accounts;
+                    binanceSettings.Accounts = new List<Account>();
                     binanceSettings.BinanceAccount = BinanceAccount;
                     binanceSettings.CurrentPrices = CurrentPrices;
                     binanceSettings.ExchangeInfo = ExchangeInfo;
@@ -145,7 +148,7 @@ namespace exchange.binance
             base.ApplicationName = "Binance Exchange";
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
-            Accounts = new List<Account>();
+            BinanceAccount = new BinanceAccount();
             AccountHistories = new List<AccountHistory>();
             AccountHolds = new List<AccountHold>();
             Products = new List<Product>();
@@ -156,6 +159,7 @@ namespace exchange.binance
             SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
             _ioLock = new object();
+            _clientWebSocket = new ClientWebSocket();
         }
         public async Task<ServerTime> UpdateTimeServerAsync()
         {
@@ -172,8 +176,11 @@ namespace exchange.binance
                 Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/api/v1/exchangeInfo");
                 string json = await _connectionAdapter.RequestUnsignedAsync(request);
-                ExchangeInfo = JsonSerializer.Deserialize<ExchangeInfo>(json);
-                Save();
+                if (!string.IsNullOrEmpty(json))
+                {
+                    ExchangeInfo = JsonSerializer.Deserialize<ExchangeInfo>(json);
+                    Save();
+                }           
             }
             catch (Exception e)
             {
@@ -196,6 +203,31 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
+                List<Asset> assets = BinanceAccount.Balances.Where(x => x.Free.ToDecimal() > 0 || (x.ID == "BTC")).ToList();
+                Accounts = new List<Account>();              
+                foreach (Asset asset in assets)
+                {
+                    Accounts.Add(new Account() { Hold = asset.Free, Balance = asset.Free, ID = asset.ID, Currency = asset.ID });
+                }
+                if (ExchangeInfo == null || ExchangeInfo.Symbols == null || !ExchangeInfo.Symbols.Any())
+                    return BinanceAccount;
+                foreach (Symbol symbol in ExchangeInfo.Symbols)
+                {
+                    if (BinanceAccount.Balances.Any(x => x.Free.ToDecimal() > 0 && (x.ID == symbol.QuoteAsset)))
+                    {
+                        Filter filter = symbol.Filters.FirstOrDefault(x => x.FilterType == "PRICE_FILTER");
+                        Products.Add(new Product()
+                        {
+                            ID = symbol.ID,
+                            BaseCurrency = symbol.BaseAsset,
+                            QuoteCurrency = symbol.QuoteAsset,
+                            BaseMaxSize = filter.MaxPrice,
+                            BaseMinSize = filter.MinPrice,
+                            QuoteIncrement = filter.TickSize
+                        });
+                    }
+                }
+                return BinanceAccount;
             }
             catch (Exception e)
             {
@@ -372,16 +404,66 @@ namespace exchange.binance
             }
             return HistoricRates;
         }
+        
         public void StartProcessingFeed()
         {
-            throw new NotImplementedException();
+            Task.Run(async () =>
+            {
+                string json = null;
+                try
+                {
+                    ProcessLogBroadcast?.Invoke(MessageType.General, $"Started Processing Feed Information.");                
+                    string message = "stream?streams=";              
+                    List<Product> products = new List<Product>
+                    {
+                        Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
+                        Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
+                    };
+                    foreach (Product product in products)
+                    {
+                        message += product.ID.ToLower() + "@trade/";
+                    }
+
+                    if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
+                        return;
+                    int lastIndexOfSlash = message.LastIndexOf("/", StringComparison.Ordinal);
+                    if (lastIndexOfSlash != -1)
+                        message = message.Remove(lastIndexOfSlash, 1);
+                    while (Accounts.Any())
+                    {
+                        string uriString = _connectionAdapter.Authentication.WebSocketUri + message;
+                        await _connectionAdapter.ConnectAsync(uriString, _clientWebSocket);
+                        while (_connectionAdapter.IsWebSocketConnected(_clientWebSocket))
+                        {
+                            json = await _connectionAdapter.WebSocketReceiveAsync(_clientWebSocket).ConfigureAwait(false);
+                            if (string.IsNullOrEmpty(json))
+                                continue;
+                            Feed feed = JsonSerializer.Deserialize<Feed>(json);
+                            if (feed == null || feed.Type == "error")
+                                return;
+                            CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+                            feed.CurrentPrices = CurrentPrices;
+
+                            FeedBroadcast?.Invoke(feed);
+                        }
+                    }
+                    
+                }
+                catch (Exception e)
+                {
+                    ProcessLogBroadcast?.Invoke(MessageType.Error,
+                        $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+                }
+            });
+
+           
         }
         public override void Dispose()
         {
             _connectionAdapter?.Dispose();
             CurrentPrices = null;
             Tickers = null;
-            Accounts = null;
+            BinanceAccount = null;
             AccountHistories = null;
             AccountHolds = null;
             Products = null;
@@ -399,16 +481,26 @@ namespace exchange.binance
             {
                 if (!_connectionAdapter.Validate())
                     return false;
-                await UpdateBinanceAccountAsync();
                 await UpdateExchangeInfoAsync();
-                await UpdateProductOrderBookAsync(new Product { ID = "BTCEUR" }, 20);
-                HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
-                historicCandlesSearch.Symbol = "BTCEUR";
-                historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
-                historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
-                historicCandlesSearch.Granularity = (Granularity)900;
-                await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
-                await UpdateTickersAsync(new List<Product> { new Product { ID = "BTCEUR" }, new Product { ID = "ETHBTC" } });
+                await UpdateBinanceAccountAsync();
+                List<Product> products = new List<Product>
+                {
+                    Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
+                    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
+                };
+                products.RemoveAll(x => x == null);
+                if (products.Any())
+                {
+                    await UpdateProductOrderBookAsync(products[0], 20);
+                    HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                    historicCandlesSearch.Symbol = products[0].ID;
+                    historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
+                    historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
+                    historicCandlesSearch.Granularity = (Granularity)900;
+                    await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                    await UpdateTickersAsync(products);
+                    StartProcessingFeed();
+                }         
                 return true;
             }
             catch (Exception e)

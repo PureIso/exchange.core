@@ -1,4 +1,5 @@
-﻿using System;
+﻿using exchange.core.implementations;
+using System;
 
 namespace exchange.core.Interfaces
 {
@@ -8,7 +9,7 @@ namespace exchange.core.Interfaces
         string Passphrase { get; }
         string EndpointUrl { get; }
         Uri WebSocketUri { get; }
-        IAuthenticationSignature ComputeSignature(IRequest request);
+        AuthenticationSignature ComputeSignature(IRequest request);
         string ComputeSignature(string message);
         string HashString(string prehashString, byte[] secret);
     }

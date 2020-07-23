@@ -33,7 +33,7 @@ namespace exchange.core.implementations
             Secret = secret;
         }
         #region Public Methods
-        public IAuthenticationSignature ComputeSignature(IRequest request)
+        public AuthenticationSignature ComputeSignature(IRequest request)
         {
             request.TimeStamp = (long)DateTime.UtcNow.ToUnixTimestamp();
             string timestamp = DateTime.UtcNow.ToUnixTimestamp().ToString(CultureInfo.InvariantCulture);

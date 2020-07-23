@@ -20,7 +20,6 @@ namespace exchange.core
         #region Properties
         public Authentication Authentication { get; set; }
         public HttpClient HttpClient { get; set; }
-        public ClientWebSocket ClientWebSocket { get; }
         #endregion
 
         #region Fields
@@ -30,24 +29,52 @@ namespace exchange.core
 
         #region Events
         public Action<Feed> FeedBroadCast { get; set; }
+
+        public ClientWebSocket ClientWebSocket => throw new NotImplementedException();
         #endregion
 
         public ConnectionAdapter()
         {
-            ClientWebSocket = new ClientWebSocket();
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
         }
         public ConnectionAdapter(HttpClient httpClient)
         {
             HttpClient = httpClient;
-            ClientWebSocket = new ClientWebSocket();
             _ioSemaphoreSlim = new SemaphoreSlim(1,1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1,1);
         }
 
         #region Web Socket
-        public virtual async Task<string> WebSocketSendAsync(string message)
+        public virtual async Task ConnectAsync(string uriString, ClientWebSocket ClientWebSocket)
+        {
+            try
+            {
+                await _ioSemaphoreSlim.WaitAsync();
+                if (ClientWebSocket == null)
+                    return;
+                if (ClientWebSocket.State != WebSocketState.Open)
+                {
+                    await ClientWebSocket.ConnectAsync(new Uri(uriString), CancellationToken.None);
+                }
+            }
+            catch (WebSocketException)
+            {
+                await Task.Delay(5000);
+            }
+            catch (WebException)
+            {
+                await Task.Delay(5000);
+            }
+            catch (Exception ex)
+            {
+            }
+            finally
+            {
+                _ioSemaphoreSlim.Release();
+            }
+        }
+        public virtual async Task<string> WebSocketSendAsync(string message, ClientWebSocket ClientWebSocket)
         {
             try
             {
@@ -55,12 +82,12 @@ namespace exchange.core
                 if (string.IsNullOrEmpty(message))
                     return null;
                 byte[] requestBytes = Encoding.UTF8.GetBytes(message);
-                if (!IsWebSocketConnected())
+                if (!IsWebSocketConnected(ClientWebSocket))
                     await ClientWebSocket.ConnectAsync(Authentication.WebSocketUri, CancellationToken.None);
                 ArraySegment<byte> subscribeRequest = new ArraySegment<byte>(requestBytes);
                 await ClientWebSocket.SendAsync(subscribeRequest, WebSocketMessageType.Text, true,
                     CancellationToken.None);
-                if (!IsWebSocketConnected())
+                if (!IsWebSocketConnected(ClientWebSocket))
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await ClientWebSocket.ReceiveAsync(
@@ -76,19 +103,24 @@ namespace exchange.core
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
+            return null;
         }
-        public virtual async Task<string> WebSocketReceiveAsync()
+        public virtual async Task<string> WebSocketReceiveAsync(ClientWebSocket ClientWebSocket)
         {
             try
             {
                 await _ioSemaphoreSlim.WaitAsync();
                 if (ClientWebSocket == null)
                     return null;
-                if (!IsWebSocketConnected())
+                if (!IsWebSocketConnected(ClientWebSocket))
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await ClientWebSocket.ReceiveAsync(
@@ -109,12 +141,12 @@ namespace exchange.core
                 _ioSemaphoreSlim.Release();
             }
         }
-        public virtual async Task<bool> WebSocketCloseAsync()
+        public virtual async Task<bool> WebSocketCloseAsync(ClientWebSocket ClientWebSocket)
         {
             try
             {
                 await _ioSemaphoreSlim.WaitAsync();
-                if (ClientWebSocket == null || !IsWebSocketConnected())
+                if (ClientWebSocket == null || !IsWebSocketConnected(ClientWebSocket))
                     return true;
                 await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                 Dispose();
@@ -125,7 +157,7 @@ namespace exchange.core
                 _ioSemaphoreSlim.Release();
             }
         }
-        public virtual bool IsWebSocketConnected()
+        public virtual bool IsWebSocketConnected(ClientWebSocket ClientWebSocket)
         {
             return ClientWebSocket != null && ClientWebSocket.State == WebSocketState.Open;
         }
@@ -134,7 +166,6 @@ namespace exchange.core
         public void Dispose()
         {
             HttpClient?.Dispose();
-            ClientWebSocket?.Dispose();
         }
 
         #region Private Methods
@@ -159,7 +190,7 @@ namespace exchange.core
                 }
                 else
                 {
-                    IAuthenticationSignature authenticationSignature = Authentication.ComputeSignature(request);
+                    AuthenticationSignature authenticationSignature = Authentication.ComputeSignature(request);
                     requestBody = request.GetRequestBody();
                     absoluteUri = request.AbsoluteUri;
                     HttpClient.DefaultRequestHeaders.Clear();

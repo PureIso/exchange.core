@@ -12,13 +12,14 @@ namespace exchange.core.Interfaces
         HttpClient HttpClient { get; }
         ClientWebSocket ClientWebSocket { get; }
 
-        Task<string> WebSocketSendAsync(string message); 
-        Task<string> WebSocketReceiveAsync(); 
-        Task<bool> WebSocketCloseAsync();
+        Task ConnectAsync(string uriString, ClientWebSocket ClientWebSocket);
+        Task<string> WebSocketSendAsync(string message, ClientWebSocket ClientWebSocket); 
+        Task<string> WebSocketReceiveAsync(ClientWebSocket ClientWebSocket); 
+        Task<bool> WebSocketCloseAsync(ClientWebSocket ClientWebSocket);
         Task<string> RequestAsync(IRequest request);
         Task<string> RequestUnsignedAsync(IRequest request);
 
-        bool IsWebSocketConnected();
+        bool IsWebSocketConnected(ClientWebSocket ClientWebSocket);
         void Dispose();
         bool Validate();
     }

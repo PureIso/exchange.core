@@ -14,6 +14,7 @@ using exchange.core.helpers;
 using exchange.core.Indicators;
 using exchange.core.Interfaces;
 using exchange.core.implementations;
+using System.Net.WebSockets;
 
 namespace exchange.coinbase
 {
@@ -482,29 +483,6 @@ namespace exchange.coinbase
             }
             return OrderBook;
         }
-        public async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(Product product,
-            DateTime startingDateTime, DateTime endingDateTime, int granularity = 86400)
-        {
-            string json = null;
-            try
-            {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Historic Candles Information.");
-                if (startingDateTime.AddMilliseconds(granularity) >= endingDateTime)
-                    return null;
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/products/{product.ID}/candles?start={startingDateTime:o}&end={endingDateTime:o}&granularity={granularity}");
-                json = await _connectionAdapter.RequestAsync(request);
-                ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
-                HistoricRates = candles.ToHistoricRateList();
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return HistoricRates;
-        }
         #endregion
 
         #region Feed
@@ -515,7 +493,7 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Subscribing to Feed Information.");
-                json = _connectionAdapter.WebSocketSendAsync(message).Result;
+                json = _connectionAdapter.WebSocketSendAsync(message, clientWebSocket).Result;
                 if (string.IsNullOrEmpty(json))
                     return false;
                 feed = JsonSerializer.Deserialize<Feed>(json);
@@ -528,6 +506,7 @@ namespace exchange.coinbase
 
             return feed != null && feed.Type != "error";
         }
+        ClientWebSocket clientWebSocket = new ClientWebSocket();
         public void StartProcessingFeed()
         {
             Task.Run(async () =>
@@ -536,9 +515,10 @@ namespace exchange.coinbase
                 try
                 {
                     ProcessLogBroadcast?.Invoke(MessageType.General, $"Started Processing Feed Information.");
-                    while (_connectionAdapter.IsWebSocketConnected())
+                   
+                    while (_connectionAdapter.IsWebSocketConnected(clientWebSocket))
                     {
-                        json = await _connectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
+                        json = await _connectionAdapter.WebSocketReceiveAsync(clientWebSocket).ConfigureAwait(false);
                         Feed feed = JsonSerializer.Deserialize<Feed>(json);
                         if (feed == null || feed.Type == "error")
                             return;
@@ -561,7 +541,7 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Closing Feed Subscription.");
-                isClosed = await _connectionAdapter.WebSocketCloseAsync();
+                isClosed = await _connectionAdapter.WebSocketCloseAsync(clientWebSocket);
             }
             catch (Exception e)
             {
@@ -643,9 +623,27 @@ namespace exchange.coinbase
             }
             return false;
         }
-        public override Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
-            throw new NotImplementedException();
+            string json = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Historic Candles Information.");
+                if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double)historicCandlesSearch.Granularity) >= historicCandlesSearch.EndingDateTime)
+                    return null;
+                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={historicCandlesSearch.Granularity}");
+                json = await _connectionAdapter.RequestAsync(request);
+                ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
+                HistoricRates = candles.ToHistoricRateList();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return HistoricRates;
         }
         public override bool InitIndicatorsAsync()
         {
