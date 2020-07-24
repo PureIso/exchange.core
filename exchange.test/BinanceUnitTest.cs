@@ -59,7 +59,6 @@ namespace exchange.test
             Assert.IsNotNull(subjectUnderTest.ServerTime);
             Assert.AreEqual(1592395836992, subjectUnderTest.ServerTime.ServerTimeLong);
         }
-
         [TestMethod]
         public void UpdateExchangeInfo_ShouldReturnExchangeInfo()
         {
@@ -169,7 +168,6 @@ namespace exchange.test
             //Assert
             Assert.IsNotNull(subjectUnderTest.ExchangeInfo);
         }
-
         [TestMethod]
         public void UpdateAccounts_ShouldReturnAccounts_WhenAccountExists()
         {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using exchange.core.Models;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace exchange.core.models
@@ -27,6 +28,11 @@ namespace exchange.core.models
         public string BestBid { get; set; }
         [JsonPropertyName("best_ask")]
         public string BestAsk { get; set; }
+        [JsonPropertyName("data")]
+        public BinanceData BinanceData { get; set; }
+        [JsonPropertyName("stream")]
+        public string Stream { get; set; }
+
         public Dictionary<string, decimal> CurrentPrices { get; set; }
     }
 }

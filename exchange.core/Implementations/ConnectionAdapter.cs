@@ -35,6 +35,7 @@ namespace exchange.core
 
         public ConnectionAdapter()
         {
+            HttpClient = new HttpClient();
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
         }

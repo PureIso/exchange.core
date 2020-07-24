@@ -24,6 +24,7 @@ namespace exchange.coinbase
         private IConnectionAdapter _connectionAdapter;
         private object _ioLock;
         public Authentication _authentication;
+        public ClientWebSocket clientWebSocket = new ClientWebSocket();
         #endregion
 
         #region Events
@@ -506,7 +507,7 @@ namespace exchange.coinbase
 
             return feed != null && feed.Type != "error";
         }
-        ClientWebSocket clientWebSocket = new ClientWebSocket();
+        
         public void StartProcessingFeed()
         {
             Task.Run(async () =>
@@ -524,7 +525,6 @@ namespace exchange.coinbase
                             return;
                         CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                         feed.CurrentPrices = CurrentPrices;
-
                         FeedBroadcast?.Invoke(feed);
                     }
                 }

@@ -698,6 +698,7 @@ namespace exchange.test
                 .Returns(Task.FromResult($@"{{""type"":""subscriptions"",""channels"":[{{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}}]}}"));
 
             Coinbase subjectUnderTest = new Coinbase();
+            subjectUnderTest.clientWebSocket = clientWebSocket;
             subjectUnderTest.InitConnectionAdapter(connectionFactoryMock.Object);
 
             //Act
@@ -710,8 +711,8 @@ namespace exchange.test
         {
             //Arrange
             HttpClient httpClient = new HttpClient();
-            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             ClientWebSocket clientWebSocket = new ClientWebSocket();
+            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             connectionFactoryMock.Setup(x => x.IsWebSocketConnected(clientWebSocket)).Returns(true);
             connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync(clientWebSocket))
                 .Returns(Task.FromResult($@"{{
@@ -767,10 +768,10 @@ namespace exchange.test
                                             }}"));  // will be returned on 3rd invocation
             Coinbase subjectUnderTest = new Coinbase();
             subjectUnderTest.InitConnectionAdapter(connectionFactoryMock.Object);
-
             bool eventRaised = false;
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);
+            subjectUnderTest.clientWebSocket = clientWebSocket;
             subjectUnderTest.FeedBroadcast += delegate(Feed feed)
             {
                 eventRaised = true;
