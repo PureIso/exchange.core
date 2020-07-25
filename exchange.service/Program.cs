@@ -38,9 +38,7 @@ namespace exchange.service
                     builder.WithOrigins($"http://*:9000/")
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
-                services.AddHttpClient<IConnectionAdapter, ConnectionAdapter>();
                 services.AddSignalR();
-                //services.AddSingleton<IExchangeService, Coinbase>();
                 services.AddSingleton<IExchangeService, Binance>();
                 services.AddHostedService<Worker>();
              })

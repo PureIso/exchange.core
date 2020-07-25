@@ -5,36 +5,26 @@ using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
+using exchange.binance.models;
 using exchange.core;
 using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.Indicators;
-using exchange.core.interfaces;
-using exchange.core.Interfaces;
 using exchange.core.models;
 using exchange.core.Models;
 
 namespace exchange.binance
-{
-    
+{ 
     public class Binance : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-
-        private IConnectionAdapter _connectionAdapter;
         private object _ioLock;
-        private ClientWebSocket _clientWebSocket;
         #endregion
 
         #region Public Properties
-        public Authentication _authentication;
         public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
         public List<Account> Accounts { get; set; }
@@ -44,11 +34,9 @@ namespace exchange.binance
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
-        public List<Order> Orders { get; set; }
+        public List<BinanceOrder> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
-        public List<AccountHistory> AccountHistories { get; set; }
-        public List<AccountHold> AccountHolds { get; set; }
         #endregion
 
         public void LoadINI(string filePath)
@@ -57,8 +45,8 @@ namespace exchange.binance
             {
                 if (File.Exists(filePath))
                 {
-                    if (_authentication == null)
-                        _authentication = new Authentication();
+                    if (Authentication == null)
+                        Authentication = new Authentication();
                     string line;
                     StreamReader streamReader = new StreamReader(filePath);
                     while((line = streamReader.ReadLine()) != null)
@@ -70,31 +58,33 @@ namespace exchange.binance
                             line = line.Replace("uri=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.WebSocketUri = new Uri(line);
+                            Authentication.WebSocketUri = new Uri(line);
                         }
                         else if (line.StartsWith("key="))
                         {
                             line = line.Replace("key=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.ApiKey = line;
+                            Authentication.ApiKey = line;
                         }
                         else if (line.StartsWith("secret="))
                         {
                             line = line.Replace("secret=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.Secret = line;
+                            Authentication.Secret = line;
                         }
                         else if (line.StartsWith("endpoint="))
                         {
                             line = line.Replace("endpoint=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.EndpointUrl = line;
+                            Authentication.EndpointUrl = line;
                         }
                     }
-                    _connectionAdapter.Authentication = _authentication;
+                    ClientWebSocket = new ClientWebSocket();
+                    ConnectionAdapter.Authentication = Authentication;
+                    ConnectionAdapter.ClientWebSocket = ClientWebSocket;
                 }
             }
             catch
@@ -148,26 +138,26 @@ namespace exchange.binance
         public Binance()
         {
             base.ApplicationName = "Binance Exchange";
+            ConnectionAdapter = new ConnectionAdapter();
+
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             BinanceAccount = new BinanceAccount();
-            AccountHistories = new List<AccountHistory>();
-            AccountHolds = new List<AccountHold>();
             Products = new List<Product>();
             HistoricRates = new List<HistoricRate>();
             Fills = new List<Fill>();
-            Orders = new List<Order>();
+            Orders = new List<BinanceOrder>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
             _ioLock = new object();
-            _clientWebSocket = new ClientWebSocket();
         }
+
         public async Task<ServerTime> UpdateTimeServerAsync()
         {
-            Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+            Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                 $"/api/v1/time");
-            string json = await _connectionAdapter.RequestUnsignedAsync(request);
+            string json = await ConnectionAdapter.RequestUnsignedAsync(request);
             ServerTime = JsonSerializer.Deserialize<ServerTime>(json);
             return ServerTime;
         }
@@ -175,9 +165,9 @@ namespace exchange.binance
         {
             try
             {
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/api/v1/exchangeInfo");
-                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                string json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 if (!string.IsNullOrEmpty(json))
                 {
                     ExchangeInfo = JsonSerializer.Deserialize<ExchangeInfo>(json);
@@ -209,17 +199,17 @@ namespace exchange.binance
             }
             return ExchangeInfo;
         }
-        public async Task<BinanceAccount> UpdateBinanceAccountAsync()
+        public async Task<BinanceAccount> UpdateAccountsAsync()
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Account Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?")
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?")
                 {
                     RequestQuery = $"timestamp={serverTime.ServerTimeLong}"
                 };
-                string json = await _connectionAdapter.RequestAsync(request);
+                string json = await ConnectionAdapter.RequestAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
@@ -260,18 +250,36 @@ namespace exchange.binance
             }
             return BinanceAccount;
         }
-        public Task<List<Account>> UpdateAccountsAsync(string accountId = "")
+        public async Task<List<BinanceOrder>> UpdateOrdersAsync(Product product = null)
         {
-            throw new NotImplementedException();
+            string json = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Orders Information.");
+                ServerTime serverTime = await UpdateTimeServerAsync();
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/openOrders?")
+                {
+                    RequestQuery = $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}"
+                };
+                json = await ConnectionAdapter.RequestAsync(request);
+                Orders = JsonSerializer.Deserialize<List<BinanceOrder>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return Orders;
         }
-        public async Task<BinanceOrder> BinancePostOrdersAsync(BinanceOrder order)
+        public async Task<BinanceOrder> PostOrdersAsync(BinanceOrder order)
         {
             BinanceOrder binanceOrder = null;
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Post Order Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST",
                     $"/api/v3/order?");
                 if (order.OrderType == OrderType.Market)
                     request.RequestQuery = $"timestamp={serverTime.ServerTimeLong}&symbol={order.Symbol.ToUpper()}" +
@@ -281,7 +289,7 @@ namespace exchange.binance
                     request.RequestQuery = $"timestamp={serverTime.ServerTimeLong}&symbol={order.Symbol.ToUpper()}" +
                                            $"&side={order.OrderSide.ToString().ToUpper()}&type={order.OrderType.ToString().ToUpper()}" +
                                            $"&quantity={order.OrderSize}&price={ order.LimitPrice}&timeInForce=GTC";
-                string json = await _connectionAdapter.RequestAsync(request);
+                string json = await ConnectionAdapter.RequestAsync(request);
                 binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
             }
@@ -292,20 +300,20 @@ namespace exchange.binance
             }
             return binanceOrder;
         }
-        public async Task<BinanceOrder> BinanceCancelOrdersAsync(BinanceOrder binanceOrder)
+        public async Task<BinanceOrder> CancelOrderAsync(BinanceOrder binanceOrder)
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Cancelling order.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl,
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "DELETE",
                     $"/api/v3/order?")
                 {
                     RequestQuery =
                         $"symbol={binanceOrder.Symbol}&orderId={binanceOrder.ID}&timestamp={serverTime.ServerTimeLong}"
                 };
-                string json = await _connectionAdapter.RequestAsync(request);
+                string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"BinanceCancelOrdersAsync JSON:\r\n{json}");
@@ -313,10 +321,35 @@ namespace exchange.binance
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: BinanceCancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return binanceOrder;
         }
+        public async Task<List<BinanceOrder>> CancelOrdersAsync(Product product)
+        {
+            List<BinanceOrder> binanceOrders = new List<BinanceOrder>();
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Cancelling order.");
+                ServerTime serverTime = await UpdateTimeServerAsync();
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,"DELETE",$"/api/v3/openOrders?")
+                {
+                    RequestQuery =
+                        $"symbol={product.ID}&timestamp={serverTime.ServerTimeLong}"
+                };
+                string json = await ConnectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                    binanceOrders = JsonSerializer.Deserialize<BinanceOrder[]>(json).ToList();
+                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"CancelOrdersAsync JSON:\r\n{json}");
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return binanceOrders;
+        }
+
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
             try
@@ -329,9 +362,9 @@ namespace exchange.binance
                 //Get price of all products
                 foreach (Product product in products)
                 {
-                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                         $"/api/v3/ticker/price") {RequestQuery = $"?symbol={product.ID}"};
-                    string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                    string json = await ConnectionAdapter.RequestUnsignedAsync(request);
                     if (string.IsNullOrEmpty(json))
                         return Tickers;
                     Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
@@ -356,20 +389,20 @@ namespace exchange.binance
 
             return Tickers;
         }
-        public async Task<List<BinanceFill>> UpdateBinanceFillsAsync(Product product)
+        public async Task<List<BinanceFill>> UpdateFillsAsync(Product product)
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl,
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "GET",
                     $"/api/v3/myTrades?")
                 {
                     RequestQuery =
                         $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}&limit=10"
                 };
-                string json = await _connectionAdapter.RequestAsync(request);
+                string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
@@ -386,11 +419,11 @@ namespace exchange.binance
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Order Book.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/depth?")
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/depth?")
                 {
                     RequestQuery = $"symbol={product.ID}&limit={level}"
                 };
-                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                string json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
@@ -402,17 +435,18 @@ namespace exchange.binance
             }
             return OrderBook;
         }
+
         public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Historic Candles.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v1/klines?")
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v1/klines?")
                 {
                     RequestQuery =
                         $"symbol={historicCandlesSearch.Symbol}&interval=5m&startTime={historicCandlesSearch.StartingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
                 };
-                string json = await _connectionAdapter.RequestUnsignedAsync(request);
+                string json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 if(json.StartsWith("[") && json.EndsWith("]"))
@@ -428,7 +462,29 @@ namespace exchange.binance
             }
             return HistoricRates;
         }
-        
+        public override bool ChangeFeed(string message)
+        {
+            string json = null;
+            Feed feed = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.General, $"Subscribing to Feed Information.");
+                string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
+                ConnectionAdapter.ConnectAsync(uriString).Wait();
+                json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                if (string.IsNullOrEmpty(json))
+                    return false;
+                feed = JsonSerializer.Deserialize<Feed>(json);
+                if (feed == null || feed.Type == "error")
+                    return false;
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+            return feed != null && feed.Type != "error";
+        }
         public void StartProcessingFeed()
         {
             Task.Run(async () =>
@@ -455,11 +511,11 @@ namespace exchange.binance
                         message = message.Remove(lastIndexOfSlash, 1);
                     while (products.Any())
                     {
-                        string uriString = _connectionAdapter.Authentication.WebSocketUri + message;
-                        await _connectionAdapter.ConnectAsync(uriString, _clientWebSocket);
-                        while (_connectionAdapter.IsWebSocketConnected(_clientWebSocket))
+                        string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
+                        await ConnectionAdapter.ConnectAsync(uriString);
+                        while (ConnectionAdapter.IsWebSocketConnected())
                         {
-                            json = await _connectionAdapter.WebSocketReceiveAsync(_clientWebSocket).ConfigureAwait(false);
+                            json = await ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
                             if (string.IsNullOrEmpty(json))
                                 continue;
                             Feed feed = JsonSerializer.Deserialize<Feed>(json);
@@ -484,31 +540,23 @@ namespace exchange.binance
 
            
         }
-        public override void Dispose()
-        {
-            _connectionAdapter?.Dispose();
-            CurrentPrices = null;
-            Tickers = null;
-            BinanceAccount = null;
-            AccountHistories = null;
-            AccountHolds = null;
-            Products = null;
-            HistoricRates = null;
-            Fills = null;
-            Orders = null;
-            OrderBook = null;
-            SelectedProduct = null;
-            // Suppress finalization.
-            GC.SuppressFinalize(this);
-        }
         public override async Task<bool> InitAsync()
         {
             try
-            {
-                if (!_connectionAdapter.Validate())
-                    return false;
+            {         
+                if (string.IsNullOrEmpty(INIFilePath))
+                {
+                    string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                    INIFilePath = Path.Combine(directoryName, "binance.config.ini");
+                    LoadINI(INIFilePath);
+                }
+                else
+                {
+                    LoadINI(INIFilePath);
+                }
+
                 await UpdateExchangeInfoAsync();
-                await UpdateBinanceAccountAsync();
+                await UpdateAccountsAsync();
                 List<Product> products = new List<Product>
                 {
                     Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
@@ -525,6 +573,30 @@ namespace exchange.binance
                     historicCandlesSearch.Granularity = (Granularity)900;
                     await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                     await UpdateTickersAsync(products);
+
+                    BinanceOrder binanceOrderMarket= new BinanceOrder();
+                    binanceOrderMarket.OrderType = OrderType.Market;
+                    binanceOrderMarket.OrderSide = OrderSide.Buy;
+                    binanceOrderMarket.OrderSize = (decimal)0.1;
+                    binanceOrderMarket.Symbol = "BNBBTC";
+                    
+                    BinanceOrder binanceOrderLimit = new BinanceOrder();
+                    binanceOrderLimit.OrderType = OrderType.Limit;
+                    binanceOrderLimit.OrderSide = OrderSide.Buy;
+                    binanceOrderLimit.OrderSize = (decimal)0.1;
+                    binanceOrderLimit.LimitPrice = (decimal)0.0010000;
+                    binanceOrderLimit.Symbol = "BNBBTC";
+
+                    Product productToCancel = new Product { ID = "BNBBTC" };
+
+                    BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
+                    BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
+
+                    List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product() { ID = "BNBBTC" });
+
+                    BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
+                    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
+
                     StartProcessingFeed();
                 }         
                 return true;
@@ -539,14 +611,6 @@ namespace exchange.binance
         public override bool InitIndicatorsAsync()
         {
             RelativeStrengthIndex r = new RelativeStrengthIndex();
-            return true;
-        }
-        public override bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
-        {
-            _connectionAdapter = connectionAdapter;
-            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            string fileName = Path.Combine(directoryName, "binance.config.ini");
-            LoadINI(fileName);
             return true;
         }
     }

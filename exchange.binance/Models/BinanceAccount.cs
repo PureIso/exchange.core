@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace exchange.core.Models
+namespace exchange.binance.models
 {
     public class BinanceAccount
     {

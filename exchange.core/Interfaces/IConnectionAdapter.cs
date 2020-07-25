@@ -1,26 +1,28 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Net.WebSockets;
-using exchange.core.models;
 using System.Threading.Tasks;
+using exchange.core.Enums;
 using exchange.core.implementations;
 
 namespace exchange.core.Interfaces
 {
     public interface IConnectionAdapter
     {
-        Authentication Authentication { get; set; } 
-        HttpClient HttpClient { get; }
-        ClientWebSocket ClientWebSocket { get; }
+        Action<MessageType, string> ProcessLogBroadcast { get; set; }
 
-        Task ConnectAsync(string uriString, ClientWebSocket ClientWebSocket);
-        Task<string> WebSocketSendAsync(string message, ClientWebSocket ClientWebSocket); 
-        Task<string> WebSocketReceiveAsync(ClientWebSocket ClientWebSocket); 
-        Task<bool> WebSocketCloseAsync(ClientWebSocket ClientWebSocket);
+        Authentication Authentication { get; set; } 
+        HttpClient HttpClient { get; set; }
+        ClientWebSocket ClientWebSocket { get; set; }
+
+        Task ConnectAsync(string uriString);
+        Task<string> WebSocketSendAsync(string message); 
+        Task<string> WebSocketReceiveAsync(); 
+        Task<bool> WebSocketCloseAsync();
         Task<string> RequestAsync(IRequest request);
         Task<string> RequestUnsignedAsync(IRequest request);
 
-        bool IsWebSocketConnected(ClientWebSocket ClientWebSocket);
+        bool IsWebSocketConnected();
         void Dispose();
-        bool Validate();
     }
 }

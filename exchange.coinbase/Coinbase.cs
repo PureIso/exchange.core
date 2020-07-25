@@ -12,25 +12,15 @@ using exchange.core;
 using exchange.core.models;
 using exchange.core.helpers;
 using exchange.core.Indicators;
-using exchange.core.Interfaces;
 using exchange.core.implementations;
-using System.Net.WebSockets;
+using exchange.coinbase.models;
 
 namespace exchange.coinbase
 {
     public class Coinbase : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-        private IConnectionAdapter _connectionAdapter;
         private object _ioLock;
-        public Authentication _authentication;
-        public ClientWebSocket clientWebSocket = new ClientWebSocket();
-        #endregion
-
-        #region Events
-        public override Action<Feed> FeedBroadcast { get; set; }
-        public override Action<MessageType, string> ProcessLogBroadcast { get; set; }
-        public override Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 
         #region Public Properties
@@ -41,7 +31,6 @@ namespace exchange.coinbase
         public List<AccountHold> AccountHolds { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<Fill> Fills { get; set; }
-        public List<BinanceFill> BinanceFill { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
@@ -50,6 +39,8 @@ namespace exchange.coinbase
         public Coinbase()
         {
             ApplicationName = "Coinbase Exchange";
+            ConnectionAdapter = new ConnectionAdapter();
+
             CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             Accounts = new List<Account>();
@@ -63,14 +54,15 @@ namespace exchange.coinbase
             SelectedProduct = new Product();
             _ioLock = new object();
         }
+
         public void LoadINI(string filePath)
         {
             try
             {
                 if (File.Exists(filePath))
                 {
-                    if (_authentication == null)
-                        _authentication = new Authentication();
+                    if (Authentication == null)
+                        Authentication = new Authentication();
                     string line;
                     StreamReader streamReader = new StreamReader(filePath);
                     while ((line = streamReader.ReadLine()) != null)
@@ -82,38 +74,40 @@ namespace exchange.coinbase
                             line = line.Replace("uri=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.WebSocketUri = new Uri(line);
+                            Authentication.WebSocketUri = new Uri(line);
                         }
                         else if (line.StartsWith("key="))
                         {
                             line = line.Replace("key=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.ApiKey = line;
+                            Authentication.ApiKey = line;
                         }
                         else if (line.StartsWith("secret="))
                         {
                             line = line.Replace("secret=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.Secret = line;
+                            Authentication.Secret = line;
                         }
                         else if (line.StartsWith("endpoint="))
                         {
                             line = line.Replace("endpoint=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.EndpointUrl = line;
+                            Authentication.EndpointUrl = line;
                         }
                         else if (line.StartsWith("passphrase="))
                         {
                             line = line.Replace("passphrase=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
-                            _authentication.Passphrase = line;
+                            Authentication.Passphrase = line;
                         }
                     }
-                    _connectionAdapter.Authentication = _authentication;
+                   // ClientWebSocket = new ClientWebSocket();
+                    ConnectionAdapter.Authentication = Authentication;
+                    ConnectionAdapter.ClientWebSocket = ClientWebSocket;
                 }
             }
             catch (Exception e)
@@ -163,6 +157,7 @@ namespace exchange.coinbase
             }
             return default;
         }
+
         #region Public Methods
 
         #region Trading
@@ -172,9 +167,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 Accounts = JsonSerializer.Deserialize<List<Account>>(json);
@@ -193,9 +188,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account History Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}/ledger");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountHistoryAsync JSON:\r\n{json}");
                 AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
             }
@@ -213,9 +208,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Account Holds Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}/holds");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 AccountHolds = JsonSerializer.Deserialize<List<AccountHold>>(json);
             }
             catch (Exception e)
@@ -232,9 +227,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Orders Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 Orders = JsonSerializer.Deserialize<List<Order>>(json);
             }
             catch (Exception e)
@@ -272,11 +267,11 @@ namespace exchange.coinbase
                         product_id = order.ProductID,
                         stp = order.SelfTradePreventionType
                     };
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
                 {
                     RequestBody = JsonSerializer.Serialize(data)
                 };
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 outputOrder = JsonSerializer.Deserialize<Order>(json);
             }
             catch (Exception e)
@@ -295,9 +290,9 @@ namespace exchange.coinbase
                 if (order == null)
                     return ordersOutput;
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Cancel Orders Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders/{order.ID ?? string.Empty}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 if (!json.StartsWith('[') && !json.EndsWith(']'))
                 {
                     string orderId = JsonSerializer.Deserialize<string>(json);
@@ -346,9 +341,9 @@ namespace exchange.coinbase
                 if (product == null)
                     return ordersOutput;
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Cancel Orders Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "DELETE",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders?product_id={product.ID ?? string.Empty}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 if (!json.StartsWith('[') && !json.EndsWith(']'))
                 {
                     string orderId = JsonSerializer.Deserialize<string>(json);
@@ -394,8 +389,8 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Update Products Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
-                json = await _connectionAdapter.RequestAsync(request);
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
+                json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     Products = JsonSerializer.Deserialize<List<Product>>(json);
             }
@@ -419,9 +414,9 @@ namespace exchange.coinbase
                 //Get price of all products
                 foreach (Product product in products)
                 {
-                    Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                    Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                         $"/products/{product.ID}/ticker");
-                    json = await _connectionAdapter.RequestAsync(request);
+                    json = await ConnectionAdapter.RequestAsync(request);
                     if (string.IsNullOrEmpty(json))
                         return Tickers;
                     Ticker ticker = JsonSerializer.Deserialize<Ticker>(json);
@@ -452,9 +447,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/fills?product_id={product.ID ?? string.Empty}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     Fills = JsonSerializer.Deserialize<List<Fill>>(json);
             }
@@ -472,9 +467,9 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Orders Information.");
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{product.ID}/book?level={level}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
             }
             catch (Exception e)
@@ -494,7 +489,7 @@ namespace exchange.coinbase
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Subscribing to Feed Information.");
-                json = _connectionAdapter.WebSocketSendAsync(message, clientWebSocket).Result;
+                json = ConnectionAdapter.WebSocketSendAsync(message).Result;
                 if (string.IsNullOrEmpty(json))
                     return false;
                 feed = JsonSerializer.Deserialize<Feed>(json);
@@ -507,7 +502,6 @@ namespace exchange.coinbase
 
             return feed != null && feed.Type != "error";
         }
-        
         public void StartProcessingFeed()
         {
             Task.Run(async () =>
@@ -516,10 +510,10 @@ namespace exchange.coinbase
                 try
                 {
                     ProcessLogBroadcast?.Invoke(MessageType.General, $"Started Processing Feed Information.");
-                   
-                    while (_connectionAdapter.IsWebSocketConnected(clientWebSocket))
+                    await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
+                    while (ConnectionAdapter.IsWebSocketConnected())
                     {
-                        json = await _connectionAdapter.WebSocketReceiveAsync(clientWebSocket).ConfigureAwait(false);
+                        json = await ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
                         Feed feed = JsonSerializer.Deserialize<Feed>(json);
                         if (feed == null || feed.Type == "error")
                             return;
@@ -535,46 +529,23 @@ namespace exchange.coinbase
                 }
             });
         }
-        public override async Task<bool> CloseFeed()
-        {
-            bool isClosed = false;
-            try
-            {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Closing Feed Subscription.");
-                isClosed = await _connectionAdapter.WebSocketCloseAsync(clientWebSocket);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: CloseFeed\r\nException Stack Trace: {e.StackTrace}");
-            }
-            return isClosed;
-        }
         #endregion
 
-        public override void Dispose()
-        {
-            _connectionAdapter?.Dispose();
-            CurrentPrices = null;
-            Tickers = null;
-            Accounts = null;
-            AccountHistories = null;
-            AccountHolds = null;
-            Products = null;
-            HistoricRates = null;
-            Fills = null;
-            Orders = null;
-            OrderBook = null;
-            SelectedProduct = null;
-            // Suppress finalization.
-            GC.SuppressFinalize(this);
-        }
         public override async Task<bool> InitAsync()
         {
             try
             {
-                if (!_connectionAdapter.Validate())
-                    return false;
+                if (string.IsNullOrEmpty(INIFilePath))
+                {
+                    string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                    INIFilePath = Path.Combine(directoryName, "coinbase.config.ini");
+                    LoadINI(INIFilePath);
+                }
+                else
+                {
+                    LoadINI(INIFilePath);
+                }
+
                 await UpdateAccountsAsync();
                 if (Accounts != null && Accounts.Any())
                 {
@@ -631,9 +602,9 @@ namespace exchange.coinbase
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Product Historic Candles Information.");
                 if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double)historicCandlesSearch.Granularity) >= historicCandlesSearch.EndingDateTime)
                     return null;
-                Request request = new Request(_connectionAdapter.Authentication.EndpointUrl, "GET",
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={historicCandlesSearch.Granularity}");
-                json = await _connectionAdapter.RequestAsync(request);
+                json = await ConnectionAdapter.RequestAsync(request);
                 ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
                 HistoricRates = candles.ToHistoricRateList();
             }
@@ -652,14 +623,6 @@ namespace exchange.coinbase
             relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
             relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
             relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-            return true;
-        }
-        public override bool InitConnectionAdapter(IConnectionAdapter connectionAdapter)
-        {
-            _connectionAdapter = connectionAdapter;
-            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            string fileName = Path.Combine(directoryName, "coinbase.config.ini");
-            LoadINI(fileName);
             return true;
         }
         #endregion

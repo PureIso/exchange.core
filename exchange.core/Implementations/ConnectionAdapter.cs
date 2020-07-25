@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.core.Models;
 using exchange.core.implementations;
+using exchange.core.Enums;
 
 namespace exchange.core
 {
@@ -20,6 +21,7 @@ namespace exchange.core
         #region Properties
         public Authentication Authentication { get; set; }
         public HttpClient HttpClient { get; set; }
+        public ClientWebSocket ClientWebSocket { get; set; }
         #endregion
 
         #region Fields
@@ -27,11 +29,7 @@ namespace exchange.core
         private readonly SemaphoreSlim _ioSemaphoreSlim;
         #endregion
 
-        #region Events
-        public Action<Feed> FeedBroadCast { get; set; }
-
-        public ClientWebSocket ClientWebSocket => throw new NotImplementedException();
-        #endregion
+        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
 
         public ConnectionAdapter()
         {
@@ -47,7 +45,7 @@ namespace exchange.core
         }
 
         #region Web Socket
-        public virtual async Task ConnectAsync(string uriString, ClientWebSocket ClientWebSocket)
+        public virtual async Task ConnectAsync(string uriString)
         {
             try
             {
@@ -69,13 +67,15 @@ namespace exchange.core
             }
             catch (Exception ex)
             {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: ConnectAsync\r\nException Stack Trace: {ex.StackTrace}");
             }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
         }
-        public virtual async Task<string> WebSocketSendAsync(string message, ClientWebSocket ClientWebSocket)
+        public virtual async Task<string> WebSocketSendAsync(string message)
         {
             try
             {
@@ -83,12 +83,12 @@ namespace exchange.core
                 if (string.IsNullOrEmpty(message))
                     return null;
                 byte[] requestBytes = Encoding.UTF8.GetBytes(message);
-                if (!IsWebSocketConnected(ClientWebSocket))
+                if (!IsWebSocketConnected())
                     await ClientWebSocket.ConnectAsync(Authentication.WebSocketUri, CancellationToken.None);
                 ArraySegment<byte> subscribeRequest = new ArraySegment<byte>(requestBytes);
                 await ClientWebSocket.SendAsync(subscribeRequest, WebSocketMessageType.Text, true,
                     CancellationToken.None);
-                if (!IsWebSocketConnected(ClientWebSocket))
+                if (!IsWebSocketConnected())
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await ClientWebSocket.ReceiveAsync(
@@ -106,7 +106,8 @@ namespace exchange.core
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.StackTrace);
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: WebSocketSendAsync\r\nException Stack Trace: {ex.StackTrace}");
             }
             finally
             {
@@ -114,14 +115,14 @@ namespace exchange.core
             }
             return null;
         }
-        public virtual async Task<string> WebSocketReceiveAsync(ClientWebSocket ClientWebSocket)
+        public virtual async Task<string> WebSocketReceiveAsync()
         {
             try
             {
                 await _ioSemaphoreSlim.WaitAsync();
                 if (ClientWebSocket == null)
                     return null;
-                if (!IsWebSocketConnected(ClientWebSocket))
+                if (!IsWebSocketConnected())
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await ClientWebSocket.ReceiveAsync(
@@ -137,36 +138,51 @@ namespace exchange.core
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
             }
+            catch (Exception ex)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: WebSocketReceiveAsync\r\nException Stack Trace: {ex.StackTrace}");
+            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
+            return null;
         }
-        public virtual async Task<bool> WebSocketCloseAsync(ClientWebSocket ClientWebSocket)
+        public virtual async Task<bool> WebSocketCloseAsync()
         {
             try
             {
                 await _ioSemaphoreSlim.WaitAsync();
-                if (ClientWebSocket == null || !IsWebSocketConnected(ClientWebSocket))
+                if (ClientWebSocket == null || !IsWebSocketConnected())
                     return true;
                 await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                 Dispose();
                 return true;
             }
+            catch (Exception ex)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: WebSocketReceiveAsync\r\nException Stack Trace: {ex.StackTrace}");
+            }
             finally
             {
                 _ioSemaphoreSlim.Release();
             }
+            return false;
         }
-        public virtual bool IsWebSocketConnected(ClientWebSocket ClientWebSocket)
+        public virtual bool IsWebSocketConnected()
         {
-            return ClientWebSocket != null && ClientWebSocket.State == WebSocketState.Open;
+            if (ClientWebSocket == null)
+                ClientWebSocket = new ClientWebSocket();
+            return ClientWebSocket.State == WebSocketState.Open;
         }
         #endregion
 
         public void Dispose()
         {
             HttpClient?.Dispose();
+            ClientWebSocket?.Dispose();
         }
 
         #region Private Methods
@@ -178,8 +194,8 @@ namespace exchange.core
                 StringContent requestBody = new StringContent("");
                 HttpResponseMessage response;
                 Uri absoluteUri;
-                if (!Validate())
-                    throw new Exception($"Invalid Authentication.");
+                if (Authentication == null)
+                    throw new Exception("Invalid Authentication.");
                 if (string.IsNullOrEmpty(Authentication.Passphrase))
                 {
                     request.RequestSignature = Authentication.ComputeSignature(request.RequestQuery);
@@ -245,8 +261,6 @@ namespace exchange.core
         {
             try
             {
-                if (!Validate())
-                    throw new Exception($"Invalid Authentication.");
                 HttpResponseMessage response = null; 
                 HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
                 switch (request.Method)
@@ -273,12 +287,6 @@ namespace exchange.core
                 await Task.Delay(500);
             }
         }
-
-        public bool Validate()
-        {
-            return Authentication != null && !string.IsNullOrEmpty(Authentication.ApiKey) && !string.IsNullOrEmpty(Authentication.Secret) && !string.IsNullOrEmpty(Authentication.EndpointUrl);
-        }
-
         #endregion
     }
 }

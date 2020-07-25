@@ -1,4 +1,5 @@
-﻿using exchange.core.models;
+﻿using exchange.binance.models;
+using exchange.core.models;
 using exchange.core.Models;
 using System;
 using System.Collections.Generic;

@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance;
+using exchange.binance.models;
 using exchange.core;
 using exchange.core.Enums;
 using exchange.core.helpers;
@@ -52,7 +53,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             //Act
             subjectUnderTest.UpdateTimeServerAsync().Wait();
             //Assert
@@ -162,7 +163,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             //Act
             subjectUnderTest.UpdateExchangeInfoAsync().Wait();
             //Assert
@@ -201,10 +202,83 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             //Act
-            subjectUnderTest.UpdateBinanceAccountAsync().Wait();
+            subjectUnderTest.UpdateAccountsAsync().Wait();
             Assert.IsNotNull(subjectUnderTest.BinanceAccount);
+        }
+        [TestMethod]
+        public void UpdateOrders_ShouldReturnAllOrders_WhenOrdersExists()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v1/time")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                 .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/openOrders?")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[{{
+                    ""symbol"": ""LENDBTC"",
+                    ""orderId"": 16298376,
+                    ""clientOrderId"": ""web_49ea97ee87704d6d9bad568264b321a6"",
+                    ""price"": ""0.00000599"",
+                    ""origQty"": ""192.00000000"",
+                    ""executedQty"": ""0.00000000"",
+                    ""cummulativeQuoteQty"": ""0.00000000"",
+                    ""status"": ""NEW"",
+                    ""timeInForce"": ""GTC"",
+                    ""type"": ""LIMIT"",
+                    ""side"": ""SELL"",
+                    ""stopPrice"": ""0.00000000"",
+                    ""icebergQty"": ""0.00000000"",
+                    ""time"": 1539965295240,
+                    ""updateTime"": 1539965295240,
+                    ""isWorking"": true
+                  }},
+                  {{
+                    ""symbol"": ""LENDBTC"",
+                    ""orderId"": 16304287,
+                    ""clientOrderId"": ""web_"",
+                    ""price"": ""0.00000331"",
+                    ""origQty"": ""1815.00000000"",
+                    ""executedQty"": ""0.00000000"",
+                    ""cummulativeQuoteQty"": ""0.00000000"",
+                    ""status"": ""NEW"",
+                    ""timeInForce"": ""GTC"",
+                    ""type"": ""LIMIT"",
+                    ""side"": ""SELL"",
+                    ""stopPrice"": ""0.00000000"",
+                    ""icebergQty"": ""0.00000000"",
+                    ""time"": 1539966875495,
+                    ""updateTime"": 1539966875495,
+                    ""isWorking"": true
+                  }}
+                ]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            _connectionAdaptor.HttpClient = httpClient;
+            Binance subjectUnderTest = new Binance();
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            //Act
+            Product product = new Product { ID = "LENDBTC" };
+            subjectUnderTest.UpdateOrdersAsync(product).Wait();
+            //Assert
+            Assert.IsNotNull(subjectUnderTest.Orders);
+            Assert.AreEqual(2, subjectUnderTest.Orders.Count);
+            Assert.AreEqual(16298376, subjectUnderTest.Orders[0].ID);
+            Assert.AreEqual(16304287, subjectUnderTest.Orders[1].ID);
         }
         [TestMethod]
         public void UpdateProductOrderBook_ShouldReturnOrderBook_WhenProductExists()
@@ -235,7 +309,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             Product product = new Product {ID = "BTCEUR"};
             //Act
             subjectUnderTest.UpdateProductOrderBookAsync(product,20).Wait();
@@ -266,7 +340,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
             historicCandlesSearch.Symbol = "BTCEUR";
             historicCandlesSearch.StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
@@ -296,7 +370,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             List<Product> products = new List<Product>
             {
                 new Product {ID = "BTCEUR"},
@@ -352,10 +426,10 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             Product product = new Product {ID = "BNBBTC" };
             //Act
-            subjectUnderTest.UpdateBinanceFillsAsync(product).Wait();
+            subjectUnderTest.UpdateFillsAsync(product).Wait();
             //Assert
             Assert.IsNotNull(subjectUnderTest.BinanceFill);
             Assert.AreEqual(1, subjectUnderTest.BinanceFill.Count);
@@ -394,19 +468,19 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
             binanceOrder.OrderSize = (decimal)0.1;
             binanceOrder.Symbol = "BNBBTC";
             //Act
-            BinanceOrder binanceOrderResult = subjectUnderTest.BinancePostOrdersAsync(binanceOrder).Result;
+            BinanceOrder binanceOrderResult = subjectUnderTest.PostOrdersAsync(binanceOrder).Result;
             //Assert
             Assert.IsNotNull(binanceOrderResult);
         }
         [TestMethod]
-        public void BinanceCancelOrders_ShouldReturnBinanceOrder()
+        public void CancelOrder_ShouldReturnBinanceOrder()
         {
             //Arrange
             _httpMessageHandlerMock
@@ -435,16 +509,62 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdaptor.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.InitConnectionAdapter(_connectionAdaptor);
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
             binanceOrder.OrderSize = (decimal)0.1;
             binanceOrder.Symbol = "BNBBTC";
             //Act
-            BinanceOrder binanceOrderResult = subjectUnderTest.BinanceCancelOrdersAsync(binanceOrder).Result;
+            BinanceOrder binanceOrderResult = subjectUnderTest.CancelOrderAsync(binanceOrder).Result;
             //Assert
             Assert.IsNotNull(binanceOrderResult);
+        }
+        [TestMethod]
+        public void CancelOrders_ShouldReturnBinanceOrder()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v1/time")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"{{""serverTime"":1592395836992}}")
+                }))
+                .Verifiable();
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/openOrders")), ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        $@"[{{""symbol"":""BNBBTC"",""origClientOrderId"":""dYJEVoHBmZ9wO55DWErawG"",""orderId"":1369,
+                            ""orderListId"":-1,""clientOrderId"":""oy60PoMjhqSDSA8JrbAdbb"",""price"":""0.00100000"",
+                            ""origQty"":""0.10000000"",""executedQty"":""0.00000000"",""cummulativeQuoteQty"":""0.00000000"",
+                            ""status"":""CANCELED"",""timeInForce"":""GTC"",""type"":""LIMIT"",""side"":""BUY""}},
+                            {{""symbol"":""BNBBTC"",""origClientOrderId"":""d81bitzsSWPjprIJhgHxR1"",""orderId"":1371,
+                            ""orderListId"":-1,""clientOrderId"":""oy60PoMjhqSDSA8JrbAdbb"",""price"":""0.00100000"",""origQty"":""0.10000000"",
+                            ""executedQty"":""0.00000000"",""cummulativeQuoteQty"":""0.00000000"",""status"":""CANCELED"",""timeInForce"":""GTC"",
+                            ""type"":""LIMIT"",""side"":""BUY""}},
+                            {{""symbol"":""BNBBTC"",""origClientOrderId"":""eE5TpVjDdljT3Q6121rbkD"",""orderId"":1373,""orderListId"":-1,
+                              ""clientOrderId"":""oy60PoMjhqSDSA8JrbAdbb"",""price"":""0.00100000"",""origQty"":""0.10000000"",
+                              ""executedQty"":""0.00000000"",""cummulativeQuoteQty"":""0.00000000"",""status"":""CANCELED"",
+                            ""timeInForce"":""GTC"",""type"":""LIMIT"",""side"":""BUY""}}]")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            _connectionAdaptor.HttpClient = httpClient;
+            Binance subjectUnderTest = new Binance();
+            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            Product product = new Product();
+            product.ID = "BNBBTC";
+            //Act
+            List<BinanceOrder> binanceOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            //Assert
+            Assert.IsNotNull(binanceOrders);
         }
     }
 }

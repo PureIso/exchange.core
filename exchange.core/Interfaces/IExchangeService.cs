@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using exchange.core.Enums;
 using exchange.core.Models;
 using exchange.core.Interfaces;
+using System.Net.WebSockets;
+using exchange.core.implementations;
 
 namespace exchange.core.interfaces
 {
@@ -21,13 +23,16 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Properties
+        string INIFilePath { get; set; }
+        Authentication Authentication { get; set; }
+        ClientWebSocket ClientWebSocket { get; set; }
+        ConnectionAdapter ConnectionAdapter { get; set; }
         Dictionary<string, decimal> CurrentPrices { get; set; }
         List<Product> Products { get; set; }
         #endregion
 
         #region Methods
         Task<bool> InitAsync();
-        bool InitConnectionAdapter(IConnectionAdapter connectionAdapter);
         bool InitIndicatorsAsync();
         Task<bool> CloseFeed();
         bool ChangeFeed(string message);

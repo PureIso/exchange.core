@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -24,10 +23,9 @@ namespace exchange.service
     {
         private readonly ILogger<Worker> _logger;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
-        private readonly IConnectionAdapter _connectionAdapter;
         private ExchangePluginService _exchangePluginService;
 
-        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub, IConnectionAdapter connectionAdapter)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
@@ -39,7 +37,6 @@ namespace exchange.service
             if (!Directory.Exists(pluginDirectory))
                 Directory.CreateDirectory(pluginDirectory);
             _exchangePluginService = new ExchangePluginService(pluginDirectory);
-            _connectionAdapter = connectionAdapter;
         }
 
         public override async Task StartAsync(CancellationToken cancellationToken)
@@ -52,7 +49,6 @@ namespace exchange.service
                     abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
-                    abstractExchangePlugin.InitConnectionAdapter(_connectionAdapter);
                     await abstractExchangePlugin.InitAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
