@@ -100,7 +100,7 @@ namespace exchange.binance
                     if (string.IsNullOrEmpty(FileName))
                     {
                         string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                        FileName = Path.Combine(directoryName, "binance.json");
+                        FileName = Path.Combine(directoryName, "data\\binance.json");
                         if (!File.Exists(FileName))
                             File.Create(FileName).Close();
                     }
@@ -610,7 +610,13 @@ namespace exchange.binance
         }
         public override bool InitIndicatorsAsync()
         {
-            RelativeStrengthIndex r = new RelativeStrengthIndex();
+            //string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            //string binanceRSIFile = Path.Combine(directoryName, "data\\binance");
+            //RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile);
+            //relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
+            //relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
+            //relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+            //relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
             return true;
         }
     }

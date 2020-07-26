@@ -50,6 +50,7 @@ namespace exchange.service
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
                     await abstractExchangePlugin.InitAsync();
+                    abstractExchangePlugin.InitIndicatorsAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
             }        
@@ -80,7 +81,7 @@ namespace exchange.service
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
-                abstractExchangePlugin.CloseFeed();
+                abstractExchangePlugin.CloseFeed().GetAwaiter();
             }
             return base.StopAsync(cancellationToken);
         }

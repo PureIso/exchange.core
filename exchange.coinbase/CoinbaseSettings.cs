@@ -1,10 +1,7 @@
 ﻿using exchange.core.models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace exchange.coinbase
 {
@@ -16,7 +13,6 @@ namespace exchange.coinbase
         [JsonPropertyName("tickers")]
         public List<Ticker> Tickers { get; set; }
         [JsonPropertyName("accounts")]
-        public List<Account> Accounts { get; set; }
-        
+        public List<Account> Accounts { get; set; }       
     }
 }

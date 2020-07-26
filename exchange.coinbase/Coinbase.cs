@@ -126,7 +126,7 @@ namespace exchange.coinbase
                     if (string.IsNullOrEmpty(FileName))
                     {
                         string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                        FileName = Path.Combine(directoryName, "coinbase.json");
+                        FileName = Path.Combine(directoryName, "data\\coinbase.json");
                         if (!File.Exists(FileName))
                             File.Create(FileName).Close();
                     }
@@ -173,6 +173,7 @@ namespace exchange.coinbase
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 Accounts = JsonSerializer.Deserialize<List<Account>>(json);
+                Save();
             }
             catch (Exception e)
             {
@@ -603,7 +604,7 @@ namespace exchange.coinbase
                 if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double)historicCandlesSearch.Granularity) >= historicCandlesSearch.EndingDateTime)
                     return null;
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={historicCandlesSearch.Granularity}");
+                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int)historicCandlesSearch.Granularity}");
                 json = await ConnectionAdapter.RequestAsync(request);
                 ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
                 HistoricRates = candles.ToHistoricRateList();
@@ -618,7 +619,12 @@ namespace exchange.coinbase
         }
         public override bool InitIndicatorsAsync()
         {
-            RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex();
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string coinbaseRSIFile = Path.Combine(directoryName, "data\\coinbase");
+            Product product = new Product() { ID = "BTC-EUR" };
+            RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
+
+
             relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
             relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
             relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
