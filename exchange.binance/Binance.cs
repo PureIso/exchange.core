@@ -349,7 +349,6 @@ namespace exchange.binance
             }
             return binanceOrders;
         }
-
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
             try
@@ -591,12 +590,13 @@ namespace exchange.binance
 
                     BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
                     BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
+                    BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
 
                     List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product() { ID = "BNBBTC" });
-
-                    BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
-                    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
-
+                    if (currentOrders.Any())
+                    {
+                        List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
+                    }
                     StartProcessingFeed();
                 }         
                 return true;

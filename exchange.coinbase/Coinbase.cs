@@ -606,15 +606,22 @@ namespace exchange.coinbase
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int)historicCandlesSearch.Granularity}");
                 json = await ConnectionAdapter.RequestAsync(request);
-                ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
-                HistoricRates = candles.ToHistoricRateList();
+                if (json.StartsWith('[') && json.EndsWith(']'))
+                {
+                    ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
+                    HistoricRates = candles.ToHistoricRateList();
+                }
+                else
+                {
+                    ProcessLogBroadcast?.Invoke(MessageType.JsonOutput,
+                    $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
+                }
             }
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
-
             return HistoricRates;
         }
         public override bool InitIndicatorsAsync()
@@ -623,7 +630,6 @@ namespace exchange.coinbase
             string coinbaseRSIFile = Path.Combine(directoryName, "data\\coinbase");
             Product product = new Product() { ID = "BTC-EUR" };
             RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
-
 
             relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
             relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;

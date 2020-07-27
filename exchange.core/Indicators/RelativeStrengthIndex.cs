@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Timers;
 using exchange.core.Enums;
+using exchange.core.helpers;
 using exchange.core.models;
 using exchange.core.Models;
 
@@ -89,7 +90,8 @@ namespace exchange.core.Indicators
             Task.WhenAll(
                 Task.Run(ProcessHistoryChartDownload),
                 Task.Run(ProcessHistoryHourlyChartDownload),
-                Task.Run(ProcessHistoryQuarterlyChartDownload));
+                Task.Run(ProcessHistoryQuarterlyChartDownload)
+                );
         }
         private void SaveAnalyticData(string filePath, string data)
         {
@@ -135,7 +137,7 @@ namespace exchange.core.Indicators
             }
             else
             {
-                startingDateTime = DateTime.Parse(RelativeStrengthIndexSettings.HistoricChartLastDateTime);
+                startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTime.ToDateTime();
                 previousHistoricRate = new HistoricRate
                 {
                     Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateClose,
@@ -158,14 +160,25 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
                 List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
-                if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
+                if (!result.Any())
                 {
-                    RelativeStrengthIndexSettings.HistoricChartLastDateTime = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
-                    Save();
+                    if(startingDateTime.Date == DateTime.Now.Date)
+                    {
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTime = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        DateTime newDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, startingDateTime.Day, 0, 0, 0);
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTime = newDateTime.AddMonths(1).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                        startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTime.ToDateTime();
+                        await Task.Delay(1000);
+                        continue;
+                    }
                 }
                 if (!result.Any()) 
                     break;
                 result.Reverse();
+                Save();
                 //Iterate though the historic data
                 foreach (HistoricRate rate in result)
                 {
@@ -284,7 +297,7 @@ namespace exchange.core.Indicators
             }
             else
             {
-                startingDateTime = DateTime.Parse(RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly);
+                startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly.ToDateTime();
                 previousHistoricRate = new HistoricRate()
                 {
                     Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseHourly,
@@ -307,14 +320,25 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
                 List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
-                if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
+                if (!result.Any())
                 {
-                    RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
-                    Save();
+                    if (startingDateTime.Date == DateTime.Now.Date)
+                    {
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        DateTime newDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, startingDateTime.Day, 0, 0, 0);
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = newDateTime.AddMonths(1).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                        startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly.ToDateTime();
+                        await Task.Delay(1000);
+                        continue;
+                    }
                 }
                 if (!result.Any())
                     break;
                 result.Reverse();
+                Save();
                 //Iterate though the historic data
                 foreach (HistoricRate rate in result)
                 {
@@ -432,7 +456,7 @@ namespace exchange.core.Indicators
             }
             else
             {
-                startingDateTime = DateTime.Parse(RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly);
+                startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly.ToDateTime();
                 previousHistoricRate = new HistoricRate()
                 {
                     Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseQuarterly,
@@ -455,13 +479,24 @@ namespace exchange.core.Indicators
                 historicCandlesSearch.Granularity = (Granularity)granularity;
                 //Get the latest historic data
                 List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
-                if (!result.Any() && startingDateTime == new DateTime(2015, 4, 23).Date.ToUniversalTime())
+                if (!result.Any())
                 {
-                    RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
-                    Save();
+                    if (startingDateTime.Date == DateTime.Now.Date)
+                    {
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        DateTime newDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, startingDateTime.Day, 0, 0, 0);
+                        RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = newDateTime.AddMonths(1).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
+                        startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly.ToDateTime();
+                        await Task.Delay(1000);
+                        continue;
+                    }
                 }
                 if (!result.Any()) break;
                 result.Reverse();
+                Save();
                 //Iterate though the historic data
                 foreach (HistoricRate rate in result)
                 {
