@@ -43,9 +43,9 @@ namespace exchange.core.helpers
         public static DateTime ToDateTime(this string value)
         {
             if (DateTime.TryParse(value, out DateTime dateTimeValue))
-                return dateTimeValue.ToUniversalTime();
-            if (DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss",CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal,out DateTime dateTimeValueExact))
-                return dateTimeValueExact.ToUniversalTime();
+                return dateTimeValue;
+            if (DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss",CultureInfo.InvariantCulture,DateTimeStyles.None,out DateTime dateTimeValueExact))
+                return dateTimeValueExact;
             return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         }
 

@@ -7,6 +7,9 @@ namespace exchange.core.Indicators
     [Serializable]
     public class RelativeStrengthIndexSettings
     {
+        [JsonPropertyName("historic_chart_main_date")]
+        public string HistoricChartMainDateTime { get; set; }
+
         [JsonPropertyName("relative_index_daily")]
         public decimal RelativeIndexDaily { get; set; }
         [JsonPropertyName("relative_index_hourly")]
