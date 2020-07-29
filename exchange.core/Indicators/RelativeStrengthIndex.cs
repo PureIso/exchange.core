@@ -35,7 +35,7 @@ namespace exchange.core.Indicators
 
         public RelativeStrengthIndex(string fileName, Product product)
         {
-            RelativeStrengthIndexSettings = Load(fileName);
+            RelativeStrengthIndexSettings = Load(fileName, product);
             _updater = new Timer();
             _ioLock = new object();
             _processHistorySemaphoreSlim = new SemaphoreSlim(1,1);
@@ -65,18 +65,18 @@ namespace exchange.core.Indicators
         {
             lock (_ioLock)
             {
-                string filename = FileName + "_RSI.json";
+                string filename = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_RSI.json";
                 if (string.IsNullOrEmpty(FileName))
                     return;
                 string json = JsonSerializer.Serialize(RelativeStrengthIndexSettings, new JsonSerializerOptions() { WriteIndented = true });
                 File.WriteAllText(filename, json);
             }
         }
-        private RelativeStrengthIndexSettings Load(string fileName)
+        private RelativeStrengthIndexSettings Load(string fileName, Product product)
         {
             try
             {
-                string json = File.ReadAllText(fileName + "_RSI.json");
+                string json = File.ReadAllText(fileName + $"_{product.ID.ToLower()}_RSI.json");
                 RelativeStrengthIndexSettings RelativeStrengthIndexSettings = JsonSerializer.Deserialize<RelativeStrengthIndexSettings>(json);
                 if (RelativeStrengthIndexSettings == null)
                     return new RelativeStrengthIndexSettings();
@@ -93,21 +93,20 @@ namespace exchange.core.Indicators
                 return;
             Task.WhenAll(
                 Task.Run(ProcessHistoryChartDownload),
-                Task.Run(ProcessHistoryHourlyChartDownload),
-                Task.Run(ProcessHistoryQuarterlyChartDownload)
+                Task.Run(ProcessHistoryHourlyChartDownload)//,
+                //Task.Run(ProcessHistoryQuarterlyChartDownload)
                 );
         }
         private void SaveAnalyticData(string filePath, string data)
         {
             File.AppendAllText(filePath, data);
-        }     
-        
+        }            
         private async void ProcessHistoryChartDownload()
         {
             await _processHistorySemaphoreSlim.WaitAsync();
             try
             {
-                string fileName = FileName + "_1D.csv";
+                string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_1D.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
                 if (!File.Exists(fileName))
@@ -129,22 +128,24 @@ namespace exchange.core.Indicators
                     Low = 0,
                     High = 0,
                     Volume = 0
-                };
-                RelativeStrengthIndexSettings.RelativeIndexDaily = -1;
+                };             
                 decimal increases = 0;
                 decimal decreases = 0;
                 Queue<HistoricRate> maQueue = new Queue<HistoricRate>();
                 //Check if we have an empty file or not
-                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartMainDateTime))
+                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartLastDateTime))
                 {
-                    startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+                    startingDateTime = !string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartDefaultDateTime)
+                        ? RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime()
+                        : new DateTime(2015, 4, 23).Date.ToUniversalTime();
                     RelativeStrengthIndexSettings.HistoricChartAverageGain = 0;
                     RelativeStrengthIndexSettings.HistoricChartAverageLoss = 0;
                     RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCount = 0;
+                    RelativeStrengthIndexSettings.RelativeIndexDaily = -1;
                 }
                 else
                 {
-                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartMainDateTime.ToDateTime();
+                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTime.ToDateTime();
                     previousHistoricRate = new HistoricRate
                     {
                         Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateClose,
@@ -167,17 +168,17 @@ namespace exchange.core.Indicators
                     //Get the latest historic data
                     await Task.Delay(1000);
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
+                    Console.WriteLine($"StartDateTime: {startingDateTime} - EndDateTime: {endingDateTime} Count:{result?.Count}");
                     if (!result.Any())
                     {
-                        if (startingDateTime.Date == DateTime.Now.Date)
-                        {
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTime = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString();
-                        }
-                        else
+                        if (RelativeStrengthIndexSettings.HistoricChartDefaultDateTime == null || 
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date >= startingDateTime.Date ||
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date != DateTime.Now.Date)
                         {
                             startingDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, 1, 0, 0, 0).AddMonths(1);
-                            RelativeStrengthIndexSettings.HistoricChartMainDateTime = startingDateTime.ToString();
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTime = RelativeStrengthIndexSettings.HistoricChartMainDateTime;
+                            if (previousHistoricRate == null || previousHistoricRate.High == 0)
+                                RelativeStrengthIndexSettings.HistoricChartDefaultDateTime = startingDateTime.ToString();
+                            RelativeStrengthIndexSettings.HistoricChartLastDateTime = startingDateTime.ToString();
                             continue;
                         }
                     }
@@ -190,6 +191,8 @@ namespace exchange.core.Indicators
                     {
                         if (rate.DateAndTime.Date >= now)
                             break;
+                        if (previousHistoricRate.DateAndTime.ToString("dd/MM/yyyy HH:mm") == rate.DateAndTime.ToString("dd/MM/yyyy HH:mm"))
+                            continue;
                         //Moving Average 7 days
                         if (maQueue.Count == maPeriod)
                             maQueue.Dequeue();
@@ -244,25 +247,28 @@ namespace exchange.core.Indicators
                         previousHistoricRate = rate;
                         RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCount++;
                     }
-                    startingDateTime = endingDateTime.Date > now ? now : endingDateTime.AddDays(1);
+                    startingDateTime = previousHistoricRate.DateAndTime.AddDays(1);
                 }
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateClose = previousHistoricRate.Close;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen = previousHistoricRate.Open;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLow = previousHistoricRate.Low;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHigh = previousHistoricRate.High;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolume = previousHistoricRate.Volume;
-                RelativeStrengthIndexSettings.HistoricChartLastDateTime = startingDateTime.ToString();
-                Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                if(previousHistoricRate != null)
                 {
-                    ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
-                };
-                TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
-                Save();
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateClose = previousHistoricRate.Close;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen = previousHistoricRate.Open;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLow = previousHistoricRate.Low;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHigh = previousHistoricRate.High;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolume = previousHistoricRate.Volume;
+                    RelativeStrengthIndexSettings.HistoricChartLastDateTime = previousHistoricRate.DateAndTime.ToString();
+                    Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                    {
+                        ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+                    };
+                    TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
+                    Save();
+                }           
             }
             catch(Exception ex)
             {
@@ -278,8 +284,7 @@ namespace exchange.core.Indicators
             await _processHistorySemaphoreSlim.WaitAsync();
             try
             {
-
-                string fileName = FileName + "_1H.csv";
+                string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_1H.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
                 if (!File.Exists(fileName))
@@ -302,21 +307,23 @@ namespace exchange.core.Indicators
                     High = 0,
                     Volume = 0
                 };
-                //RelativeIndexHourly = -1;
                 decimal increases = 0;
                 decimal decreases = 0;
                 Queue<HistoricRate> maQueue = new Queue<HistoricRate>();
                 //Check if we have an empty file or not
-                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartMainDateTime))
+                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly))
                 {
-                    startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+                    startingDateTime = !string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartDefaultDateTime)
+                       ? RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime()
+                       : new DateTime(2015, 4, 23).Date.ToUniversalTime();
                     RelativeStrengthIndexSettings.HistoricChartAverageGainHourly = 0;
                     RelativeStrengthIndexSettings.HistoricChartAverageLossHourly = 0;
                     RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCountHourly = 0;
+                    RelativeStrengthIndexSettings.RelativeIndexHourly = -1;
                 }
                 else
                 {
-                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartMainDateTime.ToDateTime();
+                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly.ToDateTime();
                     previousHistoricRate = new HistoricRate
                     {
                         Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseHourly,
@@ -342,15 +349,14 @@ namespace exchange.core.Indicators
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                     if (!result.Any())
                     {
-                        if (startingDateTime.Date == DateTime.Now.Date)
-                        {
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
-                        }
-                        else
+                        if (RelativeStrengthIndexSettings.HistoricChartDefaultDateTime == null ||
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date >= startingDateTime.Date ||
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date != DateTime.Now.Date)
                         {
                             startingDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, 1, 0, 0, 0).AddMonths(1);
-                            RelativeStrengthIndexSettings.HistoricChartMainDateTime = startingDateTime.ToString();
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = RelativeStrengthIndexSettings.HistoricChartMainDateTime;
+                            if (previousHistoricRate == null || previousHistoricRate.High == 0)
+                                RelativeStrengthIndexSettings.HistoricChartDefaultDateTime = startingDateTime.ToString();
+                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = startingDateTime.ToString();
                             continue;
                         }
                     }
@@ -363,6 +369,8 @@ namespace exchange.core.Indicators
                     {
                         if (rate.DateAndTime >= now)
                             break;
+                        if (previousHistoricRate.DateAndTime.ToString("dd/MM/yyyy HH:mm") == rate.DateAndTime.ToString("dd/MM/yyyy HH:mm"))
+                            continue;
                         //Moving Average 7 days
                         if (maQueue.Count == maPeriod)
                             maQueue.Dequeue();
@@ -417,25 +425,28 @@ namespace exchange.core.Indicators
                         previousHistoricRate = rate;
                         RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCountHourly++;
                     }
-                    startingDateTime = endingDateTime > now ? now : endingDateTime.AddHours(1);
+                    startingDateTime = previousHistoricRate.DateAndTime.AddHours(1);
                 }
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseHourly = previousHistoricRate.Close;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly = previousHistoricRate.Open;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLowHourly = previousHistoricRate.Low;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHighHourly = previousHistoricRate.High;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolumeHourly = previousHistoricRate.Volume;
-                RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = startingDateTime.ToString();
-                Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                if(previousHistoricRate != null)
                 {
-                    ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
-                };
-                TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
-                Save();
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseHourly = previousHistoricRate.Close;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly = previousHistoricRate.Open;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLowHourly = previousHistoricRate.Low;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHighHourly = previousHistoricRate.High;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolumeHourly = previousHistoricRate.Volume;
+                    RelativeStrengthIndexSettings.HistoricChartLastDateTimeHourly = previousHistoricRate.DateAndTime.ToString();
+                    Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                    {
+                        ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+                    };
+                    TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
+                    Save();
+                }      
             }
             catch (Exception ex)
             {
@@ -451,7 +462,7 @@ namespace exchange.core.Indicators
             await _processHistorySemaphoreSlim.WaitAsync();
             try
             {
-                string fileName = FileName + "_15M.csv";
+                string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_15M.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
                 if (!File.Exists(fileName))
@@ -478,16 +489,19 @@ namespace exchange.core.Indicators
                 decimal decreases = 0;
                 Queue<HistoricRate> maQueue = new Queue<HistoricRate>();
                 //Check if we have an empty file or not
-                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartMainDateTime))
+                if (string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly))
                 {
-                    startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
+                    startingDateTime = !string.IsNullOrWhiteSpace(RelativeStrengthIndexSettings.HistoricChartDefaultDateTime)
+                       ? RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime()
+                       : new DateTime(2015, 4, 23).Date.ToUniversalTime();
                     RelativeStrengthIndexSettings.HistoricChartAverageGainQuarterly = 0;
                     RelativeStrengthIndexSettings.HistoricChartAverageLossQuarterly = 0;
                     RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCountQuarterly = 0;
+                    RelativeStrengthIndexSettings.RelativeIndexQuarterly = -1;
                 }
                 else
-                {
-                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartMainDateTime.ToDateTime();
+                {          
+                    startingDateTime = RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly.ToDateTime();
                     previousHistoricRate = new HistoricRate
                     {
                         Close = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseQuarterly,
@@ -513,15 +527,14 @@ namespace exchange.core.Indicators
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                     if (!result.Any())
                     {
-                        if (startingDateTime.Date == DateTime.Now.Date)
-                        {
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = DateTime.Now.AddHours(-2).Date.ToUniversalTime().ToString(CultureInfo.InvariantCulture);
-                        }
-                        else
+                        if (RelativeStrengthIndexSettings.HistoricChartDefaultDateTime == null ||
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date >= startingDateTime.Date ||
+                            RelativeStrengthIndexSettings.HistoricChartDefaultDateTime.ToDateTime().Date != DateTime.Now.Date)
                         {
                             startingDateTime = new DateTime(startingDateTime.Year, startingDateTime.Month, 1, 0, 0, 0).AddMonths(1);
-                            RelativeStrengthIndexSettings.HistoricChartMainDateTime = startingDateTime.ToString();
-                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = RelativeStrengthIndexSettings.HistoricChartMainDateTime;
+                            if (previousHistoricRate == null || previousHistoricRate.High == 0)
+                                RelativeStrengthIndexSettings.HistoricChartDefaultDateTime = startingDateTime.ToString();
+                            RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = startingDateTime.ToString();
                             continue;
                         }
                     }
@@ -533,6 +546,8 @@ namespace exchange.core.Indicators
                     {
                         if (rate.DateAndTime >= now)
                             break;
+                        if (previousHistoricRate.DateAndTime.ToString("dd/MM/yyyy HH:mm") == rate.DateAndTime.ToString("dd/MM/yyyy HH:mm"))
+                            continue;
                         //Moving Average 7 days
                         if (maQueue.Count == maPeriod)
                             maQueue.Dequeue();
@@ -587,25 +602,28 @@ namespace exchange.core.Indicators
                         previousHistoricRate = rate;
                         RelativeStrengthIndexSettings.HistoricChartCurrentPeriodCountQuarterly++;
                     }
-                    startingDateTime = endingDateTime > now ? now : endingDateTime.AddHours(1);
+                    startingDateTime = previousHistoricRate.DateAndTime.AddMinutes(15);
                 }
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseQuarterly = previousHistoricRate.Close;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly = previousHistoricRate.Open;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLowQuarterly = previousHistoricRate.Low;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHighQuarterly = previousHistoricRate.High;
-                RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolumeQuarterly = previousHistoricRate.Volume;
-                RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = startingDateTime.ToString();
-                Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                if(previousHistoricRate != null)
                 {
-                    ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
-                    ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
-                    ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
-                };
-                TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
-                Save();
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateCloseQuarterly = previousHistoricRate.Close;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly = previousHistoricRate.Open;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateLowQuarterly = previousHistoricRate.Low;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateHighQuarterly = previousHistoricRate.High;
+                    RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateVolumeQuarterly = previousHistoricRate.Volume;
+                    RelativeStrengthIndexSettings.HistoricChartLastDateTimeQuarterly = previousHistoricRate.DateAndTime.ToString();
+                    Dictionary<string, string> indicatorInformation = new Dictionary<string, string>
+                    {
+                        ["RSI-15MIN"] = RelativeStrengthIndexSettings.RelativeIndexQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1HOUR"] = RelativeStrengthIndexSettings.RelativeIndexHourly.ToString(CultureInfo.InvariantCulture),
+                        ["RSI-1DAY"] = RelativeStrengthIndexSettings.RelativeIndexDaily.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-15MIN"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenQuarterly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1HOUR"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpenHourly.ToString(CultureInfo.InvariantCulture),
+                        ["OPEN-1DAY"] = RelativeStrengthIndexSettings.HistoricChartPreviousHistoricRateOpen.ToString(CultureInfo.InvariantCulture)
+                    };
+                    TechnicalIndicatorInformationBroadcast?.Invoke(indicatorInformation);
+                    Save();
+                }            
             }
             catch (Exception ex)
             {

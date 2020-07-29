@@ -612,7 +612,8 @@ namespace exchange.binance
         {
             //string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             //string binanceRSIFile = Path.Combine(directoryName, "data\\binance");
-            //RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile);
+            //Product product = new Product() { ID = "BNBBTC" };
+            //RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
             //relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
             //relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
             //relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
