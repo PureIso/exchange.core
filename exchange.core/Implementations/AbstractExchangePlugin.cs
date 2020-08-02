@@ -26,6 +26,7 @@ namespace exchange.core
         public virtual List<Product> Products { get; set; }
         public virtual Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         public virtual string INIFilePath { get; set; }
+        public bool TestMode { get; set; }
 
         public virtual bool ChangeFeed(string message)
         {
@@ -57,7 +58,7 @@ namespace exchange.core
             GC.SuppressFinalize(this);
         }
 
-        public virtual Task<bool> InitAsync()
+        public virtual Task<bool> InitAsync(bool testMode)
         {
             throw new NotImplementedException();
         }

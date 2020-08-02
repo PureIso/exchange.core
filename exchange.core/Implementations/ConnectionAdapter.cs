@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using exchange.core.Interfaces;
-using exchange.core.models;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using exchange.core.Models;
 using exchange.core.implementations;
 using exchange.core.Enums;
 
@@ -56,14 +52,6 @@ namespace exchange.core
                 {
                     await ClientWebSocket.ConnectAsync(new Uri(uriString), CancellationToken.None);
                 }
-            }
-            catch (WebSocketException)
-            {
-                await Task.Delay(5000);
-            }
-            catch (WebException)
-            {
-                await Task.Delay(5000);
             }
             catch (Exception ex)
             {
@@ -120,9 +108,7 @@ namespace exchange.core
             try
             {
                 await _ioSemaphoreSlim.WaitAsync();
-                if (ClientWebSocket == null)
-                    return null;
-                if (!IsWebSocketConnected())
+                if (ClientWebSocket == null || !IsWebSocketConnected())
                     return null;
                 ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(new byte[512 * 512 * 5]);
                 WebSocketReceiveResult webSocketReceiveResult = await ClientWebSocket.ReceiveAsync(
@@ -155,7 +141,7 @@ namespace exchange.core
             {
                 await _ioSemaphoreSlim.WaitAsync();
                 if (ClientWebSocket == null || !IsWebSocketConnected())
-                    return true;
+                    return false;
                 await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
                 Dispose();
                 return true;
@@ -238,7 +224,6 @@ namespace exchange.core
                         throw new NotImplementedException("The supplied HTTP method is not supported: " +
                                                           request.Method);
                 }
-
                 if (response == null)
                     throw new Exception(
                         $"null response from RequestAsync \r\n URI:{request.AbsoluteUri} \r\n:Request Body:{requestBody}");
@@ -246,14 +231,13 @@ namespace exchange.core
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.StackTrace);
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: RequestAsync\r\nException Stack Trace: {ex.StackTrace}");
             }
             finally
             {
-                await Task.Delay(500);
                 _ioRequestSemaphoreSlim.Release();
             }
-
             return null;
         }
 
@@ -261,7 +245,9 @@ namespace exchange.core
         {
             try
             {
-                HttpResponseMessage response = null; 
+                await _ioRequestSemaphoreSlim.WaitAsync();
+                HttpResponseMessage response = null;
+                HttpClient.DefaultRequestHeaders.Clear();
                 HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
                 switch (request.Method)
                 {
@@ -282,10 +268,16 @@ namespace exchange.core
                     throw new Exception($"null response from RequestUnsignedAsync \r\n URI:{request.ComposeRequestUriAbsolute(Authentication.EndpointUrl)}");
                 return await response.Content.ReadAsStringAsync();
             }
+            catch (Exception ex)
+            {
+                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    $"Method: RequestUnsignedAsync\r\nException Stack Trace: {ex.StackTrace}");
+            }
             finally
             {
-                await Task.Delay(500);
+                _ioRequestSemaphoreSlim.Release();
             }
+            return null;
         }
         #endregion
     }

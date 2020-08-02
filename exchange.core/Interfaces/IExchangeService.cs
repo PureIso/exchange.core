@@ -24,6 +24,7 @@ namespace exchange.core.interfaces
 
         #region Properties
         string INIFilePath { get; set; }
+        bool TestMode { get; set; }
         Authentication Authentication { get; set; }
         ClientWebSocket ClientWebSocket { get; set; }
         ConnectionAdapter ConnectionAdapter { get; set; }
@@ -32,7 +33,7 @@ namespace exchange.core.interfaces
         #endregion
 
         #region Methods
-        Task<bool> InitAsync();
+        Task<bool> InitAsync(bool testMode);
         bool InitIndicatorsAsync();
         Task<bool> CloseFeed();
         bool ChangeFeed(string message);

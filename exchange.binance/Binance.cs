@@ -23,7 +23,7 @@ namespace exchange.binance
         #region Fields
         private object _ioLock;
         #endregion
-
+        
         #region Public Properties
         public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
@@ -53,30 +53,31 @@ namespace exchange.binance
                     {
                         if (string.IsNullOrEmpty(line))
                             continue;
-                        if (line.StartsWith("uri="))
+                        string env = TestMode ? "test" : "live";
+                        if (line.StartsWith($"{env}_uri="))
                         {
-                            line = line.Replace("uri=", "").Trim();
+                            line = line.Replace($"{env}_uri=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.WebSocketUri = new Uri(line);
                         }
-                        else if (line.StartsWith("key="))
+                        else if (line.StartsWith($"{env}_key="))
                         {
-                            line = line.Replace("key=", "").Trim();
+                            line = line.Replace($"{env}_key=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.ApiKey = line;
                         }
-                        else if (line.StartsWith("secret="))
+                        else if (line.StartsWith($"{env}_secret="))
                         {
-                            line = line.Replace("secret=", "").Trim();
+                            line = line.Replace($"{env}_secret=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.Secret = line;
                         }
-                        else if (line.StartsWith("endpoint="))
+                        else if (line.StartsWith($"{env}_endpoint="))
                         {
-                            line = line.Replace("endpoint=", "").Trim();
+                            line = line.Replace($"{env}_endpoint=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.EndpointUrl = line;
@@ -100,7 +101,8 @@ namespace exchange.binance
                     if (string.IsNullOrEmpty(FileName))
                     {
                         string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                        FileName = Path.Combine(directoryName, "data\\binance.json");
+                        string env = TestMode ? "test" : "live";
+                        FileName = Path.Combine(directoryName, $"data\\binance_{env}.json");
                         if (!File.Exists(FileName))
                             File.Create(FileName).Close();
                     }
@@ -440,10 +442,31 @@ namespace exchange.binance
             try
             {
                 ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Historic Candles.");
+                string interval = "1d";
+                switch (historicCandlesSearch.Granularity)
+                {
+                    case Granularity.FiveMinutes:
+                        interval = "5m";
+                        break;
+                    case Granularity.Fifteen:
+                        interval = "15m";
+                        break;
+                    case Granularity.OneHour:
+                        interval = "1h";
+                        break;
+                    case Granularity.OneDay:
+                        interval = "1d";
+                        break;
+                    default:
+                        interval = "1d";
+                        break;
+                }
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v1/klines?")
                 {
                     RequestQuery =
-                        $"symbol={historicCandlesSearch.Symbol}&interval=5m&startTime={historicCandlesSearch.StartingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
+                        $"symbol={historicCandlesSearch.Symbol}&" +
+                        $"interval={interval}&startTime={historicCandlesSearch.StartingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}&" +
+                        $"endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
                 };
                 string json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
@@ -539,14 +562,15 @@ namespace exchange.binance
 
            
         }
-        public override async Task<bool> InitAsync()
+        public override async Task<bool> InitAsync(bool testMode)
         {
             try
-            {         
+            {
+                TestMode = testMode;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    INIFilePath = Path.Combine(directoryName, "binance.config.ini");
+                    INIFilePath = Path.Combine(directoryName, $"binance.config.ini");
                     LoadINI(INIFilePath);
                 }
                 else
@@ -610,15 +634,20 @@ namespace exchange.binance
         }
         public override bool InitIndicatorsAsync()
         {
-            //string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            //string binanceRSIFile = Path.Combine(directoryName, "data\\binance");
-            //Product product = new Product() { ID = "BNBBTC" };
-            //RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
-            //relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
-            //relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
-            //relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-            //relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-            return true;
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string env = TestMode ? "test" : "live";
+            string binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}");
+            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD");
+            if(product != null)
+            {
+                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
+                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
+                relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
+                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                return true;
+            }
+            return false;
         }
     }
 }

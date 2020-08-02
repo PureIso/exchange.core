@@ -69,43 +69,43 @@ namespace exchange.coinbase
                     {
                         if (string.IsNullOrEmpty(line))
                             continue;
-                        if (line.StartsWith("uri="))
+                        string env = TestMode ? "test" : "live";
+                        if (line.StartsWith($"{env}_uri="))
                         {
-                            line = line.Replace("uri=", "").Trim();
+                            line = line.Replace($"{env}_uri=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.WebSocketUri = new Uri(line);
                         }
-                        else if (line.StartsWith("key="))
+                        else if (line.StartsWith($"{env}_key="))
                         {
-                            line = line.Replace("key=", "").Trim();
+                            line = line.Replace($"{env}_key=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.ApiKey = line;
                         }
-                        else if (line.StartsWith("secret="))
+                        else if (line.StartsWith($"{env}_secret="))
                         {
-                            line = line.Replace("secret=", "").Trim();
+                            line = line.Replace($"{env}_secret=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.Secret = line;
                         }
-                        else if (line.StartsWith("endpoint="))
+                        else if (line.StartsWith($"{env}_endpoint="))
                         {
-                            line = line.Replace("endpoint=", "").Trim();
+                            line = line.Replace($"{env}_endpoint=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.EndpointUrl = line;
                         }
-                        else if (line.StartsWith("passphrase="))
+                        else if (line.StartsWith($"{env}_passphrase="))
                         {
-                            line = line.Replace("passphrase=", "").Trim();
+                            line = line.Replace($"{env}_passphrase=", "").Trim();
                             if (string.IsNullOrEmpty(line))
                                 continue;
                             Authentication.Passphrase = line;
                         }
                     }
-                   // ClientWebSocket = new ClientWebSocket();
                     ConnectionAdapter.Authentication = Authentication;
                     ConnectionAdapter.ClientWebSocket = ClientWebSocket;
                 }
@@ -126,7 +126,8 @@ namespace exchange.coinbase
                     if (string.IsNullOrEmpty(FileName))
                     {
                         string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                        FileName = Path.Combine(directoryName, "data\\coinbase.json");
+                        string env = TestMode ? "test" : "live";
+                        FileName = Path.Combine(directoryName, $"data\\coinbase_{env}.json");
                         if (!File.Exists(FileName))
                             File.Create(FileName).Close();
                     }
@@ -532,14 +533,15 @@ namespace exchange.coinbase
         }
         #endregion
 
-        public override async Task<bool> InitAsync()
+        public override async Task<bool> InitAsync(bool testMode)
         {
             try
             {
+                TestMode = testMode;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    INIFilePath = Path.Combine(directoryName, "coinbase.config.ini");
+                    INIFilePath = Path.Combine(directoryName, $"coinbase.config.ini");
                     LoadINI(INIFilePath);
                 }
                 else
@@ -610,6 +612,7 @@ namespace exchange.coinbase
                 {
                     ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
                     HistoricRates = candles.ToHistoricRateList();
+                    HistoricRates.Reverse();
                 }
                 else
                 {
@@ -627,15 +630,19 @@ namespace exchange.coinbase
         public override bool InitIndicatorsAsync()
         {
             string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            string coinbaseRSIFile = Path.Combine(directoryName, "data\\coinbase");
-            Product product = new Product() { ID = "BTC-EUR" };
+            string env = TestMode ? "test" : "live";
+            string coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}");
+            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR");
             RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
-
-            relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
-            relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
-            relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-            relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-            return true;
+            if(product != null)
+            {
+                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
+                relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
+                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                return true;
+            }
+            return false;
         }
         #endregion
     }

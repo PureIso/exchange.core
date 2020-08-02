@@ -10,11 +10,18 @@ using exchange.coinbase;
 using exchange.core.interfaces;
 using exchange.core;
 using exchange.binance;
+using exchange.core.Implementations;
 
 namespace exchange.service
 {
     public static class Program
     {
+#if DEBUG
+        private const string DefaultEnvironmentName = "Development";
+#else
+        private const string DefaultEnvironmentName = "Production";
+#endif
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
@@ -33,6 +40,8 @@ namespace exchange.service
             })
             .ConfigureServices((hostContext, services) => {
                 IConfiguration configuration = hostContext.Configuration;
+                ExchangeSettings exchangeSettings = configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
+                services.AddSingleton<IExchangeSettings>(exchangeSettings);
                 //cross origin requests
                 services.AddCors(options => options.AddPolicy(name: Startup.AllowSpecificOrigins, builder => {
                     builder.WithOrigins($"http://*:9000/")
@@ -44,9 +53,10 @@ namespace exchange.service
              })
             .ConfigureAppConfiguration((hostContext, configApp) =>
             {
-                string f = Directory.GetCurrentDirectory();
+
                 configApp.SetBasePath(Directory.GetCurrentDirectory());
-                configApp.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
+                //configApp.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
+                configApp.AddJsonFile($"appsettings.{DefaultEnvironmentName}.json", optional: true);
                 configApp.AddCommandLine(args);
 
             })

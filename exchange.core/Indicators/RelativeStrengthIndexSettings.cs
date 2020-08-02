@@ -7,8 +7,8 @@ namespace exchange.core.Indicators
     [Serializable]
     public class RelativeStrengthIndexSettings
     {
-        [JsonPropertyName("historic_chart_default_date")]
-        public string HistoricChartDefaultDateTime { get; set; }
+        //[JsonPropertyName("historic_chart_default_date")]
+        //public string HistoricChartDefaultDateTime { get; set; }
 
         [JsonPropertyName("relative_index_daily")]
         public decimal RelativeIndexDaily { get; set; }
@@ -18,8 +18,10 @@ namespace exchange.core.Indicators
         public decimal RelativeIndexQuarterly { get; set; }
         [JsonPropertyName("product")]
         public Product Product { get; set; }
-        [JsonPropertyName("historic_chart_last_datetime")]
-        public string HistoricChartLastDateTime { get; set; }
+
+
+        [JsonPropertyName("historic_chart_previous_date_time")]
+        public string HistoricChartPreviousHistoricDateTime { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_close")]
         public decimal HistoricChartPreviousHistoricRateClose { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_open")]
@@ -36,8 +38,10 @@ namespace exchange.core.Indicators
         public decimal HistoricChartAverageLoss { get; set; }
         [JsonPropertyName("historic_chart_current_period_count")]
         public int HistoricChartCurrentPeriodCount { get; set; }
-        [JsonPropertyName("historic_chart_last_datetime_hourly")]
-        public string HistoricChartLastDateTimeHourly { get; set; }
+
+
+        [JsonPropertyName("historic_chart_previous_date_time_hourly")]
+        public string HistoricChartPreviousHistoricDateTimeHourly { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_close_hourly")]
         public decimal HistoricChartPreviousHistoricRateCloseHourly { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_open_hourly")]
@@ -54,8 +58,11 @@ namespace exchange.core.Indicators
         public decimal HistoricChartAverageLossHourly { get; set; }
         [JsonPropertyName("historic_chart_current_period_count_hourly")]
         public int HistoricChartCurrentPeriodCountHourly { get; set; }
-        [JsonPropertyName("historic_chart_last_datetime_quarterly")]
-        public string HistoricChartLastDateTimeQuarterly { get; set; }
+
+
+
+        [JsonPropertyName("historic_chart_previous_date_time_quarterly")]
+        public string HistoricChartPreviousHistoricDateTimeQuarterly { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_close_quarterly")]
         public decimal HistoricChartPreviousHistoricRateCloseQuarterly { get; set; }
         [JsonPropertyName("historic_chart_previous_rate_open_quarterly")]

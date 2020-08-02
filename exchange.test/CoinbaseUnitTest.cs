@@ -630,7 +630,7 @@ namespace exchange.test
                 {
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent(
-                        $@"[[1415398768, 0.32, 4.2, 0.35, 4.2, 12.3],[1415398998, 0.33, 4.9, 0.40, 4.5, 15.3]]")
+                        $@"[[1415398998, 0.33, 4.9, 0.40, 4.5, 15.3],[1415398768, 0.32, 4.2, 0.35, 4.2, 12.3]]")
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);

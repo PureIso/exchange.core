@@ -22,13 +22,15 @@ namespace exchange.service
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
+        private readonly IExchangeSettings _exchangeSettings;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
         private ExchangePluginService _exchangePluginService;
 
-        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub,IExchangeSettings exchangeSettings)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
+            _exchangeSettings = exchangeSettings;
             //Load available plugins
             string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             if (string.IsNullOrEmpty(directoryName))
@@ -49,7 +51,7 @@ namespace exchange.service
                     abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
-                    await abstractExchangePlugin.InitAsync();
+                    await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode);
                     abstractExchangePlugin.InitIndicatorsAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
