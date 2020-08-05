@@ -13,9 +13,5 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if not exist $(SolutionDir)exchange.service\bin\$(ConfigurationName)\net5.0\plugin mkdir $(SolutionDir)exchange.service\bin\$(ConfigurationName)\net5.0\plugin&#xD;&#xA;xcopy $(TargetDir)$(TargetName).* $(SolutionDir)exchange.service\bin\$(ConfigurationName)\net5.0\plugin /Y&#xD;&#xA;xcopy $(TargetDir)coinbase.config.ini $(SolutionDir)exchange.service\bin\$(ConfigurationName)\net5.0\plugin /Y" />
-  </Target>
-
+  
 </Project>

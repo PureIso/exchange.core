@@ -1,7 +1,17 @@
 # exchange.core
 
-Cryptocurrency exchange API
+**Build status**
+
+**master**:
+[![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=master)](https://travis-ci.org/PureIso/exchange.core)
+development:
+[![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=development)](https://travis-ci.org/PureIso/exchange.core)
+
+
 **Version: 1.0.0**
+
+
+Cryptocurrency exchange API
 
 System will connect to various exchanges for real-time trade information.\
 System will record trading information to be later used for supervised machine learning.\
@@ -93,22 +103,31 @@ The following development process seems to work well for this project.
 - [Flask](https://flask.palletsprojects.com/en/1.1.x/) - (MicroWeb Framework)
 - [Celery](http://www.celeryproject.org/) - (Distributed Task Queue)
 - [RabbitMQ](https://www.rabbitmq.com/) - (Message Broker)
-- [SQLite](https://sqlite.org/index.html) - (Database Engine)
+- [MongoDB](https://www.mongodb.com/) - (Database Engine)
 
 ## Configuration
 
 Open exchange.service/appsettings[Environment].json change the -> "ExchangeSettings" in order to connect to exchange API.
 
-See example for Coinbase:
+Service setting to determine what API endpoints to use
 
 ```json
 "ExchangeSettings": {
-    "Uri": "wss://ws-feed.gdax.com",
-    "APIKey": "API-KEY",
-    "PassPhrase": "PASS-PHRASE",
-    "Secret": "SECRET",
-    "EndpointUrl": "https://api.pro.coinbase.com"
+    "TestMode": true
   }
+```
+
+```ini
+test_uri=wss://ws-feed-public.sandbox.pro.coinbase.com
+test_key=
+test_passphrase=
+test_secret=
+test_endpoint=https://api-public.sandbox.pro.coinbase.com
+live_uri=wss://ws-feed.pro.coinbase.com
+live_key=
+live_passphrase=
+live_secret=
+live_endpoint=https://api.pro.coinbase.com
 ```
 
 ## Installation
