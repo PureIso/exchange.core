@@ -17,9 +17,9 @@ namespace exchange.core.interfaces
     public interface IExchangeService
     {
         #region Actions
-        Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
-        Action<Feed> FeedBroadcast { get; set; }
-        Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        Action<string, Feed> FeedBroadcast { get; set; }
+        Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
         #endregion
 
         #region Properties

@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
     <StartupObject>exchange.service.Program</StartupObject>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

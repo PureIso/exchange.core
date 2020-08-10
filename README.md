@@ -4,7 +4,7 @@
 
 **master**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=master)](https://travis-ci.org/PureIso/exchange.core)
-development:
+**development**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=development)](https://travis-ci.org/PureIso/exchange.core)
 
 

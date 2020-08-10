@@ -119,7 +119,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: Save\r\nException Stack Trace: {e.StackTrace}");
             }
         }
@@ -196,7 +196,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateExchangeInfoAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return ExchangeInfo;
@@ -205,14 +205,14 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Account Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"[Binance] Updating Account Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/account?")
                 {
                     RequestQuery = $"timestamp={serverTime.ServerTimeLong}"
                 };
                 string json = await ConnectionAdapter.RequestAsync(request);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
                 if(BinanceAccount != null && BinanceAccount.Balances != null && BinanceAccount.Balances.Any())
@@ -247,7 +247,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return BinanceAccount;
@@ -257,7 +257,7 @@ namespace exchange.binance
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Orders Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Orders Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/openOrders?")
                 {
@@ -268,7 +268,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
@@ -279,7 +279,7 @@ namespace exchange.binance
             BinanceOrder binanceOrder = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Post Order Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"[Binance] Post Order Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST",
                     $"/api/v3/order?");
@@ -293,11 +293,11 @@ namespace exchange.binance
                                            $"&quantity={order.OrderSize}&price={ order.LimitPrice}&timeInForce=GTC";
                 string json = await ConnectionAdapter.RequestAsync(request);
                 binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: BinancePostOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return binanceOrder;
@@ -306,7 +306,7 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Cancelling order.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Cancelling order.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "DELETE",
@@ -318,11 +318,11 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"BinanceCancelOrdersAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"BinanceCancelOrdersAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return binanceOrder;
@@ -332,7 +332,7 @@ namespace exchange.binance
             List<BinanceOrder> binanceOrders = new List<BinanceOrder>();
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Cancelling order.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Cancelling order.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,"DELETE",$"/api/v3/openOrders?")
                 {
@@ -342,11 +342,11 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     binanceOrders = JsonSerializer.Deserialize<BinanceOrder[]>(json).ToList();
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"CancelOrdersAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"CancelOrdersAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return binanceOrders;
@@ -355,7 +355,7 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Update Tickers Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Update Tickers Information.");
                 if (products == null || !products.Any())
                     return Tickers;
                 if (Tickers == null)
@@ -384,7 +384,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateTickersAsync\r\nException Stack Trace: {e.StackTrace}");
             }
 
@@ -394,7 +394,7 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Updating Fills Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Fills Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "GET",
@@ -406,11 +406,11 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return BinanceFill;
@@ -419,19 +419,19 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Order Book.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"[Binance] Updating Product Order Book.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/api/v3/depth?")
                 {
                     RequestQuery = $"symbol={product.ID}&limit={level}"
                 };
                 string json = await ConnectionAdapter.RequestUnsignedAsync(request);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return OrderBook;
@@ -441,7 +441,7 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"[Binance] Updating Product Historic Candles.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"[Binance] Updating Product Historic Candles.");
                 string interval = "1d";
                 switch (historicCandlesSearch.Granularity)
                 {
@@ -469,7 +469,7 @@ namespace exchange.binance
                         $"endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
                 };
                 string json = await ConnectionAdapter.RequestUnsignedAsync(request);
-                ProcessLogBroadcast?.Invoke(MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateProductOrderBookAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 if(json.StartsWith("[") && json.EndsWith("]"))
                 {
@@ -479,7 +479,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return HistoricRates;
@@ -490,7 +490,7 @@ namespace exchange.binance
             Feed feed = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Subscribing to Feed Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Subscribing to Feed Information.");
                 string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
                 ConnectionAdapter.ConnectAsync(uriString).Wait();
                 json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
@@ -502,7 +502,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
             return feed != null && feed.Type != "error";
@@ -514,7 +514,7 @@ namespace exchange.binance
                 string json = null;
                 try
                 {
-                    ProcessLogBroadcast?.Invoke(MessageType.General, $"Started Processing Feed Information.");                
+                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Started Processing Feed Information.");                
                     string message = "stream?streams=";              
                     List<Product> products = new List<Product>
                     {
@@ -548,14 +548,14 @@ namespace exchange.binance
                             feed.Price = feed.BinanceData.Price;
                             feed.CurrentPrices = CurrentPrices;
 
-                            FeedBroadcast?.Invoke(feed);
+                            FeedBroadcast?.Invoke(ApplicationName,feed);
                         }
                     }
                     
                 }
                 catch (Exception e)
                 {
-                    ProcessLogBroadcast?.Invoke(MessageType.Error,
+                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                         $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
                 }
             });
@@ -627,7 +627,7 @@ namespace exchange.binance
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return false;
@@ -641,8 +641,14 @@ namespace exchange.binance
             if(product != null)
             {
                 RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
-                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
-                relativeStrengthIndex.ProcessLogBroadcast += ProcessLogBroadcast;
+                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += delegate (Dictionary<string, string> input)
+                {
+                    TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                };
+                relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
+                {
+                    ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
+                };
                 relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
                 relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
                 return true;

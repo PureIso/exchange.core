@@ -20,11 +20,11 @@ namespace exchange.core
         public virtual string Description { get; set; }
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
-        public virtual Action<Feed> FeedBroadcast { get; set; }
-        public virtual Action<MessageType, string> ProcessLogBroadcast { get; set; }
+        public virtual Action<string,Feed> FeedBroadcast { get; set; }
+        public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
         public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual List<Product> Products { get; set; }
-        public virtual Action<Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }
 
@@ -38,12 +38,12 @@ namespace exchange.core
             bool isClosed = false;
             try
             {
-                ProcessLogBroadcast?.Invoke(MessageType.General, $"Closing Feed Subscription.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, $"Closing Feed Subscription.");
                 isClosed = await ConnectionAdapter?.WebSocketCloseAsync();
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
                     $"Method: CloseFeed\r\nException Stack Trace: {e.StackTrace}");
             }
             return isClosed;

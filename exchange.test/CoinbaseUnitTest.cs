@@ -774,7 +774,7 @@ namespace exchange.test
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             subjectUnderTest.ClientWebSocket = clientWebSocket;
-            subjectUnderTest.FeedBroadcast += delegate(Feed feed)
+            subjectUnderTest.FeedBroadcast += delegate(string applicationame, Feed feed)
             {
                 eventRaised = true;
                 if(feed.Sequence == 7000000002 || feed.Sequence == 7000000001 || feed.Sequence == 7000000000) 

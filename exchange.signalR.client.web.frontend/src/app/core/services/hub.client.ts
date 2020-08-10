@@ -23,7 +23,7 @@ export class HubClient {
         HubClient.notificationContainer = notificationContainer;
     }
 
-    notifyCurrentPrices(priceRecords: Record<string, number>) {
+    notifyCurrentPrices(applicationName:string, priceRecords: Record<string, number>) {
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
@@ -42,7 +42,7 @@ export class HubClient {
         });
     }
 
-    notifyInformation(messageType: MessageType, message: string) {
+    notifyInformation(applicationName:string, messageType: MessageType, message: string) {
         console.log(messageType + " - " + message);
     }
 }

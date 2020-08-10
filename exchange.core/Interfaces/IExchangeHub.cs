@@ -6,8 +6,9 @@ namespace exchange.core.interfaces
 {
     public interface IExchangeHub
     {
-        Task NotifyCurrentPrices(Dictionary<string, decimal> currentPrices);
-        Task NotifyInformation(MessageType messageType, string message);
-        Task NotifyTechnicalIndicatorInformation(Dictionary<string, string> indicatorInformation);
+        Task NotifyCurrentPrices(string exchange, Dictionary<string, decimal> currentPrices);
+        Task NotifyInformation(string exchange, MessageType messageType, string message);
+
+        Task NotifyTechnicalIndicatorInformation(string exchange, Dictionary<string, string> indicatorInformation);
     }
 }

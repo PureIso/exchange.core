@@ -13,38 +13,61 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.core", "exchange.c
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1FD7EC3A-CA77-45DE-A0CB-2C99905DAF7F}"
 	ProjectSection(SolutionItems) = preProject
+		copy_plugins.bat = copy_plugins.bat
 		docker-compose.yml = docker-compose.yml
 		Dockerfile = Dockerfile
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "exchange.binance", "exchange.binance\exchange.binance.csproj", "{3528D898-C540-424A-ADE5-0ABABC6755AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "exchange.binance", "exchange.binance\exchange.binance.csproj", "{3528D898-C540-424A-ADE5-0ABABC6755AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Debug|x64.ActiveCfg = Debug|x64
+		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Debug|x64.Build.0 = Debug|x64
 		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Release|x64.ActiveCfg = Release|x64
+		{C7A03CD6-3EB1-4439-B15E-6FED2E7A640F}.Release|x64.Build.0 = Release|x64
 		{CFA01642-17F0-4D49-88B5-178F640A9745}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CFA01642-17F0-4D49-88B5-178F640A9745}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFA01642-17F0-4D49-88B5-178F640A9745}.Debug|x64.ActiveCfg = Debug|x64
+		{CFA01642-17F0-4D49-88B5-178F640A9745}.Debug|x64.Build.0 = Debug|x64
 		{CFA01642-17F0-4D49-88B5-178F640A9745}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CFA01642-17F0-4D49-88B5-178F640A9745}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFA01642-17F0-4D49-88B5-178F640A9745}.Release|x64.ActiveCfg = Release|x64
+		{CFA01642-17F0-4D49-88B5-178F640A9745}.Release|x64.Build.0 = Release|x64
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|x64.ActiveCfg = Debug|x64
+		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Debug|x64.Build.0 = Debug|x64
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|x64.ActiveCfg = Release|x64
+		{FCBD979A-A83C-4BC7-AA10-E81E04728427}.Release|x64.Build.0 = Release|x64
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|x64.ActiveCfg = Debug|x64
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Debug|x64.Build.0 = Debug|x64
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|x64.ActiveCfg = Release|x64
+		{E1D3B646-8C92-4690-9C3D-D20E339E86DB}.Release|x64.Build.0 = Release|x64
 		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Debug|x64.ActiveCfg = Debug|x64
+		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Debug|x64.Build.0 = Debug|x64
 		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Release|x64.ActiveCfg = Release|x64
+		{3528D898-C540-424A-ADE5-0ABABC6755AE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

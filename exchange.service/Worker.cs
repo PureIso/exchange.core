@@ -40,7 +40,6 @@ namespace exchange.service
                 Directory.CreateDirectory(pluginDirectory);
             _exchangePluginService = new ExchangePluginService(pluginDirectory);
         }
-
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
@@ -59,25 +58,26 @@ namespace exchange.service
             await base.StartAsync(cancellationToken);
         }
 
-        private async void TechnicalIndicatorInformationBroadcast(Dictionary<string, string> indicatorInformation)
+        #region Broadcast
+        private async void TechnicalIndicatorInformationBroadcast(string applicationName, Dictionary<string, string> indicatorInformation)
         {
-            await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(indicatorInformation);
-        }
-
-        private async void ProcessLogBroadcast(MessageType messageType, string message)
+            await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(applicationName, indicatorInformation);
+        }     
+        private async void ProcessLogBroadcast(string applicationName, MessageType messageType, string message)
         {
             _logger.LogInformation($"Log Broadcast: [Type: {messageType.GetStringValue()} , Message: {message}]");
-            await _exchangeHub.Clients.All.NotifyInformation(messageType,message);
+            await _exchangeHub.Clients.All.NotifyInformation(applicationName, messageType, message);
         }
-
-        private async void FeedBroadCast(Feed feed)
+        private async void FeedBroadCast(string applicationName, Feed feed)
         {
             if (feed.ProductID == null)
                 return;
-            await _exchangeHub.Clients.All.NotifyCurrentPrices(feed.CurrentPrices);
-            await _exchangeHub.Clients.All.NotifyInformation(MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
+            await _exchangeHub.Clients.All.NotifyCurrentPrices(applicationName, feed.CurrentPrices);
+            await _exchangeHub.Clients.All.NotifyInformation(applicationName, MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
             _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
         }
+        #endregion
+
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
