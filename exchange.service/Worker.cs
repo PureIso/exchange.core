@@ -50,6 +50,7 @@ namespace exchange.service
                     abstractExchangePlugin.FeedBroadcast += FeedBroadCast;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += TechnicalIndicatorInformationBroadcast;
+                    abstractExchangePlugin.AccountInfoBroadcast += AccountInfoBroadcast;
                     await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode);
                     abstractExchangePlugin.InitIndicatorsAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
@@ -62,10 +63,14 @@ namespace exchange.service
         private async void TechnicalIndicatorInformationBroadcast(string applicationName, Dictionary<string, string> indicatorInformation)
         {
             await _exchangeHub.Clients.All.NotifyTechnicalIndicatorInformation(applicationName, indicatorInformation);
-        }     
+        }
+        private async void AccountInfoBroadcast(string applicationName, Dictionary<string, decimal> accountInformation)
+        {
+            await _exchangeHub.Clients.All.NotifyAccountInfo(applicationName, accountInformation);
+        }
         private async void ProcessLogBroadcast(string applicationName, MessageType messageType, string message)
         {
-            _logger.LogInformation($"Log Broadcast: [Type: {messageType.GetStringValue()} , Message: {message}]");
+            _logger.LogInformation($"Log Broadcast: [ApplicationName: {applicationName} , Type: {messageType.GetStringValue()} , Message: {message}]");
             await _exchangeHub.Clients.All.NotifyInformation(applicationName, messageType, message);
         }
         private async void FeedBroadCast(string applicationName, Feed feed)
@@ -73,8 +78,8 @@ namespace exchange.service
             if (feed.ProductID == null)
                 return;
             await _exchangeHub.Clients.All.NotifyCurrentPrices(applicationName, feed.CurrentPrices);
-            await _exchangeHub.Clients.All.NotifyInformation(applicationName, MessageType.General, $"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
-            _logger.LogInformation($"Feed: [Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
+            //await _exchangeHub.Clients.All.NotifyInformation(applicationName, MessageType.General, $"Feed: [ApplicationName: {applicationName} ,Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
+            _logger.LogInformation($"Feed: [ApplicationName: {applicationName} ,Product: {feed.ProductID}, Price: {feed.Price}, Side: {feed.Side}, ID:{feed.Type}]");
         }
         #endregion
 

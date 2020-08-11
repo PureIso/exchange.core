@@ -25,7 +25,7 @@
                 <div class="row">
                     <ng-container *ngFor="let price of exchangeUIContainer.prices">
                         <div class="col-md-3 grid-margin stretch-card">
-                            <price-card-component [priceId]="price.id" [price]="price.price"></price-card-component>
+                            <price-card-component [priceId]="price.asset" [price]="price.price"></price-card-component>
                         </div>
                     </ng-container>
                 </div>

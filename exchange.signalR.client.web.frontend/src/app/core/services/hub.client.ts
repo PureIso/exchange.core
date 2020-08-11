@@ -29,10 +29,9 @@ export class HubClient {
         );
         let prices: Price[] = new Array();
         let keyValuePairs = Object.keys(priceRecords);
-        console.log(keyValuePairs);
         keyValuePairs.forEach((key) => {
             let value = priceRecords[key];
-            let price: Price = { id: key, price: value };
+            let price: Price = {applicationName: applicationName, asset: key, price: value };
             prices.push(price);
         });
         exchangeUIContainerActions.updatePrices(prices);
@@ -43,6 +42,6 @@ export class HubClient {
     }
 
     notifyInformation(applicationName:string, messageType: MessageType, message: string) {
-        console.log(messageType + " - " + message);
+        //console.log(applicationName + " - " + messageType + " - " + message);
     }
 }

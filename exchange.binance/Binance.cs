@@ -123,18 +123,28 @@ namespace exchange.binance
                     $"Method: Save\r\nException Stack Trace: {e.StackTrace}");
             }
         }
-        public static BinanceSettings Load(string fileName)
+        public void Load()
         {
+            string json = null;
             try
             {
-                string json = File.ReadAllText(fileName);
-                return JsonSerializer.Deserialize<BinanceSettings>(json);
+                if (string.IsNullOrEmpty(FileName))
+                    return;
+                if (!File.Exists(FileName))
+                    return;
+                json = File.ReadAllText(FileName);
+                BinanceSettings binanceSettings = JsonSerializer.Deserialize<BinanceSettings>(json);
+                if (binanceSettings == null)
+                    return;
+                binanceSettings.Accounts = Accounts;
+                binanceSettings.CurrentPrices = CurrentPrices;
+                binanceSettings.Tickers = Tickers;
             }
-            catch
+            catch (Exception e)
             {
-
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: Load\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
-            return default;
         }
 
         public Binance()
@@ -222,6 +232,17 @@ namespace exchange.binance
                     foreach (Asset asset in assets)
                     {
                         Accounts.Add(new Account() { Hold = asset.Free, Balance = asset.Free, ID = asset.ID, Currency = asset.ID });
+                    }
+                    if (Accounts != null)
+                    {
+                        Accounts.ForEach(account =>
+                        {
+                            AccountInfo ??= new Dictionary<string, decimal>();
+                            if (AccountInfo.ContainsKey(account.Currency))
+                                AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                        });
+                        AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
+                        Save();
                     }
                     if (ExchangeInfo.Symbols == null || !ExchangeInfo.Symbols.Any())
                         return BinanceAccount;
@@ -577,7 +598,7 @@ namespace exchange.binance
                 {
                     LoadINI(INIFilePath);
                 }
-
+                Load();
                 await UpdateExchangeInfoAsync();
                 await UpdateAccountsAsync();
                 List<Product> products = new List<Product>

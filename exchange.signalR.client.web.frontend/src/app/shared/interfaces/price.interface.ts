@@ -1,4 +1,5 @@
 export interface Price {
-    id: string;
+    applicationName: string;
+    asset: string;
     price: number;
 }

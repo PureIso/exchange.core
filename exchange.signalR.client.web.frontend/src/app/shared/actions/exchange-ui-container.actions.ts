@@ -11,7 +11,7 @@ export class CRUDExchangeUIContainer implements Action {
     }
     private getIndex(price: Price): number {
         return this.payload.prices.findIndex((x: Price) => {
-            return x.id === price.id;
+            return x.asset === price.asset && x.applicationName === price.applicationName;
         });
     }
     updatePrices(prices: Price[]) {

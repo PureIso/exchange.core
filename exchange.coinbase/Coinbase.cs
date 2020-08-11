@@ -20,7 +20,7 @@ namespace exchange.coinbase
     public class Coinbase : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-        private object _ioLock;
+        private readonly object _ioLock;
         #endregion
 
         #region Public Properties
@@ -145,18 +145,28 @@ namespace exchange.coinbase
                     $"Method: Save\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
         }
-        public static CoinbaseSettings Load(string fileName)
+        public void Load()
         {
+            string json = null;
             try
             {
-                string json = File.ReadAllText(fileName);
-                return JsonSerializer.Deserialize<CoinbaseSettings>(json);
+                if (string.IsNullOrEmpty(FileName))
+                    return;
+                if (!File.Exists(FileName))
+                    return; 
+                json = File.ReadAllText(FileName);
+                CoinbaseSettings coinbaseSettings = JsonSerializer.Deserialize<CoinbaseSettings>(json);
+                if (coinbaseSettings == null)
+                    return;
+                coinbaseSettings.Accounts = Accounts;
+                coinbaseSettings.CurrentPrices = CurrentPrices;
+                coinbaseSettings.Tickers = Tickers;
             }
-            catch
+            catch (Exception e)
             {
-
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: Load\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
-            return default;
         }
 
         #region Public Methods
@@ -174,7 +184,17 @@ namespace exchange.coinbase
                 ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 Accounts = JsonSerializer.Deserialize<List<Account>>(json);
-                Save();
+                if (Accounts != null)
+                {
+                    Accounts.ForEach(account =>
+                    {
+                        AccountInfo ??= new Dictionary<string, decimal>();
+                        if (AccountInfo.ContainsKey(account.Currency))
+                            AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                    });
+                    AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
+                    Save();
+                }
             }
             catch (Exception e)
             {
@@ -549,6 +569,7 @@ namespace exchange.coinbase
                     LoadINI(INIFilePath);
                 }
 
+                Load();
                 await UpdateAccountsAsync();
                 if (Accounts != null && Accounts.Any())
                 {

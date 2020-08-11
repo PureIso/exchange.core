@@ -18,17 +18,23 @@ namespace exchange.core.interfaces
     {
         #region Actions
         Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        Action<string, Dictionary<string, decimal>> AccountInfoBroadcast { get; set; }
         Action<string, Feed> FeedBroadcast { get; set; }
         Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
         #endregion
 
+        void RequestCurrentPrices();
+        void RequestAccountInfo();
+
         #region Properties
         string INIFilePath { get; set; }
         bool TestMode { get; set; }
+        Feed CurrentFeed { get; set; }
         Authentication Authentication { get; set; }
         ClientWebSocket ClientWebSocket { get; set; }
         ConnectionAdapter ConnectionAdapter { get; set; }
         Dictionary<string, decimal> CurrentPrices { get; set; }
+        Dictionary<string, decimal> AccountInfo { get; set; }
         List<Product> Products { get; set; }
         #endregion
 

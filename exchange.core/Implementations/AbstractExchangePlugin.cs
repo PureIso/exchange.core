@@ -12,7 +12,18 @@ namespace exchange.core
 {
     public abstract class AbstractExchangePlugin : IExchangeService
     {
+        #region Actions
+        public virtual Action<string, Feed> FeedBroadcast { get; set; }
+        public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
+        public virtual Action<string, Dictionary<string, decimal>> AccountInfoBroadcast { get; set; }
+        public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        #endregion
+
         #region Virtual Properties
+        public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
+        public virtual Dictionary<string, decimal> AccountInfo { get; set; }
+
+        public Feed CurrentFeed { get; set; }
         public virtual Authentication Authentication { get; set; }
         public virtual ClientWebSocket ClientWebSocket { get; set; }
         public virtual ConnectionAdapter ConnectionAdapter { get; set; }
@@ -20,11 +31,17 @@ namespace exchange.core
         public virtual string Description { get; set; }
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
-        public virtual Action<string,Feed> FeedBroadcast { get; set; }
-        public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
-        public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual List<Product> Products { get; set; }
-        public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+        public void RequestCurrentPrices()
+        {
+            FeedBroadcast?.Invoke(ApplicationName, CurrentFeed);
+        }
+
+        public void RequestAccountInfo()
+        {
+            AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
+        }
+
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }
 
@@ -69,6 +86,11 @@ namespace exchange.core
         }
         #endregion
 
+        public AbstractExchangePlugin()
+        {
+            AccountInfo = new Dictionary<string, decimal>();
+            CurrentPrices = new Dictionary<string, decimal>();
+        }
         #region Virtual Methods
 
         public virtual Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
