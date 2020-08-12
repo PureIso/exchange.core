@@ -16,6 +16,7 @@ import { NotificationContainer } from "@interfaces/notification-container.interf
 })
 export class PriceCardComponent implements AfterViewInit, OnInit {
     @Input() priceId: string;
+    @Input() applicationName: string;
     @Input() price: Number;
     @ViewChild("priceCard") priceCard: any;
     priceCardNativeElement: HTMLElement;
@@ -35,8 +36,7 @@ export class PriceCardComponent implements AfterViewInit, OnInit {
 
     ngAfterViewInit() {
         if (this.priceCard != undefined) {
-            this.priceCardNativeElement = this.priceCard
-                .nativeElement as HTMLElement;
+            this.priceCardNativeElement = this.priceCard.nativeElement as HTMLElement;
         }
     }
 }
