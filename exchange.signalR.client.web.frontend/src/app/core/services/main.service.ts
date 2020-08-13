@@ -33,6 +33,7 @@ export class MainService extends HubClient {
     start() {
         this.hubConnection.onclose(this.hub_connection_timeout.bind(this));
         this.hubConnection.on("notifyCurrentPrices", super.notifyCurrentPrices);
+        this.hubConnection.on("notifyAccountInfo", super.notifyAccountInfo);
         this.hubConnection.on("notifyInformation", super.notifyInformation);
         this.initialiseSubscriptions();
         this.hub_connecting();
@@ -78,7 +79,6 @@ export class MainService extends HubClient {
         this.hubUrlChange = false;
         this.timeout = 0;
         clearInterval(this.serverHubInitId);
-        this.hub_requestedCurrentPrices();
     }
 
     hub_connection_timeout() {
@@ -89,5 +89,8 @@ export class MainService extends HubClient {
     }
     hub_requestedCurrentPrices() {
         this.hubConnection.invoke("RequestCurrentPrices").catch((err) => console.error(err));
+    }
+    hub_requestedAccountInfo() {
+        this.hubConnection.invoke("RequestAccountInfo").catch((err) => console.error(err));
     }
 }

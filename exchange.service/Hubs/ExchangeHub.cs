@@ -16,19 +16,11 @@ namespace exchange.service.hubs
         #region Requested Methods from UI to Service
         public void RequestCurrentPrices()
         {
-            _exchangeService.RequestCurrentPrices();
+            _exchangeService.RequestedCurrentPrices();
         }
         public void RequestAccountInfo()
         {
-            _exchangeService.RequestAccountInfo();
-        }
-        #endregion
-
-        #region Overridden Methods
-        public override Task OnConnectedAsync()
-        {
-            //Clients.All.InvokeAsync("broadcastMessage", "system", $"{Context.ConnectionId} joined the conversation");
-            return base.OnConnectedAsync();
+            _exchangeService.RequestedAccountInfo();
         }
         #endregion
     }

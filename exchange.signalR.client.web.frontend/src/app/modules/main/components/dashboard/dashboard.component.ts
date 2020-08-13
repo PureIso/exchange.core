@@ -36,5 +36,12 @@ export class DashboardComponent implements OnInit {
             this.exchangeUIContainer = x;
         });
     }
-    ngAfterViewInit() {}
+    ngAfterViewInit() {
+        this.mainService.hub_requestedCurrentPrices();
+        this.mainService.hub_requestedAccountInfo();
+    }
+
+    onAccountInformationRefresh(){
+        this.mainService.hub_requestedAccountInfo();
+    }
 }

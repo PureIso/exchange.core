@@ -11,6 +11,8 @@ using exchange.core.interfaces;
 using exchange.core;
 using exchange.binance;
 using exchange.core.Implementations;
+using exchange.service.hubs;
+using exchange.service.Plugins;
 
 namespace exchange.service
 {
@@ -48,7 +50,7 @@ namespace exchange.service
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
                 services.AddSignalR();
-                services.AddSingleton<IExchangeService, Binance>();
+                services.AddSingleton<IExchangeService, ExchangeService>();
                 services.AddHostedService<Worker>();
              })
             .ConfigureAppConfiguration((hostContext, configApp) =>

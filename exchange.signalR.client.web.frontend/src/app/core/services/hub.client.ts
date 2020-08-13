@@ -5,6 +5,7 @@ import { NotificationContainer } from "@interfaces/notification-container.interf
 import * as ExchangeUIContainerActions from "@actions/exchange-ui-container.actions";
 import * as NotificationContainerActions from "@actions/exchange-ui-container.actions";
 import { Price } from "@interfaces/price.interface";
+import { AccountInfo } from "@interfaces/account-info.interface";
 
 export class HubClient {
     static redux: NgRedux<AppState>;
@@ -35,6 +36,24 @@ export class HubClient {
             prices.push(price);
         });
         exchangeUIContainerActions.updatePrices(prices);
+        HubClient.redux.dispatch({
+            type: exchangeUIContainerActions.type,
+            payload: exchangeUIContainerActions.payload,
+        });
+    }
+
+    notifyAccountInfo(applicationName:string, accountInfo: Record<string, number>) {
+        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
+            HubClient.exchangeUIContainer
+        );
+        let accounts: AccountInfo[] = new Array();
+        let keyValuePairs = Object.keys(accountInfo);
+        keyValuePairs.forEach((key) => {
+            let value = accountInfo[key];
+            let account: AccountInfo = {applicationName: applicationName, asset: key, balance: value };
+            accounts.push(account);
+        });
+        exchangeUIContainerActions.updateAccountInfo(accounts);
         HubClient.redux.dispatch({
             type: exchangeUIContainerActions.type,
             payload: exchangeUIContainerActions.payload,

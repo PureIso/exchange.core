@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace exchange.core
 {
-    public abstract class AbstractExchangePlugin : IExchangeService
+    public abstract class AbstractExchangePlugin
     {
         #region Actions
         public virtual Action<string, Feed> FeedBroadcast { get; set; }
@@ -32,15 +32,6 @@ namespace exchange.core
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
         public virtual List<Product> Products { get; set; }
-        public void RequestCurrentPrices()
-        {
-            FeedBroadcast?.Invoke(ApplicationName, CurrentFeed);
-        }
-
-        public void RequestAccountInfo()
-        {
-            AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
-        }
 
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }
@@ -94,6 +85,16 @@ namespace exchange.core
         #region Virtual Methods
 
         public virtual Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RequestedAccountInfo()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RequestedCurrentPrices()
         {
             throw new NotImplementedException();
         }

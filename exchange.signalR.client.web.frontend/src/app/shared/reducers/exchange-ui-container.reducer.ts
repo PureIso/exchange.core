@@ -2,7 +2,8 @@ import * as ExchangeUIContainerActions from "@actions/exchange-ui-container.acti
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
 
 export const initialState: ExchangeUIContainer = {
-    prices: []
+    prices: [],
+    accountInfo: []
 };
 /**
  * Exchange UI Container Reducer

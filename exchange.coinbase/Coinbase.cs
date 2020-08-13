@@ -191,6 +191,8 @@ namespace exchange.coinbase
                         AccountInfo ??= new Dictionary<string, decimal>();
                         if (AccountInfo.ContainsKey(account.Currency))
                             AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                        else
+                            AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
                     });
                     AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
                     Save();
@@ -541,6 +543,7 @@ namespace exchange.coinbase
                             return;
                         CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                         feed.CurrentPrices = CurrentPrices;
+                        CurrentFeed = feed;
                         FeedBroadcast?.Invoke(ApplicationName,feed);
                     }
                 }

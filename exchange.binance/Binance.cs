@@ -240,6 +240,8 @@ namespace exchange.binance
                             AccountInfo ??= new Dictionary<string, decimal>();
                             if (AccountInfo.ContainsKey(account.Currency))
                                 AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                            else
+                                AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
                         });
                         AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
                         Save();
@@ -568,7 +570,7 @@ namespace exchange.binance
                             feed.ProductID = feed.BinanceData.Symbol;
                             feed.Price = feed.BinanceData.Price;
                             feed.CurrentPrices = CurrentPrices;
-
+                            CurrentFeed = feed;
                             FeedBroadcast?.Invoke(ApplicationName,feed);
                         }
                     }

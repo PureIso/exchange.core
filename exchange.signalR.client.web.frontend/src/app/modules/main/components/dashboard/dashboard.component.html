@@ -21,6 +21,41 @@
         <!--End Side Bar-->
         <!--Main-->
         <div class="col-md-10 py-1 main-bg-custom">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="btn-group btn-block">
+                        <button type="button" class="btn btn-block btn-primary" (click)="onAccountInformationRefresh()">Refresh Account Information
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group row">
+                    </div>
+                </div>
+            </div>
+            <br>
+
+            <h2>Account</h2>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th class="table-wrap">Exchange</th>
+                            <th>Asset</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let accountInfo of exchangeUIContainer.accountInfo">
+                            <td>{{ accountInfo.applicationName }}</td>
+                            <td>{{ accountInfo.asset }}</td>
+                            <td>{{ accountInfo.balance }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <br>
+            <h2>Assets</h2>
             <div class="col-md-12 py-3">
                 <div class="row">
                     <ng-container *ngFor="let price of exchangeUIContainer.prices">

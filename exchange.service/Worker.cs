@@ -24,13 +24,19 @@ namespace exchange.service
         private readonly ILogger<Worker> _logger;
         private readonly IExchangeSettings _exchangeSettings;
         private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
+        private readonly IExchangeService _exchangeService;
         private ExchangePluginService _exchangePluginService;
 
-        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub,IExchangeSettings exchangeSettings)
+        public Worker(ILogger<Worker> logger, IHubContext<ExchangeHub, IExchangeHub> exchangeHub,IExchangeSettings exchangeSettings, IExchangeService exchangeService)
         {
             _logger = logger;
             _exchangeHub = exchangeHub;
             _exchangeSettings = exchangeSettings;
+            _exchangeService = exchangeService;
+        }
+        public override async Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation($"Worker started at: {DateTime.Now}");
             //Load available plugins
             string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
             if (string.IsNullOrEmpty(directoryName))
@@ -39,10 +45,6 @@ namespace exchange.service
             if (!Directory.Exists(pluginDirectory))
                 Directory.CreateDirectory(pluginDirectory);
             _exchangePluginService = new ExchangePluginService(pluginDirectory);
-        }
-        public override async Task StartAsync(CancellationToken cancellationToken)
-        {
-            _logger.LogInformation($"Worker started at: {DateTime.Now}");
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
             {
                 foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
@@ -53,6 +55,7 @@ namespace exchange.service
                     abstractExchangePlugin.AccountInfoBroadcast += AccountInfoBroadcast;
                     await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode);
                     abstractExchangePlugin.InitIndicatorsAsync();
+                    _exchangeService.ExchangeServicePlugins.Add(abstractExchangePlugin);
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
             }        
@@ -107,6 +110,16 @@ namespace exchange.service
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);              
             await Task.Delay(1000, stoppingToken);
+        }
+
+        public Task RequestedAccountInfo()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RequestedCurrentPrices()
+        {
+            throw new NotImplementedException();
         }
     }
 }
