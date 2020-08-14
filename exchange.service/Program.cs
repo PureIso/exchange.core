@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,12 +5,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using exchange.core.Interfaces;
-using exchange.coinbase;
 using exchange.core.interfaces;
-using exchange.core;
-using exchange.binance;
 using exchange.core.Implementations;
-using exchange.service.hubs;
 using exchange.service.Plugins;
 
 namespace exchange.service
@@ -50,7 +45,8 @@ namespace exchange.service
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
                 services.AddSignalR();
-                services.AddSingleton<IExchangeService, ExchangeService>();
+                services.AddSingleton<IExchangePluginService, ExchangePluginService>();
+                services.AddSingleton<ExchangeServiceBase, ExchangeService>();
                 services.AddHostedService<Worker>();
              })
             .ConfigureAppConfiguration((hostContext, configApp) =>

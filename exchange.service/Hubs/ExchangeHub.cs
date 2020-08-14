@@ -1,27 +1,26 @@
 ﻿using exchange.core.interfaces;
 using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
 
 namespace exchange.service.hubs
 {
-    public class ExchangeHub : Hub<IExchangeHub>
-    {
-        private readonly IExchangeService _exchangeService;
-        public ExchangeHub(IExchangeService exchangeService)
-        {
-            _exchangeService = exchangeService;
-        }
+    //public class ExchangeHub : Hub<IExchangeHub>
+    //{
+    //    //private readonly IExchangeService _exchangeService;
+    //    //public ExchangeHub(IExchangeService exchangeService)
+    //    //{
+    //    //    _exchangeService = exchangeService;
+    //    //}
 
 
-        #region Requested Methods from UI to Service
-        public void RequestCurrentPrices()
-        {
-            _exchangeService.RequestedCurrentPrices();
-        }
-        public void RequestAccountInfo()
-        {
-            _exchangeService.RequestedAccountInfo();
-        }
-        #endregion
-    }
+    //    //#region Requested Methods from UI to Service
+    //    //public void RequestCurrentPrices()
+    //    //{
+    //    //    _exchangeService.RequestedCurrentPrices();
+    //    //}
+    //    //public void RequestAccountInfo()
+    //    //{
+    //    //    _exchangeService.RequestedAccountInfo();
+    //    //}
+    //    #endregion
+    //}
 }

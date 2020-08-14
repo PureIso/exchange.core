@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Linq;
-using exchange.core.Interfaces;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using exchange.core.implementations;
 using exchange.core.Enums;
+using exchange.core.implementations;
+using exchange.core.Interfaces;
 
-namespace exchange.core
+namespace exchange.core.Implementations
 {
     public class ConnectionAdapter : IConnectionAdapter
     {

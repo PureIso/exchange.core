@@ -14,6 +14,7 @@ using exchange.core.helpers;
 using exchange.core.Indicators;
 using exchange.core.implementations;
 using exchange.coinbase.models;
+using exchange.core.Implementations;
 
 namespace exchange.coinbase
 {

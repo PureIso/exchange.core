@@ -12,8 +12,6 @@ namespace exchange.binance.models
         [JsonPropertyName("price")] public string Price { get; set; }
         [JsonPropertyName("origQty")] public string OrigQty { get; set; }
         [JsonPropertyName("executedQty")] public string ExecutedQty { get; set; }
-        [JsonPropertyName("cummulativeQuoteQty")]
-        public string CummulativeQuoteQty { get; set; }
         [JsonPropertyName("status")] public string Status { get; set; }
         [JsonPropertyName("timeInForce")] public string TimeInForce { get; set; }
         [JsonPropertyName("stopPrice")] public string StopPrice { get; set; }

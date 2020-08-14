@@ -1,14 +1,13 @@
-﻿using exchange.core.Enums;
-using exchange.core.implementations;
-using exchange.core.interfaces;
-using exchange.core.models;
-using exchange.core.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using exchange.core.Enums;
+using exchange.core.implementations;
+using exchange.core.models;
+using exchange.core.Models;
 
-namespace exchange.core
+namespace exchange.core.Implementations
 {
     public abstract class AbstractExchangePlugin
     {

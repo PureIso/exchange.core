@@ -1,4 +1,5 @@
-﻿using exchange.service.hubs;
+﻿using exchange.core.Implementations;
+using exchange.service.hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
@@ -23,7 +24,7 @@ namespace exchange.service
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<ExchangeHub>("/hubs/exchange");
+                endpoints.MapHub<ExchangeService>("/hubs/exchange");
             });
         }
     }

@@ -12,6 +12,7 @@ using exchange.core;
 using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
+using exchange.core.Implementations;
 using exchange.core.Indicators;
 using exchange.core.models;
 using exchange.core.Models;
@@ -21,7 +22,7 @@ namespace exchange.binance
     public class Binance : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-        private object _ioLock;
+        private readonly object _ioLock;
         #endregion
         
         #region Public Properties

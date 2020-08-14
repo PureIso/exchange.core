@@ -1,5 +1,4 @@
-﻿using exchange.core.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace exchange.core.models
