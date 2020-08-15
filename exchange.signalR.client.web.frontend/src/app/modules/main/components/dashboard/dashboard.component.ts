@@ -44,4 +44,7 @@ export class DashboardComponent implements OnInit {
     onAccountInformationRefresh(){
         this.mainService.hub_requestedAccountInfo();
     }
+    onCurrentPricesRefresh(){
+        this.mainService.hub_requestedCurrentPrices();
+    }
 }

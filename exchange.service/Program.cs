@@ -1,4 +1,7 @@
 using System.IO;
+using System.Reflection;
+using exchange.core.implementations;
+using exchange.core.Implementations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
@@ -6,8 +9,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using exchange.core.Interfaces;
 using exchange.core.interfaces;
-using exchange.core.Implementations;
 using exchange.service.Plugins;
+using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.service
 {
@@ -45,15 +48,21 @@ namespace exchange.service
                         .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }));
                 services.AddSignalR();
-                services.AddSingleton<IExchangePluginService, ExchangePluginService>();
-                services.AddSingleton<ExchangeServiceBase, ExchangeService>();
+                string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                if (string.IsNullOrEmpty(directoryName))
+                    return;
+                string pluginDirectory = Path.Combine(directoryName, "plugin");
+                if (!Directory.Exists(pluginDirectory))
+                    Directory.CreateDirectory(pluginDirectory);
+                ExchangePluginService exchangePluginService = new ExchangePluginService();
+                exchangePluginService.AddPluginFromFolder(pluginDirectory);
+                services.AddSingleton<IExchangePluginService>(exchangePluginService);
+                services.AddSingleton<IExchangeService, ExchangeService>();
                 services.AddHostedService<Worker>();
              })
             .ConfigureAppConfiguration((hostContext, configApp) =>
             {
-
                 configApp.SetBasePath(Directory.GetCurrentDirectory());
-                //configApp.AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true);
                 configApp.AddJsonFile($"appsettings.{DefaultEnvironmentName}.json", optional: true);
                 configApp.AddCommandLine(args);
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using exchange.core.Implementations;
+using exchange.core.implementations;
 using exchange.core.interfaces;
 
 namespace exchange.service.Plugins
@@ -10,7 +10,7 @@ namespace exchange.service.Plugins
     public class ExchangePluginService : IExchangePluginService
     {
         #region Constants
-        private const string AssemblyBaseTypeFullName = "exchange.core.abstractexchangeplugin";
+        private const string AssemblyBaseTypeFullName = "exchange.core.implementations.abstractexchangeplugin";
         #endregion
 
         #region Fields
@@ -28,10 +28,6 @@ namespace exchange.service.Plugins
         }
         #endregion
 
-        public ExchangePluginService()
-        {
-
-        }
         #region Methods
         public void AddPluginFromFolder(string folderPath)
         {
@@ -60,31 +56,6 @@ namespace exchange.service.Plugins
                     }
                 }
                 
-            }
-            catch (Exception e)
-            {
-                throw new Exception(e.Message);
-            }
-        }
-        public void AddPlugin(string pluginPath)
-        {
-            try
-            {
-                Assembly pluginAssembly = Assembly.LoadFrom(pluginPath); //Load assembly given its full name and path
-
-                foreach (Type pluginType in pluginAssembly.GetTypes())
-                {
-                    if (!pluginType.IsPublic) continue; //break the for each loop to next iteration if any
-                    if (pluginType.IsAbstract) continue; //break the for each loop to next iteration if any
-                    //search for specified interface while ignoring case sensitivity
-                    if (pluginType.BaseType == null ||
-                        pluginType.BaseType.FullName.ToLower() != AssemblyBaseTypeFullName)
-                        continue;
-                    //New plug-in information setting
-                    AbstractExchangePlugin pluginInterfaceInstance =
-                        (AbstractExchangePlugin)(Activator.CreateInstance(pluginAssembly.GetType(pluginType.ToString())));
-                    _pluginExchanges.Add(pluginInterfaceInstance);
-                }
             }
             catch (Exception e)
             {

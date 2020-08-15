@@ -8,6 +8,7 @@ using exchange.core.Enums;
 using exchange.core.Models;
 using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using exchange.core;
 using exchange.core.models;
 using exchange.core.helpers;
@@ -190,12 +191,14 @@ namespace exchange.coinbase
                     Accounts.ForEach(account =>
                     {
                         AccountInfo ??= new Dictionary<string, decimal>();
+                        if (account.Balance.ToDecimal() <= 0)
+                            return;
                         if (AccountInfo.ContainsKey(account.Currency))
                             AccountInfo[account.Currency] = account.Balance.ToDecimal();
                         else
                             AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
                     });
-                    AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
+                    NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
                     Save();
                 }
             }
@@ -545,6 +548,7 @@ namespace exchange.coinbase
                         CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                         feed.CurrentPrices = CurrentPrices;
                         CurrentFeed = feed;
+                        NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
                         FeedBroadcast?.Invoke(ApplicationName,feed);
                     }
                 }

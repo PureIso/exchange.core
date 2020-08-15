@@ -7,10 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.core.Enums;
-using exchange.core.implementations;
 using exchange.core.Interfaces;
 
-namespace exchange.core.Implementations
+namespace exchange.core.implementations
 {
     public class ConnectionAdapter : IConnectionAdapter
     {

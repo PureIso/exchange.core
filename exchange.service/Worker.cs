@@ -5,17 +5,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.core.interfaces;
-using exchange.service.hubs;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using exchange.core.models;
-using exchange.core.Enums;
-using exchange.service.Plugins;
-using System.Reflection;
 using exchange.core.Interfaces;
-using exchange.core.helpers;
-using exchange.core.Implementations;
+using exchange.core.implementations;
+using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.service
 {
@@ -23,62 +17,55 @@ namespace exchange.service
     {
         private readonly ILogger<Worker> _logger;
         private readonly IExchangeSettings _exchangeSettings;
-       // private readonly IHubContext<ExchangeHub, IExchangeHub> _exchangeHub;
-        private readonly ExchangeServiceBase _exchangeService;
-        private IExchangePluginService _exchangePluginService;
+        private readonly IExchangeService _exchangeService;
+        private readonly IExchangePluginService _exchangePluginService;
+        private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
 
-        public Worker(ILogger<Worker> logger,IExchangeSettings exchangeSettings, ExchangeServiceBase exchangeService, IExchangePluginService exchangePluginService)
+        public Worker(ILogger<Worker> logger,IExchangeSettings exchangeSettings, IExchangeService exchangeService, IExchangePluginService exchangePluginService, IHubContext<ExchangeHubService, IExchangeHubService> exchangeHubService)
         {
             _logger = logger;
-            //_exchangeHub = exchangeHub;
             _exchangeSettings = exchangeSettings;
             _exchangeService = exchangeService;
             _exchangePluginService = exchangePluginService;
+            _exchangeHubService = exchangeHubService;
         }
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
-            //Load available plugins
-            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-            if (string.IsNullOrEmpty(directoryName))
-                return;
-            string pluginDirectory = Path.Combine(directoryName, "plugin");
-            if (!Directory.Exists(pluginDirectory))
-                Directory.CreateDirectory(pluginDirectory);
-            _exchangePluginService.AddPlugin(pluginDirectory);
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
             {
                 foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
                 {
-                    abstractExchangePlugin.FeedBroadcast += _exchangeService.FeedBroadCast;
-                    abstractExchangePlugin.ProcessLogBroadcast += _exchangeService.ProcessLogBroadcast;
-                    abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += _exchangeService.TechnicalIndicatorInformationBroadcast;
-                    abstractExchangePlugin.AccountInfoBroadcast += _exchangeService.AccountInfoBroadcast;
+                    //abstractExchangePlugin.FeedBroadcast += _exchangeService.FeedBroadCast;
+                    //abstractExchangePlugin.ProcessLogBroadcast += _exchangeService.ProcessLogBroadcast;
+                    //abstractExchangePlugin.TechnicalIndicatorInformationBroadcast += _exchangeService.TechnicalIndicatorInformationBroadcast;
+                    abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
+                    abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
+
                     await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode);
                     abstractExchangePlugin.InitIndicatorsAsync();
-                    _exchangeService.ExchangeServicePlugins.Add(abstractExchangePlugin);
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
-            }        
+            }
             await base.StartAsync(cancellationToken);
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker stopped at: {DateTime.Now}");
-            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
-            {
-                abstractExchangePlugin.CloseFeed().GetAwaiter();
-            }
+            //foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangeService.ExchangeServicePlugins)
+            //{
+            //    abstractExchangePlugin.CloseFeed().GetAwaiter();
+            //}
             return base.StopAsync(cancellationToken);
         }
         public override void Dispose()
         {
             _logger.LogInformation($"Worker disposed at: {DateTime.Now}");
-            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
-            {
-                abstractExchangePlugin.Dispose();
-            }
+            //foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangeService.ExchangeServicePlugins)
+            //{
+            //    abstractExchangePlugin.Dispose();
+            //}
             base.Dispose();
         }
 

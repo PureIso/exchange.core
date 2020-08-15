@@ -13,6 +13,7 @@ import * as NotificationContainerActions from "@actions/notification-container.a
 @Injectable()
 export class MainService extends HubClient {
     private timeout: any = 0;
+    private connected: boolean;
     private hubUrlChange: boolean = false;
     private serverHubInitId: any = -1;
     private hubConnection: HubConnection;
@@ -66,6 +67,7 @@ export class MainService extends HubClient {
 
     hub_connecting() {
         console.log("Connecting");
+        this.connected = false;
         this.hubConnection
             .start()
             .then(this.hub_connected.bind(this))
@@ -76,6 +78,7 @@ export class MainService extends HubClient {
     }
     hub_connected() {
         console.log("Connected");
+        this.connected = true;
         this.hubUrlChange = false;
         this.timeout = 0;
         clearInterval(this.serverHubInitId);
@@ -83,14 +86,19 @@ export class MainService extends HubClient {
 
     hub_connection_timeout() {
         console.log("Timeout");
+        this.connected = false;
         clearInterval(this.serverHubInitId);
         this.timeout = this.timeout + 1000;
         this.serverHubInitId = setInterval(this.start.bind(this), this.timeout);
     }
     hub_requestedCurrentPrices() {
-        this.hubConnection.invoke("RequestCurrentPrices").catch((err) => console.error(err));
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedCurrentPrices").catch((err) => console.error(err));
     }
     hub_requestedAccountInfo() {
-        this.hubConnection.invoke("RequestAccountInfo").catch((err) => console.error(err));
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedAccountInfo").catch((err) => console.error(err));
     }
 }

@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using exchange.core.Enums;
-using exchange.core.implementations;
 using exchange.core.models;
 using exchange.core.Models;
 
-namespace exchange.core.Implementations
+namespace exchange.core.implementations
 {
     public abstract class AbstractExchangePlugin
     {
         #region Actions
         public virtual Action<string, Feed> FeedBroadcast { get; set; }
         public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
-        public virtual Action<string, Dictionary<string, decimal>> AccountInfoBroadcast { get; set; }
+
+
+        public virtual Func<string, Dictionary<string, decimal>, Task> NotifyAccountInfo { get; set; }
+        public virtual Func<string, Dictionary<string, decimal>, Task> NotifyCurrentPrices { get; set; }
+
+
+
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 

@@ -239,12 +239,14 @@ namespace exchange.binance
                         Accounts.ForEach(account =>
                         {
                             AccountInfo ??= new Dictionary<string, decimal>();
+                            if (account.Balance.ToDecimal() <= 0) 
+                                return;
                             if (AccountInfo.ContainsKey(account.Currency))
                                 AccountInfo[account.Currency] = account.Balance.ToDecimal();
                             else
                                 AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
                         });
-                        AccountInfoBroadcast?.Invoke(ApplicationName, AccountInfo);
+                        NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
                         Save();
                     }
                     if (ExchangeInfo.Symbols == null || !ExchangeInfo.Symbols.Any())
@@ -572,6 +574,7 @@ namespace exchange.binance
                             feed.Price = feed.BinanceData.Price;
                             feed.CurrentPrices = CurrentPrices;
                             CurrentFeed = feed;
+                            NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
                             FeedBroadcast?.Invoke(ApplicationName,feed);
                         }
                     }

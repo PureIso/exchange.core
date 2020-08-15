@@ -32,7 +32,7 @@ namespace exchange.core.helpers
 
         public static decimal ToDecimal(this string value)
         {
-            return decimal.TryParse(value, out decimal decimalValue) ? decimalValue : 0;
+            return decimal.TryParse(value, out decimal decimalValue) ? Math.Round(decimalValue, 8) : 0;
         }
 
         public static long ToLong(this string value)
