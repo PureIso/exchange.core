@@ -130,10 +130,22 @@ live_secret=
 live_endpoint=https://api.pro.coinbase.com
 ```
 
-## Installation
+## Setup - Visual Studios and Visual Studio Code
 
-By default when you build the netcore project.
-Start the exchange.service.
+- Using visual studios build solution.
+- Run the "copy_plugins.bat", it will copy the plugins to the exchange.service plugin directory (release and debug)
+- Using visual studios run the "exchange.service" project.
+- Using visual studio code, open the "exchange.signalR.client.web.frontend" directory and run the following
+
+```shell
+npm install
+npm start
+```
+- Navigate to localhost:9000
+
+## Setup - Docker and Docker Compose
+
+- TODO
 
 ## License
 
