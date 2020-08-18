@@ -2,7 +2,7 @@
     "name": "exchange",
     "productName": "Exchange",
     "version": "1.0.0",
-    "description": "Cryptocurrency exchange API (Coinbase)",
+    "description": "Cryptocurrency exchange API (Coinbase and Binance)",
     "main": "main.js",
     "scripts": {
         "start": "webpack-dev-server --progress --config webpack/webpack-development.config.js",

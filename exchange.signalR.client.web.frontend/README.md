@@ -1,4 +1,4 @@
-# Commerce Front End
+# Exchange.SignalR.Client.Web.Frontend
 
 [Angular API](https://angular.io/api)
 
