@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using exchange.core.Interfaces;
 using exchange.core.interfaces;
 using exchange.service.Plugins;
-using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.service
 {
