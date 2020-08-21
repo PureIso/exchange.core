@@ -1,16 +1,12 @@
 # exchange.core
 
 **Build status**
-
 **master**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=master)](https://travis-ci.org/PureIso/exchange.core)
 **development**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=development)](https://travis-ci.org/PureIso/exchange.core)
 
-
 **Version: 1.0.0**
-
-
 Cryptocurrency exchange API
 
 System will connect to various exchanges for real-time trade information.\
@@ -141,11 +137,37 @@ live_endpoint=https://api.pro.coinbase.com
 npm install
 npm start
 ```
+
 - Navigate to localhost:9000
 
 ## Setup - Docker and Docker Compose
 
-- TODO
+- Using visual studio code, download and install docker
+- In some cases you might have to clean orphaned images using the following command:
+
+```shell
+docker image prune
+```
+
+- Using visual studio code, remove volumes with the following command
+
+```shell
+docker-compose down -v
+```
+
+- Using visual studio code, build the docker image with the following command
+
+```shell
+docker-compose up --build
+```
+
+## Common Issues
+
+- Byte Order Mark (BOM) casuing issues with UTF-8 file. It can be removed form the init.sh file as part of docker mongo with the following command in bash:
+
+```shell
+sed -i $'1s/^\uFEFF//' theFile
+```
 
 ## License
 
