@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using exchange.core.Enums;
-using exchange.core.interfaces;
-using Microsoft.AspNetCore.SignalR;
-
-namespace exchange.core.implementations
+﻿namespace exchange.core.implementations
 {
     //public abstract class ExchangeServiceBase : Hub<IExchangeHubService>//, IExchangeService
     //{
@@ -23,7 +16,7 @@ namespace exchange.core.implementations
     //    {
     //        foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
     //        {
-                
+
     //            if (abstractExchangePlugin.AccountInfo == null)
     //                continue;
     //            await Clients.All.NotifyAccountInfo(abstractExchangePlugin.ApplicationName,
@@ -39,7 +32,6 @@ namespace exchange.core.implementations
     //            await Clients.All.NotifyCurrentPrices(abstractExchangePlugin.ApplicationName, abstractExchangePlugin.CurrentFeed.CurrentPrices);
     //        }
     //    }
-
 
 
     //    public virtual async Task DelegateNotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices)

@@ -13,33 +13,45 @@ namespace exchange.core.implementations
 {
     public class ConnectionAdapter : IConnectionAdapter
     {
-        #region Properties
-        public Authentication Authentication { get; set; }
-        public HttpClient HttpClient { get; set; }
-        public ClientWebSocket ClientWebSocket { get; set; }
-        #endregion
-
-        #region Fields
-        private readonly SemaphoreSlim _ioRequestSemaphoreSlim;
-        private readonly SemaphoreSlim _ioSemaphoreSlim;
-        #endregion
-
-        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
-
         public ConnectionAdapter()
         {
             HttpClient = new HttpClient();
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
         }
+
         public ConnectionAdapter(HttpClient httpClient)
         {
             HttpClient = httpClient;
-            _ioSemaphoreSlim = new SemaphoreSlim(1,1);
-            _ioRequestSemaphoreSlim = new SemaphoreSlim(1,1);
+            _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
+            _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
         }
 
+        public Action<MessageType, string> ProcessLogBroadcast { get; set; }
+
+        public void Dispose()
+        {
+            HttpClient?.Dispose();
+            ClientWebSocket?.Dispose();
+        }
+
+        #region Properties
+
+        public Authentication Authentication { get; set; }
+        public HttpClient HttpClient { get; set; }
+        public ClientWebSocket ClientWebSocket { get; set; }
+
+        #endregion
+
+        #region Fields
+
+        private readonly SemaphoreSlim _ioRequestSemaphoreSlim;
+        private readonly SemaphoreSlim _ioSemaphoreSlim;
+
+        #endregion
+
         #region Web Socket
+
         public virtual async Task ConnectAsync(string uriString)
         {
             try
@@ -48,9 +60,7 @@ namespace exchange.core.implementations
                 if (ClientWebSocket == null)
                     return;
                 if (ClientWebSocket.State != WebSocketState.Open)
-                {
                     await ClientWebSocket.ConnectAsync(new Uri(uriString), CancellationToken.None);
-                }
             }
             catch (Exception ex)
             {
@@ -62,6 +72,7 @@ namespace exchange.core.implementations
                 _ioSemaphoreSlim.Release();
             }
         }
+
         public virtual async Task<string> WebSocketSendAsync(string message)
         {
             try
@@ -87,6 +98,7 @@ namespace exchange.core.implementations
                     ClientWebSocket.Dispose();
                     return null;
                 }
+
                 if (webSocketReceiveResult.Count == 0 || !receiveBuffer.Any() || receiveBuffer.Array == null)
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
@@ -100,8 +112,10 @@ namespace exchange.core.implementations
             {
                 _ioSemaphoreSlim.Release();
             }
+
             return null;
         }
+
         public virtual async Task<string> WebSocketReceiveAsync()
         {
             try
@@ -119,6 +133,7 @@ namespace exchange.core.implementations
                     ClientWebSocket.Dispose();
                     return null;
                 }
+
                 if (webSocketReceiveResult.Count == 0 || !receiveBuffer.Any() || receiveBuffer.Array == null)
                     return null;
                 return Encoding.UTF8.GetString(receiveBuffer.Array, 0, webSocketReceiveResult.Count);
@@ -132,8 +147,10 @@ namespace exchange.core.implementations
             {
                 _ioSemaphoreSlim.Release();
             }
+
             return null;
         }
+
         public virtual async Task<bool> WebSocketCloseAsync()
         {
             try
@@ -141,7 +158,8 @@ namespace exchange.core.implementations
                 await _ioSemaphoreSlim.WaitAsync();
                 if (ClientWebSocket == null || !IsWebSocketConnected())
                     return false;
-                await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
+                    CancellationToken.None);
                 Dispose();
                 return true;
             }
@@ -154,23 +172,21 @@ namespace exchange.core.implementations
             {
                 _ioSemaphoreSlim.Release();
             }
+
             return false;
         }
+
         public virtual bool IsWebSocketConnected()
         {
             if (ClientWebSocket == null)
                 ClientWebSocket = new ClientWebSocket();
             return ClientWebSocket.State == WebSocketState.Open;
         }
+
         #endregion
 
-        public void Dispose()
-        {
-            HttpClient?.Dispose();
-            ClientWebSocket?.Dispose();
-        }
-
         #region Private Methods
+
         public virtual async Task<string> RequestAsync(IRequest request)
         {
             try
@@ -188,7 +204,8 @@ namespace exchange.core.implementations
                     absoluteUri = request.ComposeRequestUriAbsolute(Authentication.EndpointUrl);
                     HttpClient.DefaultRequestHeaders.Clear();
                     HttpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Authentication.ApiKey);
-                    HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));//ACCEPT header
+                    HttpClient.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json")); //ACCEPT header
                 }
                 else
                 {
@@ -223,6 +240,7 @@ namespace exchange.core.implementations
                         throw new NotImplementedException("The supplied HTTP method is not supported: " +
                                                           request.Method);
                 }
+
                 if (response == null)
                     throw new Exception(
                         $"null response from RequestAsync \r\n URI:{request.AbsoluteUri} \r\n:Request Body:{requestBody}");
@@ -237,6 +255,7 @@ namespace exchange.core.implementations
             {
                 _ioRequestSemaphoreSlim.Release();
             }
+
             return null;
         }
 
@@ -251,20 +270,25 @@ namespace exchange.core.implementations
                 switch (request.Method)
                 {
                     case "GET":
-                        response = await HttpClient.GetAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
+                        response = await HttpClient.GetAsync(
+                            request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
                         break;
                     case "POST":
-                        response = await HttpClient.PostAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl), new StringContent(""));
+                        response = await HttpClient.PostAsync(
+                            request.ComposeRequestUriAbsolute(Authentication.EndpointUrl), new StringContent(""));
                         break;
                     case "DELETE":
-                        response = await HttpClient.DeleteAsync(request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
+                        response = await HttpClient.DeleteAsync(
+                            request.ComposeRequestUriAbsolute(Authentication.EndpointUrl));
                         break;
                     default:
                         response = null;
                         break;
                 }
+
                 if (response == null)
-                    throw new Exception($"null response from RequestUnsignedAsync \r\n URI:{request.ComposeRequestUriAbsolute(Authentication.EndpointUrl)}");
+                    throw new Exception(
+                        $"null response from RequestUnsignedAsync \r\n URI:{request.ComposeRequestUriAbsolute(Authentication.EndpointUrl)}");
                 return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
@@ -276,8 +300,10 @@ namespace exchange.core.implementations
             {
                 _ioRequestSemaphoreSlim.Release();
             }
+
             return null;
         }
+
         #endregion
     }
 }

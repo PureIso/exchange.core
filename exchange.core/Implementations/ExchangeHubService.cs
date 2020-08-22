@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using exchange.core.interfaces;
 using Microsoft.AspNetCore.SignalR;
@@ -19,20 +18,21 @@ namespace exchange.core.implementations
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
-
                 if (abstractExchangePlugin.AccountInfo == null)
                     continue;
                 await Clients.All.NotifyAccountInfo(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.AccountInfo);
             }
         }
+
         public async Task RequestedCurrentPrices()
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
                 if (abstractExchangePlugin.CurrentFeed == null)
                     continue;
-                await Clients.All.NotifyCurrentPrices(abstractExchangePlugin.ApplicationName, abstractExchangePlugin.CurrentFeed.CurrentPrices);
+                await Clients.All.NotifyCurrentPrices(abstractExchangePlugin.ApplicationName,
+                    abstractExchangePlugin.CurrentFeed.CurrentPrices);
             }
         }
 

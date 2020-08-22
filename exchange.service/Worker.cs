@@ -1,27 +1,27 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using exchange.core.implementations;
 using exchange.core.interfaces;
+using exchange.core.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using exchange.core.Interfaces;
-using exchange.core.implementations;
-using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.service
 {
     public class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
-        private readonly IExchangeSettings _exchangeSettings;
-        private readonly IExchangeService _exchangeService;
-        private readonly IExchangePluginService _exchangePluginService;
         private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
+        private readonly IExchangePluginService _exchangePluginService;
+        private readonly IExchangeService _exchangeService;
+        private readonly IExchangeSettings _exchangeSettings;
+        private readonly ILogger<Worker> _logger;
 
-        public Worker(ILogger<Worker> logger,IExchangeSettings exchangeSettings, IExchangeService exchangeService, IExchangePluginService exchangePluginService, IHubContext<ExchangeHubService, IExchangeHubService> exchangeHubService)
+        public Worker(ILogger<Worker> logger, IExchangeSettings exchangeSettings, IExchangeService exchangeService,
+            IExchangePluginService exchangePluginService,
+            IHubContext<ExchangeHubService, IExchangeHubService> exchangeHubService)
         {
             _logger = logger;
             _exchangeSettings = exchangeSettings;
@@ -29,11 +29,11 @@ namespace exchange.service
             _exchangePluginService = exchangePluginService;
             _exchangeHubService = exchangeHubService;
         }
+
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
-            {
                 foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
                 {
                     //abstractExchangePlugin.FeedBroadcast += _exchangeService.FeedBroadCast;
@@ -46,7 +46,7 @@ namespace exchange.service
                     abstractExchangePlugin.InitIndicatorsAsync();
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
-            }
+
             await base.StartAsync(cancellationToken);
         }
 
@@ -59,6 +59,7 @@ namespace exchange.service
             //}
             return base.StopAsync(cancellationToken);
         }
+
         public override void Dispose()
         {
             _logger.LogInformation($"Worker disposed at: {DateTime.Now}");
@@ -72,7 +73,7 @@ namespace exchange.service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);              
+            _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
             await Task.Delay(1000, stoppingToken);
         }
 

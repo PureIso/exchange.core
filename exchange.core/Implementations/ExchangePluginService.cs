@@ -10,14 +10,19 @@ namespace exchange.service.Plugins
     public class ExchangePluginService : IExchangePluginService
     {
         #region Constants
+
         private const string AssemblyBaseTypeFullName = "exchange.core.implementations.abstractexchangeplugin";
+
         #endregion
 
         #region Fields
+
         private readonly List<AbstractExchangePlugin> _pluginExchanges = new List<AbstractExchangePlugin>();
+
         #endregion
 
         #region Properties
+
         public List<AbstractExchangePlugin> PluginExchanges
         {
             get
@@ -26,9 +31,11 @@ namespace exchange.service.Plugins
                 return _pluginExchanges;
             }
         }
+
         #endregion
 
         #region Methods
+
         public void AddPluginFromFolder(string folderPath)
         {
             try
@@ -38,7 +45,8 @@ namespace exchange.service.Plugins
                     FileInfo file = new FileInfo(plugin);
                     if (file.Extension.Equals(".dll"))
                     {
-                        Assembly pluginAssembly = Assembly.LoadFrom(plugin); //Load assembly given its full name and path
+                        Assembly
+                            pluginAssembly = Assembly.LoadFrom(plugin); //Load assembly given its full name and path
 
                         foreach (Type pluginType in pluginAssembly.GetTypes())
                         {
@@ -50,18 +58,19 @@ namespace exchange.service.Plugins
                                 continue;
                             //New plug-in information setting
                             AbstractExchangePlugin pluginInterfaceInstance =
-                                (AbstractExchangePlugin)(Activator.CreateInstance(pluginAssembly.GetType(pluginType.ToString())));
+                                (AbstractExchangePlugin) Activator.CreateInstance(
+                                    pluginAssembly.GetType(pluginType.ToString()));
                             _pluginExchanges.Add(pluginInterfaceInstance);
                         }
                     }
                 }
-                
             }
             catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
         }
+
         #endregion
     }
 }

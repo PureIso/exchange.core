@@ -1,6 +1,6 @@
-﻿using exchange.core.helpers;
-using System;
+﻿using System;
 using System.Text.Json.Serialization;
+using exchange.core.helpers;
 
 namespace exchange.core.Enums
 {
@@ -8,9 +8,7 @@ namespace exchange.core.Enums
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum OrderType
     {
-        [StringValue("limit")]
-        Limit,
-        [StringValue("market")]
-        Market
+        [StringValue("limit")] Limit,
+        [StringValue("market")] Market
     }
 }

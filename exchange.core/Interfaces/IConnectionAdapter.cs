@@ -11,13 +11,13 @@ namespace exchange.core.Interfaces
     {
         Action<MessageType, string> ProcessLogBroadcast { get; set; }
 
-        Authentication Authentication { get; set; } 
+        Authentication Authentication { get; set; }
         HttpClient HttpClient { get; set; }
         ClientWebSocket ClientWebSocket { get; set; }
 
         Task ConnectAsync(string uriString);
-        Task<string> WebSocketSendAsync(string message); 
-        Task<string> WebSocketReceiveAsync(); 
+        Task<string> WebSocketSendAsync(string message);
+        Task<string> WebSocketReceiveAsync();
         Task<bool> WebSocketCloseAsync();
         Task<string> RequestAsync(IRequest request);
         Task<string> RequestUnsignedAsync(IRequest request);

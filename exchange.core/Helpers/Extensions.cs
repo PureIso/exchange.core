@@ -1,12 +1,11 @@
-﻿using exchange.core.models;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-using exchange.core.Models;
-using System.Globalization;
+using exchange.core.models;
 
 namespace exchange.core.helpers
 {
@@ -15,13 +14,13 @@ namespace exchange.core.helpers
         private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
-        /// Seconds since January 1st, 1970.
+        ///     Seconds since January 1st, 1970.
         /// </summary>
         /// <param name="dateTime"></param>
         /// <returns></returns>
         public static decimal ToUnixTimestamp(this DateTime dateTime)
         {
-            return (decimal)(dateTime - UnixEpoch).TotalSeconds;
+            return (decimal) (dateTime - UnixEpoch).TotalSeconds;
         }
 
         public static string GenerateDateTimeOffsetToUnixTimeMilliseconds(this DateTime baseDateTime)
@@ -44,7 +43,8 @@ namespace exchange.core.helpers
         {
             if (DateTime.TryParse(value, out DateTime dateTimeValue))
                 return dateTimeValue;
-            if (DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss",CultureInfo.InvariantCulture,DateTimeStyles.None,out DateTime dateTimeValueExact))
+            if (DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out DateTime dateTimeValueExact))
                 return dateTimeValueExact;
             return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         }
@@ -52,7 +52,7 @@ namespace exchange.core.helpers
         public static List<Order> ToOrderList(this ArrayList[] arrayLists)
         {
             List<Order> orders = new List<Order>();
-            if (arrayLists == null) 
+            if (arrayLists == null)
                 return orders;
             foreach (ArrayList array in arrayLists)
             {
@@ -62,21 +62,23 @@ namespace exchange.core.helpers
                     case 2:
                         order = new Order
                         {
-                            Price = ((JsonElement)array[0]).GetString(),
-                            Quantity = decimal.Parse(((JsonElement)array[1]).GetString())
+                            Price = ((JsonElement) array[0]).GetString(),
+                            Quantity = decimal.Parse(((JsonElement) array[1]).GetString())
                         };
                         break;
                     case 3:
                         order = new Order
                         {
-                            Price = ((JsonElement)array[0]).GetString(),
-                            Size = ((JsonElement)array[1]).GetString(),
-                            Quantity = ((JsonElement)array[2]).GetInt32()
+                            Price = ((JsonElement) array[0]).GetString(),
+                            Size = ((JsonElement) array[1]).GetString(),
+                            Quantity = ((JsonElement) array[2]).GetInt32()
                         };
                         break;
                 }
+
                 orders.Add(order);
             }
+
             return orders;
         }
 
@@ -106,39 +108,42 @@ namespace exchange.core.helpers
                             //308,                // Number of trades
                             //"1756.87402397",    // Taker buy base asset volume
                             //"17928899.62484339" // Ignore.
-                            DateAndTime = start.AddMilliseconds(((JsonElement)array[0]).GetInt64()).ToLocalTime(),
-                            Open = decimal.Parse(((JsonElement)array[1]).GetString()),
-                            High = decimal.Parse(((JsonElement)array[2]).GetString()),
-                            Low = decimal.Parse(((JsonElement)array[3]).GetString()),
-                            Close = decimal.Parse(((JsonElement)array[4]).GetString()),
-                            Volume = decimal.Parse(((JsonElement)array[5]).GetString()),
+                            DateAndTime = start.AddMilliseconds(((JsonElement) array[0]).GetInt64()).ToLocalTime(),
+                            Open = decimal.Parse(((JsonElement) array[1]).GetString()),
+                            High = decimal.Parse(((JsonElement) array[2]).GetString()),
+                            Low = decimal.Parse(((JsonElement) array[3]).GetString()),
+                            Close = decimal.Parse(((JsonElement) array[4]).GetString()),
+                            Volume = decimal.Parse(((JsonElement) array[5]).GetString())
                         };
                         break;
                 }
+
                 historicRates.Add(historicRate);
             }
+
             return historicRates;
         }
 
         public static List<HistoricRate> ToHistoricRateList(this ArrayList[] arrayLists)
         {
             List<HistoricRate> historicRates = new List<HistoricRate>();
-            if (arrayLists == null) 
+            if (arrayLists == null)
                 return historicRates;
             foreach (ArrayList array in arrayLists)
             {
                 DateTime unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                 HistoricRate historicRate = new HistoricRate
                 {
-                    DateAndTime = unix.AddSeconds(((JsonElement)array[0]).GetInt64()),
-                    Low = ((JsonElement)array[1]).GetDecimal(),
-                    High = ((JsonElement)array[2]).GetDecimal(),
-                    Open = ((JsonElement)array[3]).GetDecimal(),
-                    Close = ((JsonElement)array[4]).GetDecimal(),
-                    Volume = ((JsonElement)array[5]).GetDecimal()
+                    DateAndTime = unix.AddSeconds(((JsonElement) array[0]).GetInt64()),
+                    Low = ((JsonElement) array[1]).GetDecimal(),
+                    High = ((JsonElement) array[2]).GetDecimal(),
+                    Open = ((JsonElement) array[3]).GetDecimal(),
+                    Close = ((JsonElement) array[4]).GetDecimal(),
+                    Volume = ((JsonElement) array[5]).GetDecimal()
                 };
                 historicRates.Add(historicRate);
             }
+
             return historicRates;
         }
 
@@ -157,8 +162,11 @@ namespace exchange.core.helpers
             {
                 productIds += $@"""{product.ID}"",";
             }
-            return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
+
+            return
+                $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
         }
+
         public static string ToUnSubscribeString(this List<Product> products)
         {
             if (products == null || !products.Any())
@@ -168,12 +176,15 @@ namespace exchange.core.helpers
             {
                 productIds += $@"""{product.ID}"",";
             }
-            return $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
+
+            return
+                $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
         }
+
         /// <summary>
-        /// Will get the string value for a given enums value, this will
-        /// only work if you assign the StringValue attribute to
-        /// the items in your enum.
+        ///     Will get the string value for a given enums value, this will
+        ///     only work if you assign the StringValue attribute to
+        ///     the items in your enum.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -186,8 +197,10 @@ namespace exchange.core.helpers
             // Get the stringvalue attributes
             // Return the first if there was a match.
             return fieldInfo.GetCustomAttributes(
-                typeof(StringValueAttribute), false) is StringValueAttribute[] stringValueAttributes && stringValueAttributes.Length > 0 ?
-                stringValueAttributes[0].StringValue : null;
+                       typeof(StringValueAttribute), false) is StringValueAttribute[] stringValueAttributes &&
+                   stringValueAttributes.Length > 0
+                ? stringValueAttributes[0].StringValue
+                : null;
         }
     }
 }

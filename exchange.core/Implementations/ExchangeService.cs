@@ -8,10 +8,12 @@ namespace exchange.core.implementations
     public class ExchangeService : IExchangeService
     {
         private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
+
         public ExchangeService(IHubContext<ExchangeHubService, IExchangeHubService> exchangeHubService)
         {
             _exchangeHubService ??= exchangeHubService;
         }
+
         public async Task DelegateNotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices)
         {
             if (_exchangeHubService.Clients == null)
@@ -19,7 +21,8 @@ namespace exchange.core.implementations
             await _exchangeHubService.Clients.All.NotifyCurrentPrices(applicationName, currentPrices);
         }
 
-        public async Task DelegateNotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation)
+        public async Task DelegateNotifyAccountInfo(string applicationName,
+            Dictionary<string, decimal> accountInformation)
         {
             if (_exchangeHubService.Clients == null)
                 return;

@@ -4,13 +4,12 @@ namespace exchange.binance.models
 {
     public class RateLimit
     {
-        [JsonPropertyName("rateLimitType")]
-        public string RateLimitType { get; set; }
-        [JsonPropertyName("interval")]
-        public string Interval { get; set; }
-        [JsonPropertyName("intervalNum")]
-        public int IntervalNum { get; set; }
-        [JsonPropertyName("limit")]
-        public int Limit { get; set; }
+        [JsonPropertyName("rateLimitType")] public string RateLimitType { get; set; }
+
+        [JsonPropertyName("interval")] public string Interval { get; set; }
+
+        [JsonPropertyName("intervalNum")] public int IntervalNum { get; set; }
+
+        [JsonPropertyName("limit")] public int Limit { get; set; }
     }
 }

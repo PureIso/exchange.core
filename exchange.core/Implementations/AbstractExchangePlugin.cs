@@ -10,7 +10,14 @@ namespace exchange.core.implementations
 {
     public abstract class AbstractExchangePlugin
     {
+        public AbstractExchangePlugin()
+        {
+            AccountInfo = new Dictionary<string, decimal>();
+            CurrentPrices = new Dictionary<string, decimal>();
+        }
+
         #region Actions
+
         public virtual Action<string, Feed> FeedBroadcast { get; set; }
         public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
 
@@ -19,11 +26,12 @@ namespace exchange.core.implementations
         public virtual Func<string, Dictionary<string, decimal>, Task> NotifyCurrentPrices { get; set; }
 
 
-
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
+
         #endregion
 
         #region Virtual Properties
+
         public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual Dictionary<string, decimal> AccountInfo { get; set; }
 
@@ -50,14 +58,15 @@ namespace exchange.core.implementations
             bool isClosed = false;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, $"Closing Feed Subscription.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Closing Feed Subscription.");
                 isClosed = await ConnectionAdapter?.WebSocketCloseAsync();
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: CloseFeed\r\nException Stack Trace: {e.StackTrace}");
             }
+
             return isClosed;
         }
 
@@ -79,16 +88,13 @@ namespace exchange.core.implementations
         {
             throw new NotImplementedException();
         }
+
         #endregion
 
-        public AbstractExchangePlugin()
-        {
-            AccountInfo = new Dictionary<string, decimal>();
-            CurrentPrices = new Dictionary<string, decimal>();
-        }
         #region Virtual Methods
 
-        public virtual Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+        public virtual Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
+            HistoricCandlesSearch historicCandlesSearch)
         {
             throw new NotImplementedException();
         }
@@ -102,6 +108,7 @@ namespace exchange.core.implementations
         {
             throw new NotImplementedException();
         }
+
         #endregion
     }
 }

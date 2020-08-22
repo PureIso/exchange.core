@@ -1,41 +1,27 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
-using exchange.core.Enums;
-using exchange.core.Models;
-using System.IO;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
-using exchange.core;
-using exchange.core.models;
-using exchange.core.helpers;
-using exchange.core.Indicators;
-using exchange.core.implementations;
 using exchange.coinbase.models;
-using exchange.core.Implementations;
+using exchange.core.Enums;
+using exchange.core.helpers;
+using exchange.core.implementations;
+using exchange.core.Indicators;
+using exchange.core.models;
+using exchange.core.Models;
 
 namespace exchange.coinbase
 {
     public class Coinbase : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-        private readonly object _ioLock;
-        #endregion
 
-        #region Public Properties
-        public string FileName { get; set; }
-        public List<Ticker> Tickers { get; set; }
-        public List<Account> Accounts { get; set; }
-        public List<AccountHistory> AccountHistories { get; set; }
-        public List<AccountHold> AccountHolds { get; set; }
-        public List<HistoricRate> HistoricRates { get; set; }
-        public List<Fill> Fills { get; set; }
-        public List<Order> Orders { get; set; }
-        public OrderBook OrderBook { get; set; }
-        public Product SelectedProduct { get; set; }
+        private readonly object _ioLock;
+
         #endregion
 
         public Coinbase()
@@ -108,16 +94,18 @@ namespace exchange.coinbase
                             Authentication.Passphrase = line;
                         }
                     }
+
                     ConnectionAdapter.Authentication = Authentication;
                     ConnectionAdapter.ClientWebSocket = ClientWebSocket;
                 }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: LoadINI\r\nException Stack Trace: {e.StackTrace}");
             }
         }
+
         private void Save()
         {
             string json = null;
@@ -133,20 +121,22 @@ namespace exchange.coinbase
                         if (!File.Exists(FileName))
                             File.Create(FileName).Close();
                     }
+
                     CoinbaseSettings coinbaseSettings = new CoinbaseSettings();
                     coinbaseSettings.Accounts = Accounts;
                     coinbaseSettings.CurrentPrices = CurrentPrices;
                     coinbaseSettings.Tickers = Tickers;
-                    json = JsonSerializer.Serialize(coinbaseSettings, new JsonSerializerOptions() { WriteIndented = true });
+                    json = JsonSerializer.Serialize(coinbaseSettings, new JsonSerializerOptions {WriteIndented = true});
                     File.WriteAllText(FileName, json);
                 }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: Save\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
         }
+
         public void Load()
         {
             string json = null;
@@ -155,7 +145,7 @@ namespace exchange.coinbase
                 if (string.IsNullOrEmpty(FileName))
                     return;
                 if (!File.Exists(FileName))
-                    return; 
+                    return;
                 json = File.ReadAllText(FileName);
                 CoinbaseSettings coinbaseSettings = JsonSerializer.Deserialize<CoinbaseSettings>(json);
                 if (coinbaseSettings == null)
@@ -171,19 +161,36 @@ namespace exchange.coinbase
             }
         }
 
+        #region Public Properties
+
+        public string FileName { get; set; }
+        public List<Ticker> Tickers { get; set; }
+        public List<Account> Accounts { get; set; }
+        public List<AccountHistory> AccountHistories { get; set; }
+        public List<AccountHold> AccountHolds { get; set; }
+        public List<HistoricRate> HistoricRates { get; set; }
+        public List<Fill> Fills { get; set; }
+        public List<Order> Orders { get; set; }
+        public OrderBook OrderBook { get; set; }
+        public Product SelectedProduct { get; set; }
+
+        #endregion
+
         #region Public Methods
 
         #region Trading
+
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Account Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Account Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}");
                 json = await ConnectionAdapter.RequestAsync(request);
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountsAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                    $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 Accounts = JsonSerializer.Deserialize<List<Account>>(json);
                 if (Accounts != null)
@@ -204,38 +211,43 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateAccountsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return Accounts;
         }
+
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Account History Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Account History Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}/ledger");
                 json = await ConnectionAdapter.RequestAsync(request);
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput, $"UpdateAccountHistoryAsync JSON:\r\n{json}");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                    $"UpdateAccountHistoryAsync JSON:\r\n{json}");
                 AccountHistories = JsonSerializer.Deserialize<List<AccountHistory>>(json);
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateAccountHistoryAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return AccountHistories;
         }
+
         public async Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Account Holds Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Account Holds Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/accounts/{accountId}/holds");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -243,18 +255,19 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateAccountHoldsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return AccountHolds;
         }
+
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Orders Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Orders Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -262,19 +275,20 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return Orders;
         }
+
         public async Task<Order> PostOrdersAsync(Order order)
         {
             string json = null;
             Order outputOrder = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Post Order Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Post Order Information.");
                 object data;
                 if (order.Type == OrderType.Market.GetStringValue() || string.IsNullOrEmpty(order.Price))
                     data = new
@@ -295,7 +309,7 @@ namespace exchange.coinbase
                         product_id = order.ProductID,
                         stp = order.SelfTradePreventionType
                     };
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST", $"/orders")
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST", "/orders")
                 {
                     RequestBody = JsonSerializer.Serialize(data)
                 };
@@ -304,11 +318,13 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: PostOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return outputOrder;
         }
+
         public async Task<List<Order>> CancelOrderAsync(Order order)
         {
             string json = null;
@@ -317,7 +333,8 @@ namespace exchange.coinbase
             {
                 if (order == null)
                     return ordersOutput;
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Cancel Orders Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Cancel Orders Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders/{order.ID ?? string.Empty}");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -328,12 +345,12 @@ namespace exchange.coinbase
                         return ordersOutput;
                     ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
                     int removed = Orders.RemoveAll(x => x.ID == orderId);
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General,
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderId} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput.Add(new Order{ID = orderId });
+                        ordersOutput.Add(new Order {ID = orderId});
                     return ordersOutput;
                 }
                 else
@@ -343,23 +360,24 @@ namespace exchange.coinbase
                         return ordersOutput;
                     ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
                     int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General,
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderIds} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order { ID = id })?.ToList();
+                        ordersOutput = (from id in orderIds select new Order {ID = id})?.ToList();
                     return ordersOutput;
                 }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return ordersOutput;
         }
+
         public async Task<List<Order>> CancelOrdersAsync(Product product)
         {
             string json = null;
@@ -368,7 +386,8 @@ namespace exchange.coinbase
             {
                 if (product == null)
                     return ordersOutput;
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Cancel Orders Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Cancel Orders Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders?product_id={product.ID ?? string.Empty}");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -379,12 +398,12 @@ namespace exchange.coinbase
                         return ordersOutput;
                     ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
                     int removed = Orders.RemoveAll(x => x.ID == orderId);
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General,
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderId} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput.Add(new Order { ID = orderId });
+                        ordersOutput.Add(new Order {ID = orderId});
                     return ordersOutput;
                 }
                 else
@@ -394,47 +413,52 @@ namespace exchange.coinbase
                         return ordersOutput;
                     ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
                     int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General,
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderIds} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order { ID = id })?.ToList();
+                        ordersOutput = (from id in orderIds select new Order {ID = id})?.ToList();
                     return ordersOutput;
                 }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return ordersOutput;
         }
+
         public async Task<List<Product>> UpdateProductsAsync()
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Update Products Information.");
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", $"/products");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Update Products Information.");
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/products");
                 json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     Products = JsonSerializer.Deserialize<List<Product>>(json);
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateProductsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return Products;
         }
+
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Update Tickers Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Update Tickers Information.");
                 if (products == null || !products.Any())
                     return Tickers;
                 if (Tickers == null)
@@ -456,25 +480,24 @@ namespace exchange.coinbase
                 }
 
                 foreach (Ticker ticker in Tickers)
-                {
                     if (decimal.TryParse(ticker.Price, out decimal decimalPrice))
                         CurrentPrices[ticker.ProductID] = decimalPrice;
-                }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateTickersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return Tickers;
         }
+
         public async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Fills Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Fills Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/fills?product_id={product.ID ?? string.Empty}");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -483,18 +506,20 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return Fills;
         }
+
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Product Orders Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Product Orders Information.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{product.ID}/book?level={level}");
                 json = await ConnectionAdapter.RequestAsync(request);
@@ -502,21 +527,24 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateProductOrderBookAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return OrderBook;
         }
+
         #endregion
 
         #region Feed
+
         public override bool ChangeFeed(string message)
         {
             string json = null;
             Feed feed = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Subscribing to Feed Information.");
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Subscribing to Feed Information.");
                 json = ConnectionAdapter.WebSocketSendAsync(message).Result;
                 if (string.IsNullOrEmpty(json))
                     return false;
@@ -524,12 +552,13 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
             return feed != null && feed.Type != "error";
         }
+
         public void StartProcessingFeed()
         {
             Task.Run(async () =>
@@ -537,7 +566,8 @@ namespace exchange.coinbase
                 string json = null;
                 try
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Started Processing Feed Information.");
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                        "Started Processing Feed Information.");
                     await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
                     while (ConnectionAdapter.IsWebSocketConnected())
                     {
@@ -549,16 +579,17 @@ namespace exchange.coinbase
                         feed.CurrentPrices = CurrentPrices;
                         CurrentFeed = feed;
                         NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
-                        FeedBroadcast?.Invoke(ApplicationName,feed);
+                        FeedBroadcast?.Invoke(ApplicationName, feed);
                     }
                 }
                 catch (Exception e)
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                         $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
                 }
             });
         }
+
         #endregion
 
         public override async Task<bool> InitAsync(bool testMode)
@@ -569,7 +600,7 @@ namespace exchange.coinbase
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    INIFilePath = Path.Combine(directoryName, $"coinbase.config.ini");
+                    INIFilePath = Path.Combine(directoryName, "coinbase.config.ini");
                     LoadINI(INIFilePath);
                 }
                 else
@@ -584,7 +615,7 @@ namespace exchange.coinbase
                     await UpdateAccountHistoryAsync(Accounts[0].ID);
                     await UpdateAccountHoldsAsync(Accounts[0].ID);
                     UpdateProductsAsync().Wait();
-                    
+
                     List<Product> products = new List<Product>
                     {
                         Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
@@ -621,21 +652,26 @@ namespace exchange.coinbase
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
             }
+
             return false;
         }
-        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
+
+        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
+            HistoricCandlesSearch historicCandlesSearch)
         {
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.General, $"Updating Product Historic Candles Information.");
-                if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double)historicCandlesSearch.Granularity) >= historicCandlesSearch.EndingDateTime)
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating Product Historic Candles Information.");
+                if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double) historicCandlesSearch
+                    .Granularity) >= historicCandlesSearch.EndingDateTime)
                     return null;
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int)historicCandlesSearch.Granularity}");
+                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int) historicCandlesSearch.Granularity}");
                 json = await ConnectionAdapter.RequestAsync(request);
                 if (json.StartsWith('[') && json.EndsWith(']'))
                 {
@@ -645,17 +681,19 @@ namespace exchange.coinbase
                 }
                 else
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.JsonOutput,
-                    $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                        $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
                 }
             }
             catch (Exception e)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName,MessageType.Error,
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return HistoricRates;
         }
+
         public override bool InitIndicatorsAsync()
         {
             string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
@@ -663,13 +701,14 @@ namespace exchange.coinbase
             string coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}");
             Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR");
             RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
-            if(product != null)
+            if (product != null)
             {
-                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast += delegate (Dictionary<string, string> input)
-                {
-                    TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
-                };
-                relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
+                    delegate(Dictionary<string, string> input)
+                    {
+                        TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                    };
+                relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
                 {
                     ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
                 };
@@ -677,8 +716,10 @@ namespace exchange.coinbase
                 relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
                 return true;
             }
+
             return false;
         }
+
         #endregion
     }
 }

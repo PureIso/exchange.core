@@ -1,5 +1,5 @@
-﻿using exchange.core.implementations;
-using System;
+﻿using System;
+using exchange.core.implementations;
 
 namespace exchange.core.Interfaces
 {
