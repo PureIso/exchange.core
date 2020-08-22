@@ -1,9 +1,7 @@
 using System.IO;
 using System.Reflection;
 using exchange.core.implementations;
-using exchange.core.Implementations;
 using exchange.core.interfaces;
-using exchange.core.Interfaces;
 using exchange.service.Plugins;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

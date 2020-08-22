@@ -81,6 +81,15 @@ namespace exchange.core.helpers
 
             return orders;
         }
+        public static List<string> ProductsToSymbols(this List<Product> products)
+        {
+            List<string> symbols = new List<string>();
+            foreach (Product product in products)
+            {
+                symbols.Add(product.ID);
+            }
+            return symbols;
+        }
 
         public static List<HistoricRate> ToHistoricCandleList(this ArrayList[] arrayLists)
         {

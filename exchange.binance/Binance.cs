@@ -530,34 +530,9 @@ namespace exchange.binance
             return HistoricRates;
         }
 
-        public override bool ChangeFeed(string message)
+        public override Task ChangeFeed(List<Product> products = null)
         {
-            string json = null;
-            Feed feed = null;
-            try
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Subscribing to Feed Information.");
-                string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
-                ConnectionAdapter.ConnectAsync(uriString).Wait();
-                json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-                if (string.IsNullOrEmpty(json))
-                    return false;
-                feed = JsonSerializer.Deserialize<Feed>(json);
-                if (feed == null || feed.Type == "error")
-                    return false;
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return feed != null && feed.Type != "error";
-        }
-
-        public void StartProcessingFeed()
-        {
-            Task.Run(async () =>
+            return Task.Run(async () =>
             {
                 string json = null;
                 try
@@ -565,11 +540,14 @@ namespace exchange.binance
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         "Started Processing Feed Information.");
                     string message = "stream?streams=";
-                    List<Product> products = new List<Product>
+                    if (products == null || !products.Any())
                     {
-                        Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
-                        Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
-                    };
+                        products = new List<Product>
+                        {
+                            Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
+                            Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
+                        };
+                    }
                     products.RemoveAll(x => x == null);
                     foreach (Product product in products) message += product.ID.ToLower() + "@trade/";
                     if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
@@ -643,32 +621,30 @@ namespace exchange.binance
                     await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                     await UpdateTickersAsync(products);
 
-                    BinanceOrder binanceOrderMarket = new BinanceOrder();
-                    binanceOrderMarket.OrderType = OrderType.Market;
-                    binanceOrderMarket.OrderSide = OrderSide.Buy;
-                    binanceOrderMarket.OrderSize = (decimal) 0.1;
-                    binanceOrderMarket.Symbol = "BNBBTC";
+                    //BinanceOrder binanceOrderMarket = new BinanceOrder();
+                    //binanceOrderMarket.OrderType = OrderType.Market;
+                    //binanceOrderMarket.OrderSide = OrderSide.Buy;
+                    //binanceOrderMarket.OrderSize = (decimal) 0.1;
+                    //binanceOrderMarket.Symbol = "BNBBTC";
 
-                    BinanceOrder binanceOrderLimit = new BinanceOrder();
-                    binanceOrderLimit.OrderType = OrderType.Limit;
-                    binanceOrderLimit.OrderSide = OrderSide.Buy;
-                    binanceOrderLimit.OrderSize = (decimal) 0.1;
-                    binanceOrderLimit.LimitPrice = (decimal) 0.0010000;
-                    binanceOrderLimit.Symbol = "BNBBTC";
+                    //BinanceOrder binanceOrderLimit = new BinanceOrder();
+                    //binanceOrderLimit.OrderType = OrderType.Limit;
+                    //binanceOrderLimit.OrderSide = OrderSide.Buy;
+                    //binanceOrderLimit.OrderSize = (decimal) 0.1;
+                    //binanceOrderLimit.LimitPrice = (decimal) 0.0010000;
+                    //binanceOrderLimit.Symbol = "BNBBTC";
 
-                    Product productToCancel = new Product {ID = "BNBBTC"};
+                    //Product productToCancel = new Product {ID = "BNBBTC"};
 
-                    BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
-                    BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
-                    BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
+                    //BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
+                    //BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
+                    //BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
 
-                    List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product {ID = "BNBBTC"});
-                    if (currentOrders.Any())
-                    {
-                        List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
-                    }
-
-                    StartProcessingFeed();
+                    //List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product {ID = "BNBBTC"});
+                    //if (currentOrders.Any())
+                    //{
+                    //    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
+                    //}
                 }
 
                 return true;

@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.core.implementations;
 using exchange.core.interfaces;
-using exchange.core.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

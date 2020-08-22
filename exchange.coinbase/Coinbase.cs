@@ -538,34 +538,17 @@ namespace exchange.coinbase
 
         #region Feed
 
-        public override bool ChangeFeed(string message)
+        public override Task ChangeFeed(List<Product> products = null)
         {
-            string json = null;
-            Feed feed = null;
-            try
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Subscribing to Feed Information.");
-                json = ConnectionAdapter.WebSocketSendAsync(message).Result;
-                if (string.IsNullOrEmpty(json))
-                    return false;
-                feed = JsonSerializer.Deserialize<Feed>(json);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: Subscribe\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return feed != null && feed.Type != "error";
-        }
-
-        public void StartProcessingFeed()
-        {
-            Task.Run(async () =>
+           return Task.Run(async () =>
             {
                 string json = null;
                 try
                 {
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Subscribing to Feed Information.");
+                    json = ConnectionAdapter.WebSocketSendAsync(products.ToSubscribeString()).Result;
+                    if (string.IsNullOrEmpty(json))
+                        return ;
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         "Started Processing Feed Information.");
                     await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
@@ -629,8 +612,7 @@ namespace exchange.coinbase
                         UpdateOrdersAsync().Wait();
                         UpdateFillsAsync(products[0]).Wait();
                         UpdateTickersAsync(products).Wait();
-                        ChangeFeed(products.ToSubscribeString());
-                        StartProcessingFeed();
+                        //ChangeFeed(products);
 
                         ////market order
                         ////buy

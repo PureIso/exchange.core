@@ -1,4 +1,4 @@
-﻿namespace exchange.core.Interfaces
+﻿namespace exchange.core.interfaces
 {
     public interface IExchangeSettings
     {

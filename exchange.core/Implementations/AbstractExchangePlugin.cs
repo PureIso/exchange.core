@@ -48,7 +48,7 @@ namespace exchange.core.implementations
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }
 
-        public virtual bool ChangeFeed(string message)
+        public virtual Task ChangeFeed(List<Product> product)
         {
             throw new NotImplementedException();
         }

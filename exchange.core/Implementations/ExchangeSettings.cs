@@ -1,6 +1,6 @@
-﻿using exchange.core.Interfaces;
+﻿using exchange.core.interfaces;
 
-namespace exchange.core.Implementations
+namespace exchange.core.implementations
 {
     public class ExchangeSettings : IExchangeSettings
     {

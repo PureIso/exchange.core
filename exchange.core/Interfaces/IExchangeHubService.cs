@@ -7,8 +7,12 @@ namespace exchange.core.interfaces
     {
         Task RequestedAccountInfo();
         Task RequestedCurrentPrices();
-
+        Task RequestedProducts();
+        Task RequestedApplications();
+        Task RequestedSubscription(string applicationName, List<string> symbols);
+        Task NotifyApplications(List<string> applicationNames);
         Task NotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);
         Task NotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);
+        Task NotifyProductChange(string applicationName, List<string> symbols);
     }
 }
