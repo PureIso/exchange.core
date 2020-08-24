@@ -1,74 +1,11 @@
-<!--Header Navigation-->
-<nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
-    <a class="navbar-brand col-md-2 mr-0" routerLink="/">Exchange</a>
-</nav>
-<!--End Header Navigation-->
-<!--Page Body-->
-<div class="container-fluid container-bg-custom">
-    <div class="row h-100">
-        <!--Side Bar-->
-        <div class="col-md-2 sidebar-bg-custom">
-            <nav class="navbar-expand">
-                <div class="collapse navbar-collapse">
-                    <ul class="nav flex-column w-100 py-1">
-                        <li class="nav-item">
-                            <a class="nav-link py-1 active" routerLink="/">Dashboard</a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-        </div>
-        <!--End Side Bar-->
-        <!--Main-->
-        <div class="col-md-10 py-1 main-bg-custom">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="btn-group btn-block">
-                        <button type="button" class="btn btn-block btn-primary" (click)="onAccountInformationRefresh()">Refresh Account Information
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="btn-group btn-block">
-                        <button type="button" class="btn btn-block btn-primary" (click)="onCurrentPricesRefresh()">Refresh Price List
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <br>
+<mat-toolbar color="primary" class="mat-elevation-z8">
+  <button mat-icon-button routerLink="/">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <span>Exchange.Core</span>
+</mat-toolbar>
 
-            <h2>Account</h2>
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead>
-                        <tr>
-                            <th class="table-wrap">Exchange</th>
-                            <th>Asset</th>
-                            <th>Balance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let accountInfo of exchangeUIContainer.accountInfo">
-                            <td>{{ accountInfo.applicationName }}</td>
-                            <td>{{ accountInfo.asset }}</td>
-                            <td>{{ accountInfo.balance }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <br>
-            <h2>Assets</h2>
-            <div class="col-md-12 py-3">
-                <div class="row">
-                    <ng-container *ngFor="let price of exchangeUIContainer.prices">
-                        <div class="col-md-3 grid-margin">
-                            <price-card-component [priceId]="price.asset" [price]="price.price" [applicationName]="price.applicationName"></price-card-component>
-                        </div>
-                    </ng-container>
-                </div>
-            </div>
-        </div>
-        <!--End Main-->
-    </div>
-</div>
-<!--End Page Body-->
+<ng-container *ngFor="let applicationName of exchangeUIContainer.applicationNames">
+  <account-information-component [applicationName]="applicationName">Loading account-information-component</account-information-component>
+</ng-container>
+

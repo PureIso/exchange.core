@@ -37,8 +37,6 @@ export class DashboardComponent implements OnInit {
         });
     }
     ngAfterViewInit() {
-        this.mainService.hub_requestedCurrentPrices();
-        this.mainService.hub_requestedAccountInfo();
     }
 
     onAccountInformationRefresh(){

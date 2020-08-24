@@ -1,0 +1,29 @@
+<mat-accordion multi>
+    <mat-expansion-panel>
+        
+        <mat-expansion-panel-header>
+            <mat-panel-title>{{ applicationName }}</mat-panel-title>
+            <mat-panel-description>Account Balance and Assets</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <mat-list>
+            <div mat-subheader>Assets</div>
+            <mat-list-item *ngFor="let account of accountInfo">
+                <mat-icon mat-list-icon>account_balance_wallet</mat-icon>
+                <div mat-line>{{account.asset}}</div>
+                <div mat-line> {{account.balance}} </div>
+            </mat-list-item>
+        </mat-list>
+        
+    </mat-expansion-panel>
+</mat-accordion>
+<!-- 
+<div class="panel-group"> 
+    <ng-container *ngFor="let accountInfo of exchangeUIContainer.accountInfo">
+        <div *ngIf="accountInfo == applicationName" class="panel panel-default">
+            <div class="panel-body"> 
+                This is bootstrap panel 1 
+              </div> 
+        </div>
+    </ng-container>
+</div> -->

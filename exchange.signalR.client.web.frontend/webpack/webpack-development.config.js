@@ -159,13 +159,15 @@ module.exports = {
             filename: "css/[name].css",
             chunkFilename: "css/[id].css"
         }),
-        new CopyWebpackPlugin([
-            { from: "**/*.jpg", to: "img/[name].[ext]" },
-            { from: "**/*.ico", to: "img/[name].[ext]" },
-            { from: '**/src/electron/*', to: '[name].[ext]' }
-        ]),
+        new CopyWebpackPlugin({
+            patterns:[
+                { from: "**/*.jpg", to: "img/[name].[ext]" },
+                { from: "**/*.ico", to: "img/[name].[ext]" },
+                { from: '**/src/electron/*', to: '[name].[ext]' }
+            ],
+        }),
         new webpack.ContextReplacementPlugin(
-            /\@angular(\\|\/)core(\\|\/)fesm5/,
+            /\@angular(\\|\/)core(\\|\/)fesm2015/,
             path.resolve(__dirname, "../src")
         ),
         new CleanWebpackPlugin()

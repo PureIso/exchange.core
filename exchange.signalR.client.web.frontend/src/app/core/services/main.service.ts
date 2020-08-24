@@ -17,8 +17,8 @@ export class MainService extends HubClient {
     private hubUrlChange: boolean = false;
     private serverHubInitId: any = -1;
     private hubConnection: HubConnection;
-    private hubUrl = this.config.setting["HubUrl"];
-    private hubName = this.config.setting["HubName"];
+    private hubUrl:string = this.config.setting["HubUrl"];
+    private hubName:string = this.config.setting["HubName"];
 
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;
@@ -31,17 +31,25 @@ export class MainService extends HubClient {
         this.hubConnection = new HubConnectionBuilder().withUrl(url).build();
     }
 
-    start() {
-        this.hubConnection.onclose(this.hub_connection_timeout.bind(this));
-        this.hubConnection.on("notifyCurrentPrices", super.notifyCurrentPrices);
-        this.hubConnection.on("notifyAccountInfo", super.notifyAccountInfo);
-        this.hubConnection.on("notifyInformation", super.notifyInformation);
-        this.initialiseSubscriptions();
-        this.hub_connecting();
+    startAsync():Promise<Boolean> {
+        //https://www.positronx.io/angular-8-es-6-typescript-promises-examples/
+        var promise:Promise<Boolean> = new Promise((resolve, reject) => {
+            this.hubConnection.onclose(this.hub_connection_timeout.bind(this));
+            this.hubConnection.on("notifyCurrentPrices", super.notifyCurrentPrices);
+            this.hubConnection.on("notifyAccountInfo", super.notifyAccountInfo);
+            this.hubConnection.on("notifyInformation", super.notifyInformation);
+            this.hubConnection.on("notifyApplications", super.notifyApplications);
+            this.hubConnection.on("notifyProductChange", super.notifyProductChange);
+            this.initialiseSubscriptions();
+            this.hub_connecting();
+            return true;
+        });
+        return promise;      
     }
 
     initialiseSubscriptions() {
         super.setRedux(this.ngRedux);
+        console.log("initialiseSubscriptions");
         this.notificationContainer$.subscribe((x: NotificationContainer) => {
             this.notificationContainer = x;
             super.setNotificationContainer(x);
@@ -82,6 +90,7 @@ export class MainService extends HubClient {
         this.hubUrlChange = false;
         this.timeout = 0;
         clearInterval(this.serverHubInitId);
+        this.hub_requestedApplications();
     }
 
     hub_connection_timeout() {
@@ -89,8 +98,9 @@ export class MainService extends HubClient {
         this.connected = false;
         clearInterval(this.serverHubInitId);
         this.timeout = this.timeout + 1000;
-        this.serverHubInitId = setInterval(this.start.bind(this), this.timeout);
+        this.serverHubInitId = setInterval(this.startAsync.bind(this), this.timeout);
     }
+
     hub_requestedCurrentPrices() {
         if(!this.connected)
             return;
@@ -100,5 +110,20 @@ export class MainService extends HubClient {
         if(!this.connected)
             return;
         this.hubConnection.invoke("RequestedAccountInfo").catch((err) => console.error(err));
+    }
+    hub_requestedProducts() {
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedProducts").catch((err) => console.error(err));
+    }
+    hub_requestedApplications() {
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedApplications").catch((err) => console.error(err));
+    }
+    hub_requestedSubscription(applicationName:string, symbols: string[]) {
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedSubscription",applicationName, symbols).catch((err) => console.error(err));
     }
 }

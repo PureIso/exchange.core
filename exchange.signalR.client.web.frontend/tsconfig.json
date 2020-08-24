@@ -23,7 +23,9 @@
         "suppressImplicitAnyIndexErrors": true,
         /**	List of library files to be included in the compilation*/
         "lib": [
+            "es5",
             "es6",
+            "es7",
             "dom"
         ],
         /**List of folders to include type definitions from*/
