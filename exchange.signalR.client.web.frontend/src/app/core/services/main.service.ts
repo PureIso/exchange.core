@@ -91,6 +91,8 @@ export class MainService extends HubClient {
         this.timeout = 0;
         clearInterval(this.serverHubInitId);
         this.hub_requestedApplications();
+        this.hub_requestedProducts();
+        this.hub_requestedCurrentPrices();
     }
 
     hub_connection_timeout() {

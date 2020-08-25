@@ -3,27 +3,27 @@ import { NgRedux, select } from "@angular-redux/store";
 import { AppState } from "@store/app.state";
 import { Observable } from "rxjs";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
-import { MatAccordion } from '@angular/material/expansion';
 import { MainService } from "@services/main.service";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
-import { AccountInfo } from "@interfaces/account-info.interface";
+import { FormControl } from '@angular/forms';
+import { ProductInfo } from "@interfaces/product-info.interface";
 
 @Component({
-    selector: "account-information-component",
-    templateUrl: "./account-information.component.html",
+    selector: "product-information-component",
+    templateUrl: "./product-information.component.html",
 })
-export class AccountInformationComponent implements AfterViewInit, OnInit {
+export class ProductInformationComponent implements AfterViewInit, OnInit {
     @Input() applicationName: string;
-    @ViewChild(MatAccordion) accordion: MatAccordion;
-
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
-    accountInfo: AccountInfo[];
+    formControl: FormControl;
+    assetList: string[];
 
     constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
-        
+        this.formControl = new FormControl();
+        this.assetList = new Array();
     }
 
     ngOnInit() {
@@ -32,16 +32,16 @@ export class AccountInformationComponent implements AfterViewInit, OnInit {
         });
         this.exchangeUIContainer$.subscribe((x: ExchangeUIContainer) => {
             this.exchangeUIContainer = x;
-            this.accountInfo = new Array();
-            x.accountInfo.forEach((accountInfo: AccountInfo)=>{
-                if(accountInfo.applicationName == this.applicationName){
-                    this.accountInfo.push(accountInfo);
+            this.assetList = new Array();
+            x.productInfo.forEach((productInfo: ProductInfo)=>{
+                if(productInfo.applicationName == this.applicationName){
+                    this.assetList.push(productInfo.asset);
                 }
             });
         });
     }
 
     ngAfterViewInit() {
-        this.mainService.hub_requestedAccountInfo();
+        this.mainService.hub_requestedProducts();
     }
 }

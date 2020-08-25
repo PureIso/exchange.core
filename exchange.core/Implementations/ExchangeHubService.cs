@@ -64,8 +64,6 @@ namespace exchange.core.implementations
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
-                if (abstractExchangePlugin.CurrentFeed == null)
-                    continue;
                 await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.Products.ProductsToSymbols());
             }
