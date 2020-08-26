@@ -7,6 +7,7 @@ import { MainService } from "@services/main.service";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
 import { FormControl } from '@angular/forms';
 import { ProductInfo } from "@interfaces/product-info.interface";
+import { AccountInfo } from "@interfaces/account-info.interface";
 
 @Component({
     selector: "product-information-component",
@@ -20,10 +21,12 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     exchangeUIContainer: ExchangeUIContainer;
     formControl: FormControl;
     assetList: string[];
+    currentAssetList: string[];
 
     constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
         this.formControl = new FormControl();
         this.assetList = new Array();
+        this.currentAssetList = new Array();
     }
 
     ngOnInit() {
@@ -33,9 +36,26 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
         this.exchangeUIContainer$.subscribe((x: ExchangeUIContainer) => {
             this.exchangeUIContainer = x;
             this.assetList = new Array();
+            this.currentAssetList = new Array();
+
             x.productInfo.forEach((productInfo: ProductInfo)=>{
                 if(productInfo.applicationName == this.applicationName){
                     this.assetList.push(productInfo.asset);
+
+                    x.accountInfo.forEach((accountInfo: AccountInfo) => {
+                        if(accountInfo.applicationName == this.applicationName){
+
+                            if(productInfo.asset.indexOf(accountInfo.asset) !== -1)
+                            {
+                                let index: number = this.currentAssetList.findIndex((asset: string) => {
+                                    return asset === productInfo.asset;
+                                });
+                                if(index === -1){
+                                    this.currentAssetList.push(productInfo.asset);
+                                }
+                            } 
+                        }
+                    });
                 }
             });
         });
