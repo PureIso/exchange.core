@@ -64,4 +64,8 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     ngAfterViewInit() {
         this.mainService.hub_requestedProducts();
     }
+
+    subscribe(){
+        this.mainService.hub_requestedSubscription(this.applicationName,this.formControl.value)
+    }
 }

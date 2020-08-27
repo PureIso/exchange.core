@@ -1,13 +1,14 @@
-<div class="card" #priceCard>
-    <div class="card-body">
-        <p class="card-title text-md-center text-xl-left">{{ applicationName }}</p>
-        <p class="card-title text-md-center text-xl-left">{{ priceId }}</p>
-        <div class="d-flex flex-wrap justify-content-between justify-content-md-center justify-content-xl-between align-items-center">
-            <h3 class="mb-0 mb-md-2 mb-xl-0 order-md-1 order-xl-0">{{ price }}</h3>
-            <i class="fas fa-chart-line fa-2x text-muted"></i>
-        </div>
-        <p class="mb-0 mt-2 text-danger">
-            0.47% <span class="text-black ml-1"><small>(30 days)</small></span>
-        </p>
+<div class="content" fxLayout="row wrap">
+    <div fxFlex="25%" *ngFor="let price of currentPriceList">
+        <mat-card>
+            <mat-card-header>
+              <div mat-card-avatar class="example-header-image"></div>
+              <mat-card-title>{{ price.asset }}</mat-card-title>
+              <mat-card-subtitle>{{ applicationName }}</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+                {{ price.price }}
+            </mat-card-content>
+          </mat-card>
     </div>
 </div>

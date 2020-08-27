@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.core.implementations
 {
-    public class ExchangeHubService : Hub<IExchangeHubService>, IExchangeHubService
+    public class ExchangeHubService : Hub<IExchangeHubService>
     {
         private readonly IExchangePluginService _exchangePluginService;
 
@@ -22,7 +22,6 @@ namespace exchange.core.implementations
             List<string> applications =_exchangePluginService.PluginExchanges.Select(x => x.ApplicationName).ToList();
             await Clients.All.NotifyApplications(applications);
         }
-
         public async Task RequestedAccountInfo()
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
@@ -33,7 +32,6 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.AccountInfo);
             }
         }
-
         public async Task RequestedCurrentPrices()
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
@@ -44,7 +42,6 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.CurrentFeed.CurrentPrices);
             }
         }
-
         public async Task RequestedSubscription(string applicationName, List<string> symbols)
         {
             AbstractExchangePlugin abstractExchangePlugin =
@@ -54,12 +51,6 @@ namespace exchange.core.implementations
             List<Product> products = abstractExchangePlugin.Products.Where(x => symbols.Contains(x.ID)).ToList();
             await abstractExchangePlugin.ChangeFeed(products);
         }
-
-        public async Task NotifyApplications(List<string> applicationNames)
-        {
-            await Clients.All.NotifyApplications(applicationNames);
-        }
-
         public async Task RequestedProducts()
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
@@ -67,21 +58,6 @@ namespace exchange.core.implementations
                 await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.Products.ProductsToSymbols());
             }
-        }
-
-        public async Task NotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices)
-        {
-            await Clients.All.NotifyCurrentPrices(applicationName, currentPrices);
-        }
-
-        public async Task NotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation)
-        {
-            await Clients.All.NotifyAccountInfo(applicationName, accountInformation);
-        }
-
-        public async Task NotifyProductChange(string applicationName, List<string> symbols)
-        {
-            await Clients.All.NotifyProductChange(applicationName, symbols);
         }
     }
 }

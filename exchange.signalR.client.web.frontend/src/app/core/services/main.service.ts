@@ -49,7 +49,6 @@ export class MainService extends HubClient {
 
     initialiseSubscriptions() {
         super.setRedux(this.ngRedux);
-        console.log("initialiseSubscriptions");
         this.notificationContainer$.subscribe((x: NotificationContainer) => {
             this.notificationContainer = x;
             super.setNotificationContainer(x);
@@ -74,18 +73,15 @@ export class MainService extends HubClient {
     }
 
     hub_connecting() {
-        console.log("Connecting");
         this.connected = false;
         this.hubConnection
             .start()
             .then(this.hub_connected.bind(this))
             .catch((reason: any) => {
-                console.log(reason);
                 this.hub_connection_timeout();
             });
     }
     hub_connected() {
-        console.log("Connected");
         this.connected = true;
         this.hubUrlChange = false;
         this.timeout = 0;
@@ -96,7 +92,6 @@ export class MainService extends HubClient {
     }
 
     hub_connection_timeout() {
-        console.log("Timeout");
         this.connected = false;
         clearInterval(this.serverHubInitId);
         this.timeout = this.timeout + 1000;

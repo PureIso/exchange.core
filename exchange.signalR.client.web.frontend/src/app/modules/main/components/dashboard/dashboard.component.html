@@ -38,8 +38,8 @@
     <mat-divider></mat-divider>
     
     <div class="content" fxLayout="row wrap">
-      <div fxFlex="25%" *ngFor="let price of exchangeUIContainer.prices">
-        <price-card-component [priceId]="price.asset" [price]="price.price" [applicationName]="price.applicationName"></price-card-component>
+      <div fxFlex="50%" *ngFor="let applicationName of exchangeUIContainer.applicationNames">
+        <price-card-component [applicationName]="applicationName">Loading price-card-component</price-card-component>
       </div>
     </div>
     

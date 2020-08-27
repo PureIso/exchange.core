@@ -26,7 +26,6 @@ export class HubClient {
     }
 
     notifyCurrentPrices(applicationName:string, priceRecords: Record<string, number>) {
-        console.log("rec: notifyCurrentPrices");
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
@@ -44,7 +43,6 @@ export class HubClient {
         });
     }
     notifyAccountInfo(applicationName:string, accountInfo: Record<string, number>) {
-        console.log("rec: notifyAccountInfo");
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
@@ -64,7 +62,6 @@ export class HubClient {
     notifyInformation(applicationName:string, messageType: MessageType, message: string) {
     }
     notifyApplications(applicationNames:string[]){
-        console.log("rec: notifyApplications");
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
@@ -75,7 +72,6 @@ export class HubClient {
         });
     }
     notifyProductChange(applicationName:string, symbols:string[]){
-        console.log("rec: notifyProductChange");
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
