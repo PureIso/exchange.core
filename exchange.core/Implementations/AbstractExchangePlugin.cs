@@ -14,6 +14,8 @@ namespace exchange.core.implementations
         {
             AccountInfo = new Dictionary<string, decimal>();
             CurrentPrices = new Dictionary<string, decimal>();
+            ConnectionAdapter = new ConnectionAdapter();
+            Products = new List<Product>();
         }
 
         #region Actions
@@ -44,6 +46,7 @@ namespace exchange.core.implementations
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
         public virtual List<Product> Products { get; set; }
+        public virtual List<Product> SubscribeProducts { get; set; }
 
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }

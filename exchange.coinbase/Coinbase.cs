@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase.models;
 using exchange.core.Enums;
@@ -27,19 +28,16 @@ namespace exchange.coinbase
         public Coinbase()
         {
             ApplicationName = "Coinbase Exchange";
-            ConnectionAdapter = new ConnectionAdapter();
-
-            CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             Accounts = new List<Account>();
             AccountHistories = new List<AccountHistory>();
             AccountHolds = new List<AccountHold>();
-            Products = new List<Product>();
             HistoricRates = new List<HistoricRate>();
             Fills = new List<Fill>();
             Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
+            SubscribeProducts = new List<Product>();
             _ioLock = new object();
         }
 
@@ -538,38 +536,52 @@ namespace exchange.coinbase
 
         #region Feed
 
-        public override Task ChangeFeed(List<Product> products = null)
+        public override Task ChangeFeed(List<Product> products)
         {
-           return Task.Run(async () =>
+            return Task.Run(() =>
             {
-                string json = null;
-                try
+                ThreadPool.QueueUserWorkItem(x =>
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Subscribing to Feed Information.");
-                    json = ConnectionAdapter.WebSocketSendAsync(products.ToSubscribeString()).Result;
-                    if (string.IsNullOrEmpty(json))
-                        return ;
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        "Started Processing Feed Information.");
-                    await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
-                    while (ConnectionAdapter.IsWebSocketConnected())
+                    if (products == null)
+                        return;
+                    string json = null;
+                    try
                     {
-                        json = await ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
-                        Feed feed = JsonSerializer.Deserialize<Feed>(json);
-                        if (feed == null || feed.Type == "error")
+                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                            "Subscribing to Feed Information.");
+                        if (SubscribeProducts != null && SubscribeProducts.Any())
+                        {
+                            //unsubscribe
+                            ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
+                        }
+
+                        SubscribeProducts = products;
+                        json = ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString()).Result;
+                        if (string.IsNullOrEmpty(json))
                             return;
-                        CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
-                        feed.CurrentPrices = CurrentPrices;
-                        CurrentFeed = feed;
-                        NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
-                        FeedBroadcast?.Invoke(ApplicationName, feed);
+                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                            "Started Processing Feed Information.");
+                        ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString()).GetAwaiter();
+                        while (ConnectionAdapter.IsWebSocketConnected())
+                        {
+                            json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter()
+                                .GetResult();
+                            Feed feed = JsonSerializer.Deserialize<Feed>(json);
+                            if (feed == null || feed.Type == "error")
+                                return;
+                            CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+                            feed.CurrentPrices = CurrentPrices;
+                            CurrentFeed = feed;
+                            NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
+                            FeedBroadcast?.Invoke(ApplicationName, feed);
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                        $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-                }
+                    catch (Exception e)
+                    {
+                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                            $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+                    }
+                });
             });
         }
 

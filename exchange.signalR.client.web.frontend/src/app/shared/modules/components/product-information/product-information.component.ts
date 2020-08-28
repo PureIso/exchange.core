@@ -38,6 +38,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
             this.assetList = new Array();
             this.currentAssetList = new Array();
 
+            //requires ES6 support, Babel or TypeScript
             x.productInfo.forEach((productInfo: ProductInfo)=>{
                 if(productInfo.applicationName == this.applicationName){
                     this.assetList.push(productInfo.asset);

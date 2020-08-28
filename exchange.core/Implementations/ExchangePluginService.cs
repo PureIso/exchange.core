@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using exchange.core.implementations;
 using exchange.core.interfaces;
 
-namespace exchange.service.Plugins
+namespace exchange.core.implementations
 {
     public class ExchangePluginService : IExchangePluginService
     {
@@ -43,25 +42,22 @@ namespace exchange.service.Plugins
                 foreach (string plugin in Directory.GetFiles(folderPath))
                 {
                     FileInfo file = new FileInfo(plugin);
-                    if (file.Extension.Equals(".dll"))
+                    if (!file.Extension.Equals(".dll")) 
+                        continue;
+                    Assembly pluginAssembly = Assembly.LoadFrom(plugin); //Load assembly given its full name and path
+                    foreach (Type pluginType in pluginAssembly.GetTypes())
                     {
-                        Assembly
-                            pluginAssembly = Assembly.LoadFrom(plugin); //Load assembly given its full name and path
-
-                        foreach (Type pluginType in pluginAssembly.GetTypes())
-                        {
-                            if (!pluginType.IsPublic) continue; //break the for each loop to next iteration if any
-                            if (pluginType.IsAbstract) continue; //break the for each loop to next iteration if any
-                            //search for specified interface while ignoring case sensitivity
-                            if (pluginType.BaseType == null ||
-                                pluginType.BaseType.FullName.ToLower() != AssemblyBaseTypeFullName)
-                                continue;
-                            //New plug-in information setting
-                            AbstractExchangePlugin pluginInterfaceInstance =
-                                (AbstractExchangePlugin) Activator.CreateInstance(
-                                    pluginAssembly.GetType(pluginType.ToString()));
-                            _pluginExchanges.Add(pluginInterfaceInstance);
-                        }
+                        if (!pluginType.IsPublic) continue; //break the for each loop to next iteration if any
+                        if (pluginType.IsAbstract) continue; //break the for each loop to next iteration if any
+                        //search for specified interface while ignoring case sensitivity
+                        if (pluginType.BaseType.FullName != null && (pluginType.BaseType == null ||
+                                                                     pluginType.BaseType.FullName.ToLower() != AssemblyBaseTypeFullName))
+                            continue;
+                        //New plug-in information setting
+                        AbstractExchangePlugin pluginInterfaceInstance =
+                            (AbstractExchangePlugin) Activator.CreateInstance(
+                                pluginAssembly.GetType(pluginType.ToString())!);
+                        _pluginExchanges.Add(pluginInterfaceInstance);
                     }
                 }
             }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using exchange.core.helpers;
@@ -48,8 +49,9 @@ namespace exchange.core.implementations
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
             if (abstractExchangePlugin == null)
                 return;
-            List<Product> products = abstractExchangePlugin.Products.Where(x => symbols.Contains(x.ID)).ToList();
+            List<Product> products = symbols.Select(symbol => new Product {ID = symbol}).ToList();
             await abstractExchangePlugin.ChangeFeed(products);
+            Console.WriteLine("Connected Sub");
         }
         public async Task RequestedProducts()
         {

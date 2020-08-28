@@ -185,9 +185,8 @@ namespace exchange.core.helpers
             {
                 productIds += $@"""{product.ID}"",";
             }
-
             return
-                $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
+                $@"{{""type"": ""unsubscribe"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}";
         }
 
         /// <summary>

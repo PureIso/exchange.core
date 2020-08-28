@@ -1,8 +1,8 @@
 using System.IO;
 using System.Reflection;
 using exchange.core.implementations;
+using exchange.core.implementations;
 using exchange.core.interfaces;
-using exchange.service.Plugins;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

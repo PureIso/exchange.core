@@ -32,9 +32,16 @@ export class CRUDExchangeUIContainer implements Action {
             return x === applicationName;
         });
     }
+    private sort(string1:string,string2:string):number{
+        if (string1 > string2)
+            return 1;
+        else if (string1 < string2)
+            return -1;
+        return 0;
+    }
 
-    updatePrices(prices: Price[]) {
-        prices.forEach((price) => {
+    public updatePrices(prices: Price[]) {
+        prices.forEach((price: Price) => {
             let index = this.getPriceIndex(price);
             if (index == -1) {
                 this.payload.prices.push(price);
@@ -42,15 +49,23 @@ export class CRUDExchangeUIContainer implements Action {
                 this.payload.prices[index] = price;
             }
         });
+        //sort
+        this.payload.prices.sort((price1:Price, price2:Price) => {
+            return this.sort(price1.asset,price2.asset);
+        });
     }
     updateAccountInfo(accountInfo: AccountInfo[]) {
-        accountInfo.forEach((account) => {
+        accountInfo.forEach((account: AccountInfo) => {
             let index = this.getAccountInfoIndex(account);
             if (index == -1) {
                 this.payload.accountInfo.push(account);
             } else {
                 this.payload.accountInfo[index] = account;
             }
+        });
+        //sort
+        this.payload.accountInfo.sort((accountInfo1:AccountInfo, accountInfo2:AccountInfo) => {
+            return this.sort(accountInfo1.asset,accountInfo2.asset);
         });
     }
     updateApplicationNames(applicationNames:string[]) {
@@ -62,6 +77,10 @@ export class CRUDExchangeUIContainer implements Action {
                 this.payload.applicationNames[index] = applicationName;
             }
         });
+        //sort
+        this.payload.applicationNames.sort((applicationName1:string, applicationName2:string) => {
+            return this.sort(applicationName1,applicationName2)
+        });
     }
     updateProductInfo(productInfo:ProductInfo) {
         let index = this.getProductInfoIndex(productInfo);
@@ -70,6 +89,10 @@ export class CRUDExchangeUIContainer implements Action {
         } else {
             this.payload.productInfo[index] = productInfo;
         }
+        //sort
+        this.payload.productInfo.sort((productInfo1:ProductInfo, productInfo2:ProductInfo) => {
+            return this.sort(productInfo1.asset,productInfo2.asset);
+        });
     }
 }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance.models;
 using exchange.core.Enums;
@@ -28,12 +29,8 @@ namespace exchange.binance
         public Binance()
         {
             base.ApplicationName = "Binance Exchange";
-            ConnectionAdapter = new ConnectionAdapter();
-
-            CurrentPrices = new Dictionary<string, decimal>();
             Tickers = new List<Ticker>();
             BinanceAccount = new BinanceAccount();
-            Products = new List<Product>();
             HistoricRates = new List<HistoricRate>();
             Fills = new List<Fill>();
             Orders = new List<BinanceOrder>();
@@ -530,58 +527,64 @@ namespace exchange.binance
             return HistoricRates;
         }
 
-        public override Task ChangeFeed(List<Product> products = null)
+        public override Task ChangeFeed(List<Product> products)
         {
             return Task.Run(async () =>
             {
-                string json = null;
-                try
+                ThreadPool.QueueUserWorkItem(x =>
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        "Started Processing Feed Information.");
-                    string message = "stream?streams=";
-                    if (products == null || !products.Any())
-                    {
-                        products = new List<Product>
-                        {
-                            Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
-                            Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
-                        };
-                    }
-                    products.RemoveAll(x => x == null);
-                    foreach (Product product in products) message += product.ID.ToLower() + "@trade/";
-                    if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
+                    if (products == null)
                         return;
-                    int lastIndexOfSlash = message.LastIndexOf("/", StringComparison.Ordinal);
-                    if (lastIndexOfSlash != -1)
-                        message = message.Remove(lastIndexOfSlash, 1);
-                    while (products.Any())
+                    string json = null;
+                    try
                     {
-                        string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
-                        await ConnectionAdapter.ConnectAsync(uriString);
-                        while (ConnectionAdapter.IsWebSocketConnected())
+                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                            "Started Processing Feed Information.");
+                        string message = "stream?streams=";
+                        if (SubscribeProducts != null && SubscribeProducts.Any())
                         {
-                            json = await ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false);
-                            if (string.IsNullOrEmpty(json))
-                                continue;
-                            Feed feed = JsonSerializer.Deserialize<Feed>(json);
-                            if (feed == null || feed.Type == "error")
-                                return;
-                            CurrentPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
-                            feed.ProductID = feed.BinanceData.Symbol;
-                            feed.Price = feed.BinanceData.Price;
-                            feed.CurrentPrices = CurrentPrices;
-                            CurrentFeed = feed;
-                            NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
-                            FeedBroadcast?.Invoke(ApplicationName, feed);
+                            //unsubscribe
+                            ConnectionAdapter.WebSocketCloseAsync().GetAwaiter();
+                            // await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString());
+                        }
+                        SubscribeProducts = products;
+                        SubscribeProducts.RemoveAll(x => x == null);
+                        foreach (Product product in SubscribeProducts)
+                            message += product.ID.ToLower() + "@trade/";
+                        if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
+                            return;
+                        int lastIndexOfSlash = message.LastIndexOf("/", StringComparison.Ordinal);
+                        if (lastIndexOfSlash != -1)
+                            message = message.Remove(lastIndexOfSlash, 1);
+                        while (SubscribeProducts.Any())
+                        {
+                            string uriString = ConnectionAdapter.Authentication.WebSocketUri + message;
+                            ConnectionAdapter.ConnectAsync(uriString).GetAwaiter();
+                            while (ConnectionAdapter.IsWebSocketConnected())
+                            {
+                                json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter()
+                                    .GetResult();
+                                if (string.IsNullOrEmpty(json))
+                                    continue;
+                                Feed feed = JsonSerializer.Deserialize<Feed>(json);
+                                if (feed == null || feed.Type == "error")
+                                    return;
+                                CurrentPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
+                                feed.ProductID = feed.BinanceData.Symbol;
+                                feed.Price = feed.BinanceData.Price;
+                                feed.CurrentPrices = CurrentPrices;
+                                CurrentFeed = feed;
+                                NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
+                                FeedBroadcast?.Invoke(ApplicationName, feed);
+                            }
                         }
                     }
-                }
-                catch (Exception e)
-                {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                        $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-                }
+                    catch (Exception e)
+                    {
+                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                            $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+                    }
+                });
             });
         }
 
