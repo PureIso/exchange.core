@@ -529,10 +529,11 @@ namespace exchange.binance
 
         public override Task ChangeFeed(List<Product> products)
         {
-            return Task.Run(async () =>
+            return Task.Run(() =>
             {
                 ThreadPool.QueueUserWorkItem(x =>
                 {
+                    SubscribedPrices = new Dictionary<string, decimal>();
                     if (products == null)
                         return;
                     string json = null;
@@ -570,11 +571,13 @@ namespace exchange.binance
                                 if (feed == null || feed.Type == "error")
                                     return;
                                 CurrentPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
+                                SubscribedPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
+
                                 feed.ProductID = feed.BinanceData.Symbol;
                                 feed.Price = feed.BinanceData.Price;
                                 feed.CurrentPrices = CurrentPrices;
                                 CurrentFeed = feed;
-                                NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
+                                NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                                 FeedBroadcast?.Invoke(ApplicationName, feed);
                             }
                         }
@@ -607,22 +610,22 @@ namespace exchange.binance
                 Load();
                 await UpdateExchangeInfoAsync();
                 await UpdateAccountsAsync();
-                List<Product> products = new List<Product>
-                {
-                    Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
-                    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
-                };
-                products.RemoveAll(x => x == null);
-                if (products.Any())
-                {
-                    await UpdateProductOrderBookAsync(products[0], 20);
-                    HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
-                    historicCandlesSearch.Symbol = products[0].ID;
-                    historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
-                    historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
-                    historicCandlesSearch.Granularity = (Granularity) 900;
-                    await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
-                    await UpdateTickersAsync(products);
+                //List<Product> products = new List<Product>
+                //{
+                //    Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
+                //    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
+                //};
+                //products.RemoveAll(x => x == null);
+                //if (products.Any())
+                //{
+                //    await UpdateProductOrderBookAsync(products[0], 20);
+                //    HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
+                //    historicCandlesSearch.Symbol = products[0].ID;
+                //    historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
+                //    historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
+                //    historicCandlesSearch.Granularity = (Granularity) 900;
+                //    await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
+                //    await UpdateTickersAsync(products);
 
                     //BinanceOrder binanceOrderMarket = new BinanceOrder();
                     //binanceOrderMarket.OrderType = OrderType.Market;
@@ -648,7 +651,7 @@ namespace exchange.binance
                     //{
                     //    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
                     //}
-                }
+               // }
 
                 return true;
             }

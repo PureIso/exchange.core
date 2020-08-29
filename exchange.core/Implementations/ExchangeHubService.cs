@@ -51,14 +51,12 @@ namespace exchange.core.implementations
                 return;
             List<Product> products = symbols.Select(symbol => new Product {ID = symbol}).ToList();
             await abstractExchangePlugin.ChangeFeed(products);
-            Console.WriteLine("Connected Sub");
         }
         public async Task RequestedProducts()
         {
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
-                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
-                    abstractExchangePlugin.Products.ProductsToSymbols());
+                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName, abstractExchangePlugin.Products);
             }
         }
     }

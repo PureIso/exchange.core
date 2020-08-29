@@ -71,7 +71,8 @@ export class HubClient {
             payload: exchangeUIContainerActions.payload,
         });
     }
-    notifyProductChange(applicationName:string, symbols:string[]){
+    notifyProductChange(applicationName:string, symbols:any[]){
+        console.log(symbols);
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );

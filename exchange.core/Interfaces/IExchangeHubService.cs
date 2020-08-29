@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using exchange.core.models;
 
 namespace exchange.core.interfaces
 {
@@ -13,6 +14,6 @@ namespace exchange.core.interfaces
         Task NotifyApplications(List<string> applicationNames);
         Task NotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);
         Task NotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);
-        Task NotifyProductChange(string applicationName, List<string> symbols);
+        Task NotifyProductChange(string applicationName, List<Product> products);
     }
 }

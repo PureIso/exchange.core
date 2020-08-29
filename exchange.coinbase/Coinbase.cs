@@ -542,6 +542,7 @@ namespace exchange.coinbase
             {
                 ThreadPool.QueueUserWorkItem(x =>
                 {
+                    SubscribedPrices = new Dictionary<string, decimal>();
                     if (products == null)
                         return;
                     string json = null;
@@ -554,7 +555,6 @@ namespace exchange.coinbase
                             //unsubscribe
                             ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
                         }
-
                         SubscribeProducts = products;
                         json = ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString()).Result;
                         if (string.IsNullOrEmpty(json))
@@ -570,9 +570,12 @@ namespace exchange.coinbase
                             if (feed == null || feed.Type == "error")
                                 return;
                             CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
+                            SubscribedPrices[feed.ProductID] = feed.Price.ToDecimal();
+
                             feed.CurrentPrices = CurrentPrices;
                             CurrentFeed = feed;
-                            NotifyCurrentPrices?.Invoke(ApplicationName, CurrentPrices);
+
+                            NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                             FeedBroadcast?.Invoke(ApplicationName, feed);
                         }
                     }
@@ -611,19 +614,19 @@ namespace exchange.coinbase
                     await UpdateAccountHoldsAsync(Accounts[0].ID);
                     UpdateProductsAsync().Wait();
 
-                    List<Product> products = new List<Product>
-                    {
-                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
-                        Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
-                    };
-                    products.RemoveAll(x => x == null);
-                    if (products.Any())
-                    {
-                        UpdateProductOrderBookAsync(products[0]).Wait();
-                        UpdateOrdersAsync().Wait();
-                        UpdateFillsAsync(products[0]).Wait();
-                        UpdateTickersAsync(products).Wait();
+                    //List<Product> products = new List<Product>
+                    //{
+                    //    Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
+                    //    Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
+                    //    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
+                    //};
+                    //products.RemoveAll(x => x == null);
+                    //if (products.Any())
+                    //{
+                    //    UpdateProductOrderBookAsync(products[0]).Wait();
+                    //    UpdateOrdersAsync().Wait();
+                    //    UpdateFillsAsync(products[0]).Wait();
+                    //    UpdateTickersAsync(products).Wait();
                         //ChangeFeed(products);
 
                         ////market order
@@ -641,7 +644,7 @@ namespace exchange.coinbase
                         //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
                         //    DateTime.Now.AddHours(-2).ToUniversalTime(),
                         //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
-                    }
+                   // }
                 }
             }
             catch (Exception e)

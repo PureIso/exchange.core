@@ -14,6 +14,7 @@ namespace exchange.core.implementations
         {
             AccountInfo = new Dictionary<string, decimal>();
             CurrentPrices = new Dictionary<string, decimal>();
+            SubscribedPrices = new Dictionary<string, decimal>();
             ConnectionAdapter = new ConnectionAdapter();
             Products = new List<Product>();
         }
@@ -33,7 +34,7 @@ namespace exchange.core.implementations
         #endregion
 
         #region Virtual Properties
-
+        public virtual Dictionary<string, decimal> SubscribedPrices { get; set; }
         public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual Dictionary<string, decimal> AccountInfo { get; set; }
 
