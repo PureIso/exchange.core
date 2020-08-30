@@ -24,7 +24,7 @@ export class CRUDExchangeUIContainer implements Action {
     }
     private getProductInfoIndex(productInfo: ProductInfo): number {
         return this.payload.productInfo.findIndex((x: ProductInfo) => {
-            return x.asset === productInfo.asset && x.applicationName === productInfo.applicationName;
+            return x.id === productInfo.id && x.application_name === productInfo.application_name;
         });
     }
     private getApplicationNameIndex(applicationName: string): number {
@@ -82,16 +82,19 @@ export class CRUDExchangeUIContainer implements Action {
             return this.sort(applicationName1,applicationName2)
         });
     }
-    updateProductInfo(productInfo:ProductInfo) {
-        let index = this.getProductInfoIndex(productInfo);
-        if (index == -1) {
-            this.payload.productInfo.push(productInfo);
-        } else {
-            this.payload.productInfo[index] = productInfo;
-        }
+    updateProductInfo(productInfoList:ProductInfo[]) {
+        
+        productInfoList.forEach((productInfo:ProductInfo) => {
+            let index = this.getProductInfoIndex(productInfo);
+            if (index == -1) {
+                this.payload.productInfo.push(productInfo);
+            } else {
+                this.payload.productInfo[index] = productInfo;
+            }
+        });
         //sort
         this.payload.productInfo.sort((productInfo1:ProductInfo, productInfo2:ProductInfo) => {
-            return this.sort(productInfo1.asset,productInfo2.asset);
+            return this.sort(productInfo1.id,productInfo2.id);
         });
     }
 }

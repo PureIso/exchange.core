@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using exchange.core.helpers;
 using exchange.core.interfaces;
 using exchange.core.models;
 using Microsoft.AspNetCore.SignalR;

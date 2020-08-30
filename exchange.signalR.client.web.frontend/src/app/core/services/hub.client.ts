@@ -71,18 +71,24 @@ export class HubClient {
             payload: exchangeUIContainerActions.payload,
         });
     }
-    notifyProductChange(applicationName:string, symbols:any[]){
-        console.log(symbols);
+    notifyProductChange(applicationName:string, productInfoList: ProductInfo[]){
         let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
             HubClient.exchangeUIContainer
         );
-        symbols.forEach((asset: string) => {
-            let productInfo: ProductInfo = {
-                applicationName: applicationName,
-                asset: asset
+        //map
+        let productInfo: ProductInfo[] = productInfoList.map((productInfo: ProductInfo) => {
+            let product: ProductInfo = {
+                application_name: applicationName,
+                id: productInfo.id,
+                base_currency: productInfo.base_currency,
+                base_max_size: productInfo.base_max_size,
+                base_min_size: productInfo.base_min_size,
+                quote_currency: productInfo.quote_currency,
+                quote_increment: productInfo.quote_increment
             };
-            exchangeUIContainerActions.updateProductInfo(productInfo);
+            return product;
         });
+        exchangeUIContainerActions.updateProductInfo(productInfo);
         HubClient.redux.dispatch({
             type: exchangeUIContainerActions.type,
             payload: exchangeUIContainerActions.payload,

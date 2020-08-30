@@ -20,6 +20,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
     formControl: FormControl;
+    quoteCurrencies: string[];
     assetList: string[];
     currentAssetList: string[];
 
@@ -27,6 +28,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
         this.formControl = new FormControl();
         this.assetList = new Array();
         this.currentAssetList = new Array();
+        this.quoteCurrencies = new Array();
     }
 
     ngOnInit() {
@@ -37,27 +39,32 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
             this.exchangeUIContainer = x;
             this.assetList = new Array();
             this.currentAssetList = new Array();
+            this.quoteCurrencies = new Array();
 
             //requires ES6 support, Babel or TypeScript
             x.productInfo.forEach((productInfo: ProductInfo)=>{
-                if(productInfo.applicationName == this.applicationName){
-                    this.assetList.push(productInfo.asset);
+                if(productInfo.application_name == this.applicationName){
+                    this.assetList.push(productInfo.id);
+                    this.quoteCurrencies.push(productInfo.quote_currency);
 
                     x.accountInfo.forEach((accountInfo: AccountInfo) => {
                         if(accountInfo.applicationName == this.applicationName){
-
-                            if(productInfo.asset.indexOf(accountInfo.asset) !== -1)
+                            if(productInfo.id.indexOf(accountInfo.asset) !== -1)
                             {
                                 let index: number = this.currentAssetList.findIndex((asset: string) => {
-                                    return asset === productInfo.asset;
+                                    return asset === productInfo.id;
                                 });
                                 if(index === -1){
-                                    this.currentAssetList.push(productInfo.asset);
+                                    this.currentAssetList.push(productInfo.id);
                                 }
                             } 
                         }
                     });
-                }
+                };
+                //filter - duplicates
+                this.quoteCurrencies = this.quoteCurrencies.filter((quotedCurrency:string, index:number, quoteCurrencies:string[]) => {
+                    return quoteCurrencies.indexOf(quotedCurrency) === index;
+                });
             });
         });
     }
@@ -65,7 +72,20 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     ngAfterViewInit() {
         this.mainService.hub_requestedProducts();
     }
-
+    //TODO
+    onFilterAssets(){
+        if(this.formControl.value == undefined || this.formControl.value == [])
+            return;
+        let currentValues: string[] = this.formControl.value;
+        let filteredAssetList: ProductInfo[] = this.exchangeUIContainer.productInfo.filter((productInfo:ProductInfo) => {
+            return currentValues.includes(productInfo.quote_currency);
+        });
+        filteredAssetList.forEach((productInfo: ProductInfo)=>{
+            if(productInfo.application_name == this.applicationName){
+                this.assetList.push(productInfo.id);
+            }
+        });
+    }
     subscribe(){
         this.mainService.hub_requestedSubscription(this.applicationName,this.formControl.value)
     }
