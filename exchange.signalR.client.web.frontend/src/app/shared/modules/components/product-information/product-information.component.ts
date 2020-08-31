@@ -1,4 +1,4 @@
-import { Component,OnInit,Input,ViewChild,AfterViewInit } from "@angular/core";
+import { Component,OnInit,Input,AfterViewInit } from "@angular/core";
 import { NgRedux, select } from "@angular-redux/store";
 import { AppState } from "@store/app.state";
 import { Observable } from "rxjs";
@@ -19,13 +19,15 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     notificationContainer: NotificationContainer;
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
-    formControl: FormControl;
+    assetListFormControl: FormControl;
+    quoteCurrenriesFormControl: FormControl;
     quoteCurrencies: string[];
     assetList: string[];
     currentAssetList: string[];
 
-    constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
-        this.formControl = new FormControl();
+    constructor(private mainService: MainService) {
+        this.assetListFormControl = new FormControl();
+        this.quoteCurrenriesFormControl = new FormControl();
         this.assetList = new Array();
         this.currentAssetList = new Array();
         this.quoteCurrencies = new Array();
@@ -40,13 +42,11 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
             this.assetList = new Array();
             this.currentAssetList = new Array();
             this.quoteCurrencies = new Array();
-
             //requires ES6 support, Babel or TypeScript
             x.productInfo.forEach((productInfo: ProductInfo)=>{
                 if(productInfo.application_name == this.applicationName){
                     this.assetList.push(productInfo.id);
                     this.quoteCurrencies.push(productInfo.quote_currency);
-
                     x.accountInfo.forEach((accountInfo: AccountInfo) => {
                         if(accountInfo.applicationName == this.applicationName){
                             if(productInfo.id.indexOf(accountInfo.asset) !== -1)
@@ -72,21 +72,26 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     ngAfterViewInit() {
         this.mainService.hub_requestedProducts();
     }
-    //TODO
     onFilterAssets(){
-        if(this.formControl.value == undefined || this.formControl.value == [])
+        if(this.quoteCurrenriesFormControl.value == undefined || this.quoteCurrenriesFormControl.value == [])
             return;
-        let currentValues: string[] = this.formControl.value;
+        this.assetList = new Array();
+        let currentValues: string[] = this.quoteCurrenriesFormControl.value;
         let filteredAssetList: ProductInfo[] = this.exchangeUIContainer.productInfo.filter((productInfo:ProductInfo) => {
-            return currentValues.includes(productInfo.quote_currency);
+            if(productInfo.application_name == this.applicationName){
+                return currentValues.includes(productInfo.quote_currency);
+            }
+            return false;
         });
-        filteredAssetList.forEach((productInfo: ProductInfo)=>{
+        filteredAssetList.forEach((productInfo: ProductInfo)=>{          
             if(productInfo.application_name == this.applicationName){
                 this.assetList.push(productInfo.id);
             }
         });
     }
     subscribe(){
-        this.mainService.hub_requestedSubscription(this.applicationName,this.formControl.value)
+        if(this.assetListFormControl.value == undefined || this.assetListFormControl.value == [])
+            return;
+        this.mainService.hub_requestedSubscription(this.applicationName,this.assetListFormControl.value)
     }
 }

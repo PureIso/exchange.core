@@ -2,10 +2,10 @@
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
             <mat-label>Quote Currency</mat-label>      
-            <mat-select [formControl]="formControl" (selectionChange)="onFilterAssets()" multiple>
-                <mat-select-trigger>{{formControl.value ? formControl.value[0] : ''}}
-                    <span *ngIf="formControl.value?.length > 1" class="example-additional-selection">
-                        (+{{formControl.value.length - 1}} {{formControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-select [formControl]="quoteCurrenriesFormControl" (selectionChange)="onFilterAssets()" multiple>
+                <mat-select-trigger>{{quoteCurrenriesFormControl.value ? quoteCurrenriesFormControl.value[0] : ''}}
+                    <span *ngIf="quoteCurrenriesFormControl.value?.length > 1">
+                        (+{{quoteCurrenriesFormControl.value.length - 1}} {{quoteCurrenriesFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
                 </mat-select-trigger>             
                 <mat-option *ngFor="let quoteCurrency of quoteCurrencies" [value]="quoteCurrency">{{quoteCurrency}}</mat-option>
@@ -16,10 +16,10 @@
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
             <mat-label>All Assets</mat-label>      
-            <mat-select [formControl]="formControl" multiple>
-                <mat-select-trigger>{{formControl.value ? formControl.value[0] : ''}}
-                    <span *ngIf="formControl.value?.length > 1" class="example-additional-selection">
-                        (+{{formControl.value.length - 1}} {{formControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-select [formControl]="assetListFormControl" multiple>
+                <mat-select-trigger>{{assetListFormControl.value ? assetListFormControl.value[0] : ''}}
+                    <span *ngIf="assetListFormControl.value?.length > 1">
+                        (+{{assetListFormControl.value.length - 1}} {{assetListFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
                 </mat-select-trigger>
                 
@@ -30,19 +30,15 @@
 
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
-
             <mat-label>Assets</mat-label>
-
-            <mat-select [formControl]="formControl" multiple>
-                <mat-select-trigger>{{formControl.value ? formControl.value[0] : ''}}
-                    <span *ngIf="formControl.value?.length > 1" class="example-additional-selection">
-                        (+{{formControl.value.length - 1}} {{formControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-select [formControl]="assetListFormControl" multiple>
+                <mat-select-trigger>{{assetListFormControl.value ? assetListFormControl.value[0] : ''}}
+                    <span *ngIf="assetListFormControl.value?.length > 1">
+                        (+{{assetListFormControl.value.length - 1}} {{assetListFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
-                </mat-select-trigger>
-                
+                </mat-select-trigger>        
                 <mat-option *ngFor="let currentAsset of currentAssetList" [value]="currentAsset">{{currentAsset}}</mat-option>
             </mat-select>
-
         </mat-form-field>
     </div>
 
