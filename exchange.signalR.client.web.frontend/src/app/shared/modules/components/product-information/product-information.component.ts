@@ -26,7 +26,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     currentAssetList: string[];
 
     constructor(private mainService: MainService) {
-        this.assetListFormControl = new FormControl();
+        this.assetListFormControl = new FormControl({value: '', disabled: true});
         this.quoteCurrenriesFormControl = new FormControl();
         this.assetList = new Array();
         this.currentAssetList = new Array();
@@ -87,6 +87,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
             if(productInfo.application_name == this.applicationName){
                 this.assetList.push(productInfo.id);
             }
+            this.assetListFormControl.enable();
         });
     }
     subscribe(){
