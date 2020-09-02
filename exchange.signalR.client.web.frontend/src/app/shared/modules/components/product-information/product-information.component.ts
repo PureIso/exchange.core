@@ -21,6 +21,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     exchangeUIContainer: ExchangeUIContainer;
     assetListFormControl: FormControl;
     quoteCurrenriesFormControl: FormControl;
+    currentCurrenriesFormControl: FormControl;
     quoteCurrencies: string[];
     assetList: string[];
     currentAssetList: string[];
@@ -28,6 +29,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     constructor(private mainService: MainService) {
         this.assetListFormControl = new FormControl({value: '', disabled: true});
         this.quoteCurrenriesFormControl = new FormControl();
+        this.currentCurrenriesFormControl = new FormControl();
         this.assetList = new Array();
         this.currentAssetList = new Array();
         this.quoteCurrencies = new Array();
@@ -91,8 +93,13 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
         });
     }
     subscribe(){
-        if(this.assetListFormControl.value == undefined || this.assetListFormControl.value == [])
+        let assets = new Array();
+        if(this.assetListFormControl.value != undefined && this.assetListFormControl.value != [])
+            assets = assets.concat(this.assetListFormControl.value)
+        if(this.currentCurrenriesFormControl.value != undefined && this.currentCurrenriesFormControl.value != [])
+            assets = assets.concat(this.currentCurrenriesFormControl.value)
+        if(assets.length == 0)
             return;
-        this.mainService.hub_requestedSubscription(this.applicationName,this.assetListFormControl.value)
+        this.mainService.hub_requestedSubscription(this.applicationName,assets)
     }
 }
