@@ -25,6 +25,8 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     quoteCurrencies: string[];
     assetList: string[];
     currentAssetList: string[];
+    selectedCurrencies: string[];
+    subscribeIsDisabled: boolean;
 
     constructor(private mainService: MainService) {
         this.assetListFormControl = new FormControl({value: '', disabled: true});
@@ -33,6 +35,8 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
         this.assetList = new Array();
         this.currentAssetList = new Array();
         this.quoteCurrencies = new Array();
+        this.selectedCurrencies = new Array();
+        this.subscribeIsDisabled = true;
     }
 
     ngOnInit() {
@@ -74,6 +78,7 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     ngAfterViewInit() {
         this.mainService.hub_requestedProducts();
     }
+
     onFilterAssets(){
         if(this.quoteCurrenriesFormControl.value == undefined || this.quoteCurrenriesFormControl.value == [])
             return;
@@ -92,14 +97,22 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
             this.assetListFormControl.enable();
         });
     }
-    subscribe(){
-        let assets = new Array();
+
+    onFilterSelectedAssets(){
+        this.subscribeIsDisabled = true;
+        this.selectedCurrencies = new Array();
         if(this.assetListFormControl.value != undefined && this.assetListFormControl.value != [])
-            assets = assets.concat(this.assetListFormControl.value)
+            this.selectedCurrencies = this.selectedCurrencies.concat(this.assetListFormControl.value)
         if(this.currentCurrenriesFormControl.value != undefined && this.currentCurrenriesFormControl.value != [])
-            assets = assets.concat(this.currentCurrenriesFormControl.value)
-        if(assets.length == 0)
+            this.selectedCurrencies = this.selectedCurrencies.concat(this.currentCurrenriesFormControl.value)
+        if(this.selectedCurrencies.length == 0)
             return;
-        this.mainService.hub_requestedSubscription(this.applicationName,assets)
+        this.subscribeIsDisabled = false;
+    }
+
+    subscribe(){
+        if(this.selectedCurrencies.length == 0)
+            return;
+        this.mainService.hub_requestedSubscription(this.applicationName,this.selectedCurrencies)
     }
 }

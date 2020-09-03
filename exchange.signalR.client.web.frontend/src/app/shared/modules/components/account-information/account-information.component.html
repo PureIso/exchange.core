@@ -9,9 +9,15 @@
         <mat-list>
             <div mat-subheader>Assets</div>
             <mat-list-item *ngFor="let account of accountInfo">
-                <mat-icon mat-list-icon>account_balance_wallet</mat-icon>
-                <div mat-line>{{account.asset}}</div>
-                <div mat-line> {{account.balance}} </div>
+                <div fxFlex="5%">
+                    <mat-icon mat-list-icon>account_balance_wallet</mat-icon>
+                </div>
+                <div fxFlex="15%">
+                    <div mat-line>{{account.asset}}</div>
+                </div>
+                <div fxFlex="80%">
+                    <div mat-line> {{account.balance}} </div>
+                </div>
             </mat-list-item>
         </mat-list>
         
