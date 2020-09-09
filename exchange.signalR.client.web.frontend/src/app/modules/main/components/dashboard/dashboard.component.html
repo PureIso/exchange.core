@@ -1,4 +1,4 @@
-<mat-sidenav-container class="example-container">
+<mat-sidenav-container>
 
   <mat-sidenav #sidenav >            
     <mat-toolbar color="primary" class="mat-elevation-z4">
@@ -9,6 +9,9 @@
       <a mat-list-item routerLink="/" (click)="sidenav.close()">
           <mat-icon>home</mat-icon> <span class="nav-caption">Home</span>
       </a>
+      <a mat-list-item routerLink="/trade" (click)="sidenav.close()">
+        <mat-icon>filter</mat-icon> <span class="nav-caption">Trade</span>
+    </a>
     </mat-nav-list>
   </mat-sidenav>
 
