@@ -199,9 +199,13 @@ namespace exchange.coinbase
                         if (account.Balance.ToDecimal() <= 0)
                             return;
                         if (AccountInfo.ContainsKey(account.Currency))
+                        {
                             AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                        }
                         else
+                        {
                             AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
+                        }
                     });
                     NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
                     Save();
@@ -214,6 +218,33 @@ namespace exchange.coinbase
             }
 
             return Accounts;
+        }
+
+        public async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
+        {
+            string json = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating 24 hour stats Information.");
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{product.ID}/stats");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    Statistics statistics = JsonSerializer.Deserialize<Statistics>(json);
+                    Statistics[product.ID] = statistics;
+                    return statistics;
+                }
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                    $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+            return null;
         }
 
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
@@ -571,12 +602,18 @@ namespace exchange.coinbase
                                 return;
                             CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                             SubscribedPrices[feed.ProductID] = feed.Price.ToDecimal();
-
+                            Product product = Products.FirstOrDefault(x => x.ID == feed.ProductID);
+                            if (product != null)
+                            {
+                                Statistics twentyFourHourPrice = TwentyFourHoursRollingStatsAsync(product).Result;
+                                decimal change = ((twentyFourHourPrice.Last.ToDecimal() - twentyFourHourPrice.High.ToDecimal()) / Math.Abs(twentyFourHourPrice.High.ToDecimal()));
+                                decimal percentage = change * 100;
+                            }
                             feed.CurrentPrices = CurrentPrices;
                             CurrentFeed = feed;
 
                             NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
-                            FeedBroadcast?.Invoke(ApplicationName, feed);
+                            //FeedBroadcast?.Invoke(ApplicationName, feed);
                         }
                     }
                     catch (Exception e)
@@ -607,29 +644,27 @@ namespace exchange.coinbase
                 }
 
                 Load();
+                await UpdateProductsAsync();
                 await UpdateAccountsAsync();
                 if (Accounts != null && Accounts.Any())
                 {
                     await UpdateAccountHistoryAsync(Accounts[0].ID);
                     await UpdateAccountHoldsAsync(Accounts[0].ID);
-                    UpdateProductsAsync().Wait();
+                    List<Product> products = new List<Product>
+                    {
+                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR")
+                    };
+                    products.RemoveAll(x => x == null);
+                    if (products.Any())
+                    {
+                        //UpdateProductOrderBookAsync(products[0]).Wait();
+                        //UpdateOrdersAsync().Wait();
+                        //UpdateFillsAsync(products[0]).Wait();
+                        //UpdateTickersAsync(products).Wait();
+                        ChangeFeed(products);
+                    }
 
-                    //List<Product> products = new List<Product>
-                    //{
-                    //    Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR"),
-                    //    Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "USD"),
-                    //    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "EUR")
-                    //};
-                    //products.RemoveAll(x => x == null);
-                    //if (products.Any())
-                    //{
-                    //    UpdateProductOrderBookAsync(products[0]).Wait();
-                    //    UpdateOrdersAsync().Wait();
-                    //    UpdateFillsAsync(products[0]).Wait();
-                    //    UpdateTickersAsync(products).Wait();
-                        //ChangeFeed(products);
-
-                        ////market order
+                    ////market order
                         ////buy
                         //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
                         //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
@@ -644,8 +679,8 @@ namespace exchange.coinbase
                         //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
                         //    DateTime.Now.AddHours(-2).ToUniversalTime(),
                         //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
-                   // }
-                }
+                        // }
+                    }
             }
             catch (Exception e)
             {

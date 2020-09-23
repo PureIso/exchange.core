@@ -527,6 +527,58 @@ namespace exchange.binance
             return HistoricRates;
         }
 
+        public async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
+        {
+            string json = null;
+            try
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                    "Updating 24 hour stats Information.");
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/ticker/24hr?")
+                {
+                    RequestQuery = $"symbol={product.ID}"
+                };
+                /**
+                 * {
+  "symbol": "BNBBTC",
+  "priceChange": "-94.99999800",
+  "priceChangePercent": "-95.960",
+  "weightedAvgPrice": "0.29628482",
+  "prevClosePrice": "0.10002000",
+  "lastPrice": "4.00000200",
+  "lastQty": "200.00000000",
+  "bidPrice": "4.00000000",
+  "askPrice": "4.00000200",
+  "openPrice": "99.00000000",
+  "highPrice": "100.00000000",
+  "lowPrice": "0.10000000",
+  "volume": "8913.30000000",
+  "quoteVolume": "15.30000000",
+  "openTime": 1499783499040,
+  "closeTime": 1499869899040,
+  "firstId": 28385,   // First tradeId
+  "lastId": 28460,    // Last tradeId
+  "count": 76         // Trade count
+}
+                 */
+                json = await ConnectionAdapter.RequestUnsignedAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    Statistics statistics = JsonSerializer.Deserialize<Statistics>(json);
+                    Statistics[product.ID] = statistics;
+                    return statistics;
+                }
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                    $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+            return null;
+        }
+
         public override Task ChangeFeed(List<Product> products)
         {
             return Task.Run(() =>
@@ -572,13 +624,20 @@ namespace exchange.binance
                                     return;
                                 CurrentPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
                                 SubscribedPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
+                                Product product = Products.FirstOrDefault(x => x.ID == feed.ProductID);
+                                if (product != null)
+                                {
+                                    Statistics twentyFourHourPrice = TwentyFourHoursRollingStatsAsync(product).Result;
+                                    decimal change = ((twentyFourHourPrice.Last.ToDecimal() - twentyFourHourPrice.High.ToDecimal()) / Math.Abs(twentyFourHourPrice.High.ToDecimal()));
+                                    decimal percentage = change * 100;
+                                }
 
                                 feed.ProductID = feed.BinanceData.Symbol;
                                 feed.Price = feed.BinanceData.Price;
                                 feed.CurrentPrices = CurrentPrices;
                                 CurrentFeed = feed;
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
-                                FeedBroadcast?.Invoke(ApplicationName, feed);
+                                //FeedBroadcast?.Invoke(ApplicationName, feed);
                             }
                         }
                     }
