@@ -10,18 +10,19 @@ namespace exchange.core.implementations
 {
     public abstract class AbstractExchangePlugin
     {
-        public AbstractExchangePlugin()
+        protected AbstractExchangePlugin()
         {
             AccountInfo = new Dictionary<string, decimal>();
             CurrentPrices = new Dictionary<string, decimal>();
             SubscribedPrices = new Dictionary<string, decimal>();
             ConnectionAdapter = new ConnectionAdapter();
             Products = new List<Product>();
+            Statistics = new Dictionary<string, Statistics>();
         }
 
         #region Actions
 
-        public virtual Action<string, Feed> FeedBroadcast { get; set; }
+        //public virtual Action<string, Feed> FeedBroadcast { get; set; }
         public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
 
 
@@ -37,6 +38,9 @@ namespace exchange.core.implementations
         public virtual Dictionary<string, decimal> SubscribedPrices { get; set; }
         public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual Dictionary<string, decimal> AccountInfo { get; set; }
+        protected virtual Dictionary<string, Statistics> Statistics { get; set; }
+
+
 
         public Feed CurrentFeed { get; set; }
         public virtual Authentication Authentication { get; set; }
@@ -103,12 +107,7 @@ namespace exchange.core.implementations
             throw new NotImplementedException();
         }
 
-        public Task RequestedAccountInfo()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RequestedCurrentPrices()
+        public virtual Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
         {
             throw new NotImplementedException();
         }
