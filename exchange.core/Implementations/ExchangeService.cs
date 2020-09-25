@@ -5,7 +5,8 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.core.implementations
 {
-    public class ExchangeService : IExchangeService
+    public 
+        class ExchangeService : IExchangeService
     {
         private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
 
@@ -27,6 +28,11 @@ namespace exchange.core.implementations
             if (_exchangeHubService.Clients == null)
                 return;
             await _exchangeHubService.Clients.All.NotifyAccountInfo(applicationName, accountInformation);
+        }
+
+        public Task DelegateNotifyTradeInfo(string applicationName, Dictionary<string, decimal> accountInformation)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

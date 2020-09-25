@@ -7,5 +7,6 @@ namespace exchange.core.interfaces
     {
         Task DelegateNotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);
         Task DelegateNotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);
+        Task DelegateNotifyTradeInfo(string applicationName, Dictionary<string, decimal> accountInformation);
     }
 }
