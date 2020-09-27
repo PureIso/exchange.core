@@ -659,8 +659,8 @@ namespace exchange.test
             //Arrange
             _httpMessageHandlerMock
                 .Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
+                .Setup<Task<HttpResponseMessage>>("SendAsync", 
+                    ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     StatusCode = HttpStatusCode.OK,
@@ -670,25 +670,17 @@ namespace exchange.test
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdapter.HttpClient = httpClient;
-            Coinbase subjectUnderTest = new Coinbase();
-            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
-            Product product = new Product
+            Coinbase subjectUnderTest = new Coinbase
             {
-                ID = "BTC-EUR",
-                BaseCurrency = "BTC",
-                QuoteCurrency = "EUR",
-                BaseMinSize = "0.001",
-                BaseMaxSize = "10000.00",
-                QuoteIncrement = "0.01"
+                ConnectionAdapter = _connectionAdapter
             };
-            DateTime startingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
-            DateTime endingDateTime = startingDateTime.AddMonths(6).ToUniversalTime();
+            HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch
+            {
+                Symbol = "BTC-EUR",
+                StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime(),
+                EndingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime().AddMonths(6).ToUniversalTime()
+            };
             //Act
-            HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
-            historicCandlesSearch.Symbol = "BTC-EUR";
-            historicCandlesSearch.StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
-            historicCandlesSearch.EndingDateTime =
-                historicCandlesSearch.StartingDateTime.AddMonths(6).ToUniversalTime();
             subjectUnderTest.UpdateProductHistoricCandlesAsync(historicCandlesSearch).Wait();
             //Assert
             Assert.IsNotNull(subjectUnderTest.HistoricRates);
@@ -738,102 +730,138 @@ namespace exchange.test
                 .Returns(Task.FromResult(
                     @"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}"));
 
-            Coinbase subjectUnderTest = new Coinbase();
-            subjectUnderTest.ClientWebSocket = clientWebSocket;
-            subjectUnderTest.ConnectionAdapter = connectionFactoryMock.Object;
-
+            Coinbase subjectUnderTest = new Coinbase
+            {
+                ClientWebSocket = clientWebSocket, 
+                ConnectionAdapter = connectionFactoryMock.Object
+            };
             //Act
             subjectUnderTest.ChangeFeed(products);
             Assert.IsTrue(true);
         }
 
-        //[TestMethod]
-        //[Timeout(1000)]
-        //public void WebSocketProcessFeed_ShouldReturnFeed()
-        //{
-        //    //Arrange
-        //    HttpClient httpClient = new HttpClient();
-        //    ClientWebSocket clientWebSocket = new ClientWebSocket();
-        //    Mock<ConnectionAdapter> connectionFactoryMock =
-        //        new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
-        //    connectionFactoryMock.Object.Authentication = new Authentication("api_key", "passphrase",
-        //        "NiWaGaqmhB3lgI/tQmm/gQ==", "https://api.pro.coinbase.com", "wss://ws-feed.gdax.com");
-        //    connectionFactoryMock
-        //        .Setup(x => x.ConnectAsync(connectionFactoryMock.Object.Authentication.WebSocketUri.ToString()))
-        //        .Returns(Task.CompletedTask);
-        //    connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
-        //    connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync())
-        //        .Returns(Task.FromResult(@"{
-        //                                    ""type"":""ticker"",
-        //                                    ""sequence"":7000000000,
-        //                                    ""product_id"":""BTC-EUR"",
-        //                                    ""price"":""6693.2"",
-        //                                    ""open_24h"":""6785.59000000"",
-        //                                    ""volume_24h"":""1778.78223836"",
-        //                                    ""low_24h"":""6566.00000000"",
-        //                                    ""high_24h"":""6813.00000000"",
-        //                                    ""volume_30d"":""152160.22176000"",
-        //                                    ""best_bid"":""6693.20"",
-        //                                    ""best_ask"":""6698.12"",
-        //                                    ""side"":""sell"",
-        //                                    ""time"":""2020-04-09T23:09:28.709968Z"",
-        //                                    ""trade_id"":25684401,
-        //                                    ""last_size"":""0.0027496""
-        //                                    }")) // will be returned on 1st invocation
-        //        .Returns(Task.FromResult(@"{
-        //                                    ""type"":""ticker"",
-        //                                    ""sequence"":7000000001,
-        //                                    ""product_id"":""BTC-EUR"",
-        //                                    ""price"":""6700.34"",
-        //                                    ""open_24h"":""6785.59000000"",
-        //                                    ""volume_24h"":""1778.79785469"",
-        //                                    ""low_24h"":""6566.00000000"",
-        //                                    ""high_24h"":""6813.00000000"",
-        //                                    ""volume_30d"":""152160.22176000"",
-        //                                    ""best_bid"":""6695.20"",
-        //                                    ""best_ask"":""6700.12"",
-        //                                    ""side"":""buy"",
-        //                                    ""time"":""2020-04-09T23:09:57.499045Z"",
-        //                                    ""trade_id"":25684402,
-        //                                    ""last_size"":""0.01428046""
-        //                                    }")) // will be returned on 2nd invocation
-        //        .Returns(Task.FromResult(@"{
-        //                                    ""type"":""ticker"",
-        //                                    ""sequence"":7000000002,
-        //                                    ""product_id"":""BTC-EUR"",
-        //                                    ""price"":""6695.64"",
-        //                                    ""open_24h"":""6785.59000000"",
-        //                                    ""volume_24h"":""1778.79785469"",
-        //                                    ""low_24h"":""6566.00000000"",
-        //                                    ""high_24h"":""6813.00000000"",
-        //                                    ""volume_30d"":""152160.22176000"",
-        //                                    ""best_bid"":""6695.64"",
-        //                                    ""best_ask"":""6699.80"",
-        //                                    ""side"":""sell"",
-        //                                    ""time"":""2020-04-09T23:10:01.022034Z"",
-        //                                    ""trade_id"":25684403,
-        //                                    ""last_size"":""0.00133587""
-        //                                    }")); // will be returned on 3rd invocation
-        //    Coinbase subjectUnderTest = new Coinbase();
-        //    subjectUnderTest.ConnectionAdapter = connectionFactoryMock.Object;
-        //    bool eventRaised = false;
-        //    int eventRaisedCount = 0;
-        //    AutoResetEvent autoEvent = new AutoResetEvent(false);
-        //    subjectUnderTest.ClientWebSocket = clientWebSocket;
-        //    subjectUnderTest.FeedBroadcast += delegate(string applicationame, Feed feed)
-        //    {
-        //        eventRaised = true;
-        //        if (feed.Sequence == 7000000002 || feed.Sequence == 7000000001 || feed.Sequence == 7000000000)
-        //            eventRaisedCount++;
-        //        if (eventRaisedCount >= 3)
-        //            autoEvent.Set();
-        //    };
-        //    //Act
-        //    //subjectUnderTest.StartProcessingFeed();
-        //    autoEvent.WaitOne();
-        //    Assert.IsTrue(eventRaised);
-        //}
-
+        [TestMethod]
+        [Timeout(1000)]
+        public void WebSocketProcessFeed_ShouldReturnFeed()
+        {
+            //Arrange
+            HttpClient httpClient = new HttpClient();
+            ClientWebSocket clientWebSocket = new ClientWebSocket();
+            List<Product> products = new List<Product> { new Product { ID = "BTC-EUR" }};
+            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
+            connectionFactoryMock.Object.Authentication = new Authentication("api_key", "passphrase",
+                "NiWaGaqmhB3lgI/tQmm/gQ==", "https://api.pro.coinbase.com", "wss://ws-feed.gdax.com");
+            connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString()))
+                .ReturnsAsync(@"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}");
+            connectionFactoryMock
+                .Setup(x => x.ConnectAsync(connectionFactoryMock.Object.Authentication.WebSocketUri.ToString()))
+                .Returns(Task.CompletedTask);
+            connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
+            connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync())
+                .Returns(Task.FromResult(@"{
+                                            ""type"":""ticker"",
+                                            ""sequence"":7000000000,
+                                            ""product_id"":""BTC-EUR"",
+                                            ""price"":""6693.2"",
+                                            ""open_24h"":""6785.59000000"",
+                                            ""volume_24h"":""1778.78223836"",
+                                            ""low_24h"":""6566.00000000"",
+                                            ""high_24h"":""6813.00000000"",
+                                            ""volume_30d"":""152160.22176000"",
+                                            ""best_bid"":""6693.20"",
+                                            ""best_ask"":""6698.12"",
+                                            ""side"":""sell"",
+                                            ""time"":""2020-04-09T23:09:28.709968Z"",
+                                            ""trade_id"":25684401,
+                                            ""last_size"":""0.0027496""
+                                            }")) // will be returned on 1st invocation
+                .Returns(Task.FromResult(@"{
+                                            ""type"":""ticker"",
+                                            ""sequence"":7000000001,
+                                            ""product_id"":""BTC-EUR"",
+                                            ""price"":""6700.34"",
+                                            ""open_24h"":""6785.59000000"",
+                                            ""volume_24h"":""1778.79785469"",
+                                            ""low_24h"":""6566.00000000"",
+                                            ""high_24h"":""6813.00000000"",
+                                            ""volume_30d"":""152160.22176000"",
+                                            ""best_bid"":""6695.20"",
+                                            ""best_ask"":""6700.12"",
+                                            ""side"":""buy"",
+                                            ""time"":""2020-04-09T23:09:57.499045Z"",
+                                            ""trade_id"":25684402,
+                                            ""last_size"":""0.01428046""
+                                            }")) // will be returned on 2nd invocation
+                .Returns(Task.FromResult(@"{
+                                            ""type"":""ticker"",
+                                            ""sequence"":7000000002,
+                                            ""product_id"":""BTC-EUR"",
+                                            ""price"":""6695.64"",
+                                            ""open_24h"":""6785.59000000"",
+                                            ""volume_24h"":""1778.79785469"",
+                                            ""low_24h"":""6566.00000000"",
+                                            ""high_24h"":""6813.00000000"",
+                                            ""volume_30d"":""152160.22176000"",
+                                            ""best_bid"":""6695.64"",
+                                            ""best_ask"":""6699.80"",
+                                            ""side"":""sell"",
+                                            ""time"":""2020-04-09T23:10:01.022034Z"",
+                                            ""trade_id"":25684403,
+                                            ""last_size"":""0.00133587""
+                                            }")); // will be returned on 3rd invocation
+            
+            Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = connectionFactoryMock.Object};
+            bool eventRaised = false;
+            int eventRaisedCount = 0;
+            AutoResetEvent autoEvent = new AutoResetEvent(false);
+            subjectUnderTest.ClientWebSocket = clientWebSocket;
+            subjectUnderTest.NotifyCurrentPrices += delegate(string applicationName, Dictionary<string, decimal> subscribedPrices) { 
+                eventRaised = true;
+                TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
+                taskCompletionSource.SetResult(false);
+                if (applicationName != "Coinbase Exchange") 
+                    return taskCompletionSource.Task;
+                eventRaisedCount++;
+                if (eventRaisedCount < 3) 
+                    return taskCompletionSource.Task;
+                autoEvent.Set();
+                taskCompletionSource.SetResult(true);
+                return taskCompletionSource.Task;
+            };
+            //Act
+            subjectUnderTest.ChangeFeed(products);
+            autoEvent.WaitOne();
+            Assert.IsTrue(eventRaised);
+        }
+        [TestMethod]
+        public void TwentyFourHoursRollingStats_ShouldReturnStatistics()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        @"{""open"":""10222.25"",
+                        ""high"":""10411.44"",
+                        ""low"":""10215.28"",
+                        ""volume"":""6998.81991496"",
+                        ""last"":""10355.5"",
+                        ""volume_30day"":""384820.57886121""}")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            _connectionAdapter.HttpClient = httpClient;
+            Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = _connectionAdapter};
+            Product product = new Product { ID = "BTC-EUR" };
+            //Act
+            Statistics statistics = subjectUnderTest.TwentyFourHoursRollingStatsAsync(product).Result;
+            //Assert
+            Assert.IsNotNull(statistics);
+        }
         #endregion
     }
 }

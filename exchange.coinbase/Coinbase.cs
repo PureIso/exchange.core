@@ -220,7 +220,7 @@ namespace exchange.coinbase
             return Accounts;
         }
 
-        public async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
+        public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
         {
             string json = null;
             try

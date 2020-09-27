@@ -24,7 +24,7 @@ namespace exchange.test
         public void Initialize()
         {
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            _connectionAdaptor = new ConnectionAdapter
+            _connectionAdapter = new ConnectionAdapter
             {
                 Authentication = new Authentication("api_key", "passphrase", "NiWaGaqmhB3lgI/tQmm/gQ==",
                     "https://api.binance.com", "wss://stream.binance.com:9443")
@@ -46,9 +46,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             //Act
             subjectUnderTest.UpdateTimeServerAsync().Wait();
             //Assert
@@ -158,9 +158,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             //Act
             subjectUnderTest.UpdateExchangeInfoAsync().Wait();
             //Assert
@@ -200,9 +200,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             //Act
             subjectUnderTest.UpdateAccountsAsync().Wait();
             Assert.IsNotNull(subjectUnderTest.BinanceAccount);
@@ -273,9 +273,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             //Act
             Product product = new Product {ID = "LENDBTC"};
             subjectUnderTest.UpdateOrdersAsync(product).Wait();
@@ -314,9 +314,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             Product product = new Product {ID = "BTCEUR"};
             //Act
             subjectUnderTest.UpdateProductOrderBookAsync(product, 20).Wait();
@@ -348,9 +348,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
             historicCandlesSearch.Symbol = "BTCEUR";
             historicCandlesSearch.StartingDateTime = new DateTime(2015, 4, 23).Date.ToUniversalTime();
@@ -381,9 +381,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             List<Product> products = new List<Product>
             {
                 new Product {ID = "BTCEUR"}
@@ -443,9 +443,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             Product product = new Product {ID = "BNBBTC"};
             //Act
             subjectUnderTest.UpdateFillsAsync(product).Wait();
@@ -490,9 +490,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
@@ -537,9 +537,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
@@ -591,9 +591,9 @@ namespace exchange.test
                 }))
                 .Verifiable();
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-            _connectionAdaptor.HttpClient = httpClient;
+            _connectionAdapter.HttpClient = httpClient;
             Binance subjectUnderTest = new Binance();
-            subjectUnderTest.ConnectionAdapter = _connectionAdaptor;
+            subjectUnderTest.ConnectionAdapter = _connectionAdapter;
             Product product = new Product();
             product.ID = "BNBBTC";
             //Act
@@ -602,10 +602,56 @@ namespace exchange.test
             Assert.IsNotNull(binanceOrders);
         }
 
+        [TestMethod]
+        public void TwentyFourHoursRollingStats_ShouldReturnStatistics()
+        {
+            //Arrange
+            _httpMessageHandlerMock
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(x => x.RequestUri.AbsoluteUri.Contains("/api/v3/ticker/24hr")),
+                    ItExpr.IsAny<CancellationToken>())
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(
+                        @"{""symbol"": ""BNBBTC"",
+                        ""priceChange"": ""-94.99999800"",
+                        ""priceChangePercent"": ""-95.960"",
+                        ""weightedAvgPrice"": ""0.29628482"",
+                        ""prevClosePrice"": ""0.10002000"",
+                        ""lastPrice"": ""4.00000200"",
+                        ""lastQty"": ""200.00000000"",
+                        ""bidPrice"": ""4.00000000"",
+                        ""askPrice"": ""4.00000200"",
+                        ""openPrice"": ""99.00000000"",
+                        ""highPrice"": ""100.00000000"",
+                        ""lowPrice"": ""0.10000000"",
+                        ""volume"": ""8913.30000000"",
+                        ""quoteVolume"": ""15.30000000"",
+                        ""openTime"": 1499783499040,
+                        ""closeTime"": 1499869899040,
+                        ""firstId"": 28385,
+                        ""lastId"": 28460,
+                        ""count"": 76}")
+                }))
+                .Verifiable();
+            HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            _connectionAdapter.HttpClient = httpClient;
+            Binance subjectUnderTest = new Binance
+            {
+                ConnectionAdapter = _connectionAdapter
+            };
+            Product product = new Product {ID = "BNBBTC"};
+            //Act
+            Statistics statistics = subjectUnderTest.TwentyFourHoursRollingStatsAsync(product).Result;
+            //Assert
+            Assert.IsNotNull(statistics);
+        }
         #region Fields
 
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
-        private ConnectionAdapter _connectionAdaptor;
+        private ConnectionAdapter _connectionAdapter;
 
         #endregion
     }
