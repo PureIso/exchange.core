@@ -27,6 +27,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatSelectModule } from '@angular/material/select';
+import { AccountInformationTableComponent } from "./components/account-information-table/account-information-table.component";
+import { MatTableModule } from "@angular/material/table";
 
 
 @NgModule({
@@ -40,7 +42,7 @@ import { MatSelectModule } from '@angular/material/select';
         BrowserAnimationsModule,
         MatNativeDateModule ,
         ReactiveFormsModule,
-        MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,
+        MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,
         MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
         MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule
     ],
@@ -52,12 +54,13 @@ import { MatSelectModule } from '@angular/material/select';
         PriceCardComponent,
         AccountInformationComponent,
         ProductInformationComponent,
+        AccountInformationTableComponent,
         MatNativeDateModule ,
-        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule, 
+        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,
         MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
         MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule
     ],
     providers: [MatDatepickerModule],
-    declarations: [NotificationComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent],
+    declarations: [NotificationComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
 })
 export class SharedModule {}
