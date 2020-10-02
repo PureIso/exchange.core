@@ -9,14 +9,35 @@ volumes:
         name: mongo_db
         driver: local
         driver_opts:
-            device: 'D:\Docker\data\db'
+            device: 'C:\Docker\data\db'
             o: 'bind'
             type: 'none'
     mongo_configdb:
         name: mongo_configdb
         driver: local
         driver_opts:
-            device: 'D:\Docker\data\configdb'
+            device: 'C:\Docker\data\configdb'
+            o: 'bind'
+            type: 'none'
+    elasticsearch_data:
+        name: elasticsearch_data
+        driver: local
+        driver_opts:
+            device: 'C:\Docker\elasticsearch\data'
+            o: 'bind'
+            type: 'none'
+    graylog_journal:
+        name: graylog_journal
+        driver: local
+        driver_opts:
+            device: 'C:\Docker\graylog\journal'
+            o: 'bind'
+            type: 'none'
+    graylog_config:
+        name: graylog_config
+        driver: local
+        driver_opts:
+            device: 'C:\Docker\graylog\config'
             o: 'bind'
             type: 'none'
 
@@ -38,7 +59,75 @@ services:
             - 27017-27019:27017-27019
         networks:
             bridge:
+      
+    # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.6/docker.html
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
+        #data folder in share for persistence
+        volumes:
+            - elasticsearch_data:/usr/share/elasticsearch/data
+        environment:
+            - http.host=0.0.0.0
+            - transport.host=localhost
+            - network.host=0.0.0.0
+            - node.max_local_storage_nodes=4
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+        memlock:
+            soft: -1
+            hard: -1
+        mem_limit: 1g
     
+    # Graylog: https://hub.docker.com/r/graylog/graylog/
+    graylog:
+        image: graylog/graylog:3.0
+        #journal and config directories in local NFS share for persistence
+        volumes:
+            - graylog_journal:/usr/share/graylog/data/journal
+            - graylog_config:/usr/share/graylog/data/config
+        environment:
+            # CHANGE ME (must be at least 16 characters)!
+            - GRAYLOG_PASSWORD_SECRET=forpasswordencryption
+            # Password: admin
+            - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+            - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:7555
+            - GRAYLOG_HTTP_EXTERNAL_URI=http://192.168.10.152:7555/
+            - GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL=http://192.168.10.152:7555
+            - GRAYLOG_TRANSPORT_EMAIL_HOSTNAME=smtp.example.com
+            - GRAYLOG_TRANSPORT_EMAIL_ENABLED=true
+            - GRAYLOG_TRANSPORT_EMAIL_PORT=25
+            - GRAYLOG_TRANSPORT_EMAIL_USE_AUTH=false
+            - GRAYLOG_TRANSPORT_EMAIL_USE_TLS=false
+            - GRAYLOG_TRANSPORT_EMAIL_USE_SSL=false
+            - GRAYLOG_TRANSPORT_FROM_EMAIL=youremail@yourdomain.com
+            - GRAYLOG_TRANSPORT_SUBJECT_PREFIX=[graylog]
+        links:
+            - mongodb:mongo
+            - elasticsearch
+            - GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL=http://192.168.10.152:7555
+            - GRAYLOG_TRANSPORT_EMAIL_HOSTNAME=smtp.example.com
+            - GRAYLOG_TRANSPORT_EMAIL_ENABLED=true
+            - GRAYLOG_TRANSPORT_EMAIL_PORT=25
+            - GRAYLOG_TRANSPORT_EMAIL_USE_AUTH=false
+            - GRAYLOG_TRANSPORT_EMAIL_USE_TLS=false
+            - GRAYLOG_TRANSPORT_EMAIL_USE_SSL=false
+            - GRAYLOG_TRANSPORT_FROM_EMAIL=youremail@yourdomain.com
+            - GRAYLOG_TRANSPORT_SUBJECT_PREFIX=[graylog]
+        depends_on:
+            - mongodb
+            - elasticsearch
+        ports:
+            # Graylog web interface and REST API
+            - 7555:7555
+            # Syslog TCP
+            - 8514:8514
+            # Syslog UDP
+            - 8514:8514/udp
+            # GELF TCP
+            - 12201:12201
+            # GELF UDP
+            - 12201:12201/udp
+
     #celery
     celery:
         container_name: celery
