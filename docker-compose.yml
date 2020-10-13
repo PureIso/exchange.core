@@ -40,23 +40,85 @@ volumes:
             device: 'C:\Docker\graylog\config'
             o: 'bind'
             type: 'none'
+    elasticsearch_data:
+        name: elasticsearch_data
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\elasticsearch\data'
+            o: 'bind'
+            type: 'none'
+    graylog_journal:
+        name: graylog_journal
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\graylog\journal'
+            o: 'bind'
+            type: 'none'
+    graylog_config:
+        name: graylog_config
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\graylog\config'
+            o: 'bind'
+            type: 'none'
 
 services:
+    # nginx: 
+    #     image: nginx:latest
+    #     container_name: nginx
+    #     volumes:
+    #       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+    #     ports:
+    #       - 80:80
+    #       - 443:443
+    #     networks:
+    #         bridge:
+
     #mongo Database
     service.mongodb:
         image: mongo:${MONGO_DB_VERSION}
+        restart: always
         container_name: mongodb
         # List directories to mount
         volumes:
             - mongo_db:/data/db:rw
             - mongo_configdb:/data/configdb:rw
             - ./docker/mongodb/init.sh:/init.sh:rw
-            - ./docker/mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:ro
+            - ./docker/mongodb/mongo-users-init.js:/docker-entrypoint-initdb.d/mongo-users-init.js:rw
         command: [
             "./init.sh"
         ]
         ports:
-            - 27017-27019:27017-27019
+            - 27017:27017
+            - 27018:27018
+            - 27019:27019
+        networks:
+            bridge:
+      
+    # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.6/docker.html
+    elasticsearch:
+        container_name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
+        #data folder in share for persistence
+        volumes:
+            - elasticsearch_data:/usr/share/elasticsearch/data
+        environment:
+            - http.host=0.0.0.0
+            - transport.host=localhost
+            - network.host=0.0.0.0
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        mem_limit: 1g
+        ports:
+            - 9200:9200
+            - 9300:9300
+        links:
+            - service.mongodb
+        depends_on:
+            - service.mongodb
         networks:
             bridge:
       
@@ -80,41 +142,26 @@ services:
     
     # Graylog: https://hub.docker.com/r/graylog/graylog/
     graylog:
-        image: graylog/graylog:3.0
+        container_name: graylog
+        restart: always
+        image: graylog/graylog:3.3.7-1
         #journal and config directories in local NFS share for persistence
         volumes:
             - graylog_journal:/usr/share/graylog/data/journal
             - graylog_config:/usr/share/graylog/data/config
         environment:
+            - GRAYLOG_HTTP_BIND_ADDRESS=${GRAYLOG_HTTP_BIND_ADDRESS}
+            - GRAYLOG_WEB_ENDPOINT_URI=${GRAYLOG_WEB_ENDPOINT_URI}
             # CHANGE ME (must be at least 16 characters)!
-            - GRAYLOG_PASSWORD_SECRET=forpasswordencryption
+            - GRAYLOG_PASSWORD_SECRET=${GRAYLOG_PASSWORD_SECRET}
             # Password: admin
-            - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-            - GRAYLOG_HTTP_BIND_ADDRESS=0.0.0.0:7555
-            - GRAYLOG_HTTP_EXTERNAL_URI=http://192.168.10.152:7555/
-            - GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL=http://192.168.10.152:7555
-            - GRAYLOG_TRANSPORT_EMAIL_HOSTNAME=smtp.example.com
-            - GRAYLOG_TRANSPORT_EMAIL_ENABLED=true
-            - GRAYLOG_TRANSPORT_EMAIL_PORT=25
-            - GRAYLOG_TRANSPORT_EMAIL_USE_AUTH=false
-            - GRAYLOG_TRANSPORT_EMAIL_USE_TLS=false
-            - GRAYLOG_TRANSPORT_EMAIL_USE_SSL=false
-            - GRAYLOG_TRANSPORT_FROM_EMAIL=youremail@yourdomain.com
-            - GRAYLOG_TRANSPORT_SUBJECT_PREFIX=[graylog]
+            - GRAYLOG_ROOT_PASSWORD_SHA2=${GRAYLOG_ROOT_PASSWORD_SHA2}
+            - GRAYLOG_HTTP_EXTERNAL_URI=${GRAYLOG_HTTP_EXTERNAL_URI}
+            - GRAYLOG_MONGODB_URI=${GRAYLOG_MONGODB_URI}
+            - GRAYLOG_ELASTICSEARCH_HOSTS=${GRAYLOG_ELASTICSEARCH_HOSTS}
+            - GRAYLOG_ROOT_TIMEZONE=${GRAYLOG_ROOT_TIMEZONE}
         links:
-            - mongodb:mongo
-            - elasticsearch
-            - GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL=http://192.168.10.152:7555
-            - GRAYLOG_TRANSPORT_EMAIL_HOSTNAME=smtp.example.com
-            - GRAYLOG_TRANSPORT_EMAIL_ENABLED=true
-            - GRAYLOG_TRANSPORT_EMAIL_PORT=25
-            - GRAYLOG_TRANSPORT_EMAIL_USE_AUTH=false
-            - GRAYLOG_TRANSPORT_EMAIL_USE_TLS=false
-            - GRAYLOG_TRANSPORT_EMAIL_USE_SSL=false
-            - GRAYLOG_TRANSPORT_FROM_EMAIL=youremail@yourdomain.com
-            - GRAYLOG_TRANSPORT_SUBJECT_PREFIX=[graylog]
-        depends_on:
-            - mongodb
+            - service.mongodb
             - elasticsearch
         ports:
             # Graylog web interface and REST API
@@ -127,6 +174,8 @@ services:
             - 12201:12201
             # GELF UDP
             - 12201:12201/udp
+        networks:
+            bridge:
 
     #celery
     celery:
@@ -138,6 +187,7 @@ services:
         # List directories to mount
         command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
         depends_on:
+            - graylog
             - service.mongodb
         networks:
             bridge:
@@ -154,6 +204,7 @@ services:
             - 5005:5005
         command: python3.6 main.py
         depends_on:
+            - graylog
             - service.mongodb
         networks:
             bridge:
@@ -169,9 +220,13 @@ services:
             - 5001:5001
         command: dotnet exchange.service.dll
         environment:
-            - DOTNET_ENVIRONMENT=Development
+            - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT}
         networks:
             bridge:
+        links:
+            - graylog
+        depends_on:
+            - graylog
 
     #frontend
     signalr.webpack.server.frontend:
@@ -186,5 +241,7 @@ services:
             bridge:
         depends_on:
             - exchange.service
+            - graylog
         links:
             - exchange.service
+            - graylog
