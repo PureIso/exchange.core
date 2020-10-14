@@ -7,6 +7,7 @@
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=development)](https://travis-ci.org/PureIso/exchange.core)
 
 **Version: 1.0.0**
+
 Cryptocurrency exchange API
 
 System will connect to various exchanges for real-time trade information.\
@@ -89,9 +90,9 @@ The following development process seems to work well for this project.
 - [npm](https://www.npmjs.com/) - (Package Manager)
 - [Karma](http://karma-runner.github.io/0.12/index.html) - (Test Runner)
 - [Jasmine](https://jasmine.github.io/) - (Test Framework)
-- [Rxjs](https://github.com/ReactiveX/rxjs)
+- [Rxjs](https://github.com/ReactiveX/rxjs) - Reactive library for handling asynchronous data calls, callbacks and event-based programs
 - [Sass](http://sass-lang.com/)
-- [Bootstrap](http://getbootstrap.com/)
+- [Angular Material](https://material.angular.io/) - UI component Library
 - [Font Awesome](https://fontawesome.com/)
 - [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/) - (Language - Backend)
 - [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0) - (Real-Time web functionality library)
@@ -102,6 +103,7 @@ The following development process seems to work well for this project.
 - [Celery](http://www.celeryproject.org/) - (Distributed Task Queue)
 - [RabbitMQ](https://www.rabbitmq.com/) - (Message Broker)
 - [MongoDB](https://www.mongodb.com/) - (Database Engine)
+- [GrayLog](https://www.graylog.org/) - (Centralized Log Management)
 
 ## Configuration
 
@@ -168,7 +170,7 @@ docker-compose up --build
 - Byte Order Mark (BOM) casuing issues with UTF-8 file. It can be removed form the init.sh file as part of docker mongo with the following command in bash:
 
 ```shell
-sed -i $'1s/^\uFEFF//' theFile
+sed -i $'1s/^\uFEFF//' theFilePath
 ```
 
 ## License
