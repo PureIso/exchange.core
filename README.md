@@ -14,7 +14,7 @@ System will connect to various exchanges for real-time trade information.\
 System will record trading information to be later used for supervised machine learning.\
 The project is more so to experiment with various technologies and see how far it goes.
 
-![alt text](exhange.assets\exchange.jpg?raw=true)
+![alt text](exhange.assets\\exchange.jpg?raw=true)
 
 ## Programming Paradigms
 
