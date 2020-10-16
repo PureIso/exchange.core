@@ -15,6 +15,7 @@ Make sure that you have:
 - Database: mongoDB
 - Dependancy: Erlang
 
+
 ### Quick Start - Docker-Compose (Start Flask RESTful, Celery and MongoDB)
 
 Running docker-compose:
@@ -52,17 +53,9 @@ Clean dangling images:
 docker image prune
 ```
 
-### Quick Start - Env (Start Flask RESTful and Celery)
-
-Initialise environment and Start application:
-
-```shell
-activate.bat
-start.bat
-```
-
 ### Quick Start - Local
 
+[Microsoft Visual C++](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 Upgrade pip
 
 ```shell
@@ -73,26 +66,42 @@ Make sure you have virtualenv installed
 Virtualenv allows you to have different virtual environment for different projects.
 
 ```shell
-pip install virtualenv
+pip install virtualenv 
 ```
 
-Setup and initialise virtual environment:
+Get the current Python version.
 
 ```shell
-virtualenv env --python=python3.6.5
+python --version   
+```
+
+NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
+Setup and initialise virtual environment with the correct python version:
+
+```shell
+virtualenv env --python=python3.8.6
 python -m virtualenv env
 env\\Scripts\\activate.bat
 python.exe -m pip install --upgrade pip
-```
-
-Backing up packages to requirement file:
-
-```shell
-pip freeze --local > requirements.txt
 ```
 
 Installing requirement file in virtual environment:
 
 ```shell
 pip install -r requirements.txt
+```
+
+Backing up packages to requirement file especially after tested update:
+
+```shell
+pip freeze --local > requirements.txt
+```
+
+### Quick Start - Env (Start Flask RESTful and Celery)
+
+Initialise environment and Start application:
+
+```shell
+activate.bat
+start.bat
 ```
