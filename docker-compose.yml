@@ -9,35 +9,14 @@ volumes:
         name: mongo_db
         driver: local
         driver_opts:
-            device: 'C:\Docker\data\db'
+            device: 'D:\Docker\data\db'
             o: 'bind'
             type: 'none'
     mongo_configdb:
         name: mongo_configdb
         driver: local
         driver_opts:
-            device: 'C:\Docker\data\configdb'
-            o: 'bind'
-            type: 'none'
-    elasticsearch_data:
-        name: elasticsearch_data
-        driver: local
-        driver_opts:
-            device: 'C:\Docker\elasticsearch\data'
-            o: 'bind'
-            type: 'none'
-    graylog_journal:
-        name: graylog_journal
-        driver: local
-        driver_opts:
-            device: 'C:\Docker\graylog\journal'
-            o: 'bind'
-            type: 'none'
-    graylog_config:
-        name: graylog_config
-        driver: local
-        driver_opts:
-            device: 'C:\Docker\graylog\config'
+            device: 'D:\Docker\data\configdb'
             o: 'bind'
             type: 'none'
     elasticsearch_data:
@@ -61,6 +40,13 @@ volumes:
             device: 'D:\Docker\graylog\config'
             o: 'bind'
             type: 'none'
+    exchange_service_logs:
+        name: exchange_service_logs
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\exchange\service\logs'
+            o: 'bind'
+            type: 'none'
 
 services:
     # nginx: 
@@ -74,10 +60,10 @@ services:
     #     networks:
     #         bridge:
 
-    #mongo Database
+    # mongo Database
     service.mongodb:
         image: mongo:${MONGO_DB_VERSION}
-        restart: always
+        # restart: always
         container_name: mongodb
         # List directories to mount
         volumes:
@@ -122,29 +108,11 @@ services:
         networks:
             bridge:
       
-    # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.6/docker.html
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
-        #data folder in share for persistence
-        volumes:
-            - elasticsearch_data:/usr/share/elasticsearch/data
-        environment:
-            - http.host=0.0.0.0
-            - transport.host=localhost
-            - network.host=0.0.0.0
-            - node.max_local_storage_nodes=4
-            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-        ulimits:
-        memlock:
-            soft: -1
-            hard: -1
-        mem_limit: 1g
-    
     # Graylog: https://hub.docker.com/r/graylog/graylog/
     graylog:
         container_name: graylog
         restart: always
-        image: graylog/graylog:3.3.7-1
+        image: graylog/graylog:3.3.8-1
         #journal and config directories in local NFS share for persistence
         volumes:
             - graylog_journal:/usr/share/graylog/data/journal
@@ -189,6 +157,13 @@ services:
         depends_on:
             - graylog
             - service.mongodb
+        environment:
+            - MI_HOST=${MI_HOST}
+            - MI_PORT=${MI_PORT}
+            - MI_GRAYLOG_HOST=${MI_GRAYLOG_HOST}
+            - MI_GRAYLOG_PORT=${MI_GRAYLOG_PORT}
+            - MI_BROKER_URL=${MI_BROKER_URL}
+            - MI_RESULT_BACKEND=${MI_RESULT_BACKEND}
         networks:
             bridge:
         
@@ -202,7 +177,7 @@ services:
         # Access to directory has to be shared
         ports:
             - 5005:5005
-        command: python3.6 main.py
+        command: python3.8 main.py
         depends_on:
             - graylog
             - service.mongodb
@@ -215,12 +190,14 @@ services:
         build:
             context: .
             dockerfile: ./docker/exchange.service/Dockerfile
+        volumes:
+            - exchange_service_logs:/exchange/service/logs:rw
         ports:
             - 5000:5000
             - 5001:5001
         command: dotnet exchange.service.dll
         environment:
-            - DOTNET_ENVIRONMENT=${DOTNET_ENVIRONMENT}
+            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
         networks:
             bridge:
         links:
