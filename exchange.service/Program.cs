@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -19,46 +21,62 @@ namespace exchange.service
     public static class Program
     {
 #if DEBUG
-        private const string DefaultEnvironmentName = "Development";
+        private const string DefaultEnvironmentName = "Docker";
 #else
         private const string DefaultEnvironmentName = "Production";
 #endif
-
         public static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .WriteTo.Graylog(new GraylogSinkOptions
-                {
-                    HostnameOrAddress = "192.168.1.203",
-                    Port = 12201,
-                    MinimumLogEventLevel = Serilog.Events.LogEventLevel.Information,
-                    TransportType = Serilog.Sinks.Graylog.Core.Transport.TransportType.Udp,
-                })
-                .CreateLogger();
             try
             {
+                //Read Configuration from appSettings
+                string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                if (string.IsNullOrEmpty(environment))
+                    environment = DefaultEnvironmentName;
+                IConfigurationRoot config = new ConfigurationBuilder()
+                        .AddJsonFile($"appsettings.{environment}.json", true)
+                        .Build();
+                //Initialize Logger
+                Log.Logger = new LoggerConfiguration()
+                    .ReadFrom.Configuration(config)
+                    .CreateLogger();
+
                 HttpClient client = new HttpClient();
                 HttpResponseMessage response = new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.BadRequest
                 };
+                int delayInMS = 1000;
                 // Get the response.
-                while(response.StatusCode != HttpStatusCode.OK)
+                int maxGrayLogConnectionAttempt = config.GetSection("MaxGrayLogConnectionAttempt").Get<int>();
+                while (response.StatusCode != HttpStatusCode.OK && maxGrayLogConnectionAttempt > 0)
                 {
                     try
                     {
-                        response = client.GetAsync(
-                        "http://192.168.1.203:7555/"
-                        ).GetAwaiter().GetResult();
+                        string grayLogRequestUrl = config.GetSection("GrayLogUrl").Value;
+                        if (!string.IsNullOrEmpty(grayLogRequestUrl))
+                        {
+                            Log.Information($"Connecting to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
+                            response = client.GetAsync(grayLogRequestUrl).GetAwaiter().GetResult();
+                            maxGrayLogConnectionAttempt--;
+                            delayInMS += 1000;
+                        }
+                        else
+                        {
+                            Log.Information($"GrayLog url configuration is invalid.\r\nGraylog will not be used.");
+                            response.StatusCode = HttpStatusCode.OK;
+                            maxGrayLogConnectionAttempt = 0;
+                        }
                     }
-                    catch (Exception _)
+                    catch (Exception)
                     {
-                    }      
-                    Task.Delay(1000).GetAwaiter();
+                        maxGrayLogConnectionAttempt--;
+                        // ignored
+                    }
+                    Task.Delay(delayInMS).GetAwaiter();
                 }
-                Log.Information("Starting up - 127.0.0.1 - docker - 2");
+                Log.Information($"Exchange Server Starting: {Dns.GetHostName()}");
+                Log.Information($"Environment: {environment}");
                 CreateHostBuilder(args).Build().Run();
             }
             catch (Exception ex)
@@ -78,26 +96,60 @@ namespace exchange.service
                 .UseSerilog()
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder.UseUrls("http://exchange.service:5000/", "https://exchange.service:5001/");
+                    //Create a Generic Host - HTTP workload
+                    //Read Configuration from appSettings
+                    string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                    if (string.IsNullOrEmpty(environment))
+                        environment = DefaultEnvironmentName;
+                    IConfigurationRoot config = new ConfigurationBuilder()
+                        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                        .AddJsonFile($"appsettings.{environment}.json", true)
+                        .Build();
+                    string[] hostUrls = config.GetSection("HostUrls").Get<string[]>();
+                    Log.Information($"Host Url: {string.Join(",", hostUrls)}");
+                    webBuilder.UseUrls(hostUrls);
                     webBuilder.UseStartup<Startup>();
                 })
                 .ConfigureHostConfiguration(configHost =>
                 {
+                    //The host configuration is also added to the app configuration.
                     configHost.SetBasePath(Directory.GetCurrentDirectory());
                     configHost.AddEnvironmentVariables();
                 })
+                .ConfigureAppConfiguration((hostContext, configApp) =>
+                {
+                    string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+                    if (string.IsNullOrEmpty(environment))
+                        environment = DefaultEnvironmentName;
+                    configApp.AddJsonFile($"appsettings.{environment}.json", true);
+                    configApp.AddCommandLine(args);
+                })
                 .ConfigureServices((hostContext, services) =>
                 {
+                    //Creates a Generic Host using non-HTTP workload.
+                    //The IHostedService implementation is added to the DI container
                     IConfiguration configuration = hostContext.Configuration;
-                    ExchangeSettings exchangeSettings =
-                        configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
-                    services.AddSingleton<IExchangeSettings>(exchangeSettings);
-                    //cross origin requests
-                    services.AddCors(options => options.AddPolicy(Startup.AllowSpecificOrigins, builder =>
+                    hostContext.HostingEnvironment.ApplicationName = "Exchange.Service";
+                    string[] allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
+                    if (allowedOrigins != null)
                     {
-                        builder.WithOrigins("http://*:9000/")
-                            .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-                    }));
+                        Log.Information($"Allowed Origins: {string.Join(",", allowedOrigins)}");
+                        ExchangeSettings exchangeSettings =
+                            configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
+                        if (exchangeSettings != null)
+                            services.AddSingleton<IExchangeSettings>(exchangeSettings);
+                        //cross origin requests
+                        services.AddCors(options => options.AddPolicy(Startup.AllowSpecificOrigins, builder =>
+                        {
+                            builder.WithOrigins(allowedOrigins)
+                                .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+                        }));
+                    }
+                    else
+                    {
+                        Log.Information($"Service CORS Origins: N/A");
+                    }
+
                     services.AddSignalR();
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
                     if (string.IsNullOrEmpty(directoryName))
@@ -110,24 +162,7 @@ namespace exchange.service
                     services.AddSingleton<IExchangePluginService>(exchangePluginService);
                     services.AddSingleton<IExchangeService, ExchangeService>();
                     services.AddHostedService<Worker>();
-                })
-                .ConfigureAppConfiguration((hostContext, configApp) =>
-                {
-                    configApp.SetBasePath(Directory.GetCurrentDirectory());
-                    configApp.AddJsonFile($"appsettings.{DefaultEnvironmentName}.json", true);
-                    configApp.AddCommandLine(args);
                 });
-                //.ConfigureLogging((context, logging) =>
-                //{
-                //    //change configuration for logging
-                //    //clearing out everyone listening to the logging event
-                //    logging.ClearProviders();
-                //    //add configuration with appsettings.json
-                //    logging.AddConfiguration(context.Configuration.GetSection("Logging"));
-                //    //add loggers (write to)
-                //    logging.AddDebug();
-                //    logging.AddConsole();
-                //});
         }
     }
 }

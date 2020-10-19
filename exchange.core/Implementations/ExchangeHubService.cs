@@ -4,22 +4,34 @@ using System.Threading.Tasks;
 using exchange.core.interfaces;
 using exchange.core.models;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 
 namespace exchange.core.implementations
 {
     public class ExchangeHubService : Hub<IExchangeHubService>
     {
         private readonly IExchangePluginService _exchangePluginService;
+        private readonly ILogger<ExchangeHubService> _logger;
 
-        public ExchangeHubService(IExchangePluginService exchangePluginService)
+        public ExchangeHubService(IExchangePluginService exchangePluginService, ILogger<ExchangeHubService> logger)
         {
-            _exchangePluginService = exchangePluginService;
+            if (_exchangePluginService == null)
+            {
+                _exchangePluginService = exchangePluginService;
+                logger.LogInformation("ExchangeHubService exchange plugin service loaded.");
+            }
+            if (_logger == null)
+            {
+                _logger = logger;
+                logger.LogInformation("ExchangeHubService logger loaded.");
+            }  
         }
 
         public async Task RequestedApplications()
         {
             List<string> applications =_exchangePluginService.PluginExchanges.Select(x => x.ApplicationName).ToList();
             await Clients.All.NotifyApplications(applications);
+            _logger.LogInformation("ExchangeHubService RequestedApplications request to all clients notification.");
         }
         public async Task RequestedAccountInfo()
         {

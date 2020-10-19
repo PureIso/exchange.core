@@ -15,7 +15,6 @@ Make sure that you have:
 - Database: mongoDB
 - Dependancy: Erlang
 
-
 ### Quick Start - Docker-Compose (Start Flask RESTful, Celery and MongoDB)
 
 Running docker-compose:
@@ -66,13 +65,13 @@ Make sure you have virtualenv installed
 Virtualenv allows you to have different virtual environment for different projects.
 
 ```shell
-pip install virtualenv 
+pip install virtualenv
 ```
 
 Get the current Python version.
 
 ```shell
-python --version   
+python --version
 ```
 
 NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
@@ -104,4 +103,17 @@ Initialise environment and Start application:
 ```shell
 activate.bat
 start.bat
+```
+
+### API
+
+Recurrent Neural Networks for Sequence Learning:
+
+```shell
+http://localhost:5005/api/v1/rnn/
+Body
+{
+    "hourly": true,
+    "save": true
+}
 ```
