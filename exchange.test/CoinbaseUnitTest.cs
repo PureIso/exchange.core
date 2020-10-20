@@ -741,7 +741,7 @@ namespace exchange.test
         }
 
         [TestMethod]
-        [Timeout(1000)]
+        [Timeout(5000)]
         public void WebSocketProcessFeed_ShouldReturnFeed()
         {
             //Arrange

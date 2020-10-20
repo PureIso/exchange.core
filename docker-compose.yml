@@ -101,10 +101,6 @@ services:
         ports:
             - 9200:9200
             - 9300:9300
-        links:
-            - service.mongodb
-        depends_on:
-            - service.mongodb
         networks:
             bridge:
       
@@ -128,9 +124,6 @@ services:
             - GRAYLOG_MONGODB_URI=${GRAYLOG_MONGODB_URI}
             - GRAYLOG_ELASTICSEARCH_HOSTS=${GRAYLOG_ELASTICSEARCH_HOSTS}
             - GRAYLOG_ROOT_TIMEZONE=${GRAYLOG_ROOT_TIMEZONE}
-        links:
-            - service.mongodb
-            - elasticsearch
         ports:
             # Graylog web interface and REST API
             - 7555:7555
@@ -142,45 +135,6 @@ services:
             - 12201:12201
             # GELF UDP
             - 12201:12201/udp
-        networks:
-            bridge:
-
-    #celery
-    celery:
-        container_name: celery
-        # All files and folders in the currect directory
-        build: 
-            context: .
-            dockerfile: ./docker/service.machine.learning/Dockerfile 
-        # List directories to mount
-        command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
-        depends_on:
-            - graylog
-            - service.mongodb
-        environment:
-            - MI_HOST=${MI_HOST}
-            - MI_PORT=${MI_PORT}
-            - MI_GRAYLOG_HOST=${MI_GRAYLOG_HOST}
-            - MI_GRAYLOG_PORT=${MI_GRAYLOG_PORT}
-            - MI_BROKER_URL=${MI_BROKER_URL}
-            - MI_RESULT_BACKEND=${MI_RESULT_BACKEND}
-        networks:
-            bridge:
-        
-    #machine learning web application
-    service.machine.learning:
-        container_name: service.machine.learning
-        build: 
-            context: .
-            dockerfile: ./docker/service.machine.learning/Dockerfile    
-        # Application will run on port 5005
-        # Access to directory has to be shared
-        ports:
-            - 5005:5005
-        command: python3.8 main.py
-        depends_on:
-            - graylog
-            - service.mongodb
         networks:
             bridge:
 
@@ -200,10 +154,6 @@ services:
             - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
         networks:
             bridge:
-        links:
-            - graylog
-        depends_on:
-            - graylog
 
     #frontend
     signalr.webpack.server.frontend:
@@ -216,9 +166,40 @@ services:
         command: npm run start
         networks:
             bridge:
-        depends_on:
-            - exchange.service
-            - graylog
-        links:
-            - exchange.service
-            - graylog
+    
+    #celery
+    celery:
+        container_name: celery
+        env_file:
+            - .env
+        # All files and folders in the currect directory
+        build: 
+            context: .
+            dockerfile: ./docker/service.machine.learning/Dockerfile 
+        # List directories to mount
+        command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
+        networks:
+            bridge:
+        
+    #machine learning web application
+    service.machine.learning:
+        container_name: service.machine.learning
+        build: 
+            context: .
+            dockerfile: ./docker/service.machine.learning/Dockerfile    
+        # Application will run on port 5005
+        # Access to directory has to be shared
+        ports:
+            - 5005:5005
+        command: python3.8 main.py
+        env_file:
+            - .env
+        environment:
+            - MI_HOST=${MI_HOST}
+            - MI_PORT=${MI_PORT}
+            - MI_GRAYLOG_HOST=${MI_GRAYLOG_HOST}
+            - MI_GRAYLOG_PORT=${MI_GRAYLOG_PORT}
+            - MI_BROKER_URL=${MI_BROKER_URL}
+            - MI_RESULT_BACKEND=${MI_RESULT_BACKEND}
+        networks:
+            bridge:
