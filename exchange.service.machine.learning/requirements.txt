@@ -22,6 +22,7 @@ gevent==20.5.0
 google-auth==1.22.1
 google-auth-oauthlib==0.4.1
 google-pasta==0.2.0
+graypy==2.1.0
 greenlet==0.4.15
 grpcio==1.28.1
 h5py==2.10.0

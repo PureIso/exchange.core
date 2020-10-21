@@ -2,9 +2,9 @@ import sys
 from flask_restful import Resource, reqparse
 from flask import json, Response, request
 
-
 class Predict(Resource):
-    def __init__(self):
+    def __init__(self,exchange):
+        self.exchange = exchange
         self.reqparse = reqparse.RequestParser()
         super(Predict, self).__init__()
 

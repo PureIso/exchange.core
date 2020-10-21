@@ -5,33 +5,17 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import tensorflowjs as tfjs
-
-from celery import Celery
 from . import dateparse, normalize, config
+from celery import Celery
 from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, LSTM
 from sklearn.model_selection import train_test_split
 from flask import json, Response
-
-
-celery = Celery('application')
-celery.conf.update(
-    broker_url="mongodb://celery:celery@service.mongodb:27017/celery",
-    result_backend= "mongodb://celery:celery@service.mongodb:27017/celery",
-    broker_use_ssl=False,
-    authSource='celery',
-    authMechanism="SCRAM-SHA-1",
-    user = 'celery',
-    password = 'celery',
-    database_name = 'celery',
-    taskmeta_collection = 'celery_taskmeta',
-    groupmeta_collection = 'celery_groupmeta',
-    max_pool_size = 10,
-    options = None
-)
-current_training_status = {}
-
+from pathlib import Path
+from app.exchange import Exchange
+exchange = Exchange()
+celery = exchange.celery
 
 @celery.task(bind=True)
 def training(self, hourly, save):
@@ -43,7 +27,7 @@ def training(self, hourly, save):
         directory = ''
         epochs = 270
 
-        self.update_state(state="PROGRESS", meta=current_training_status)
+        self.update_state(state="PROGRESS", meta=exchange.current_training_status)
         # Setting the variables
         if hourly == 'False':
             epochs = 3550
@@ -221,7 +205,7 @@ def training(self, hourly, save):
         response = json.dumps({'current': 100,
                                'total': 100,
                                'status': 'Task completed!',
-                               'details': str(json.dumps(current_training_status)),
+                               'details': str(json.dumps(exchange.current_training_status)),
                                'summary': str(regressor.summary()),
                                'hsitory': str(history),
                                'result': str(json.dumps({
