@@ -25,8 +25,6 @@ import {MatTableDataSource} from '@angular/material/table';
 })
 export class AccountInformationTableComponent implements AfterViewInit {
     @Input() applicationName: string;
-    //@ViewChild(MatAccordion) accordion: MatAccordion;
-    displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
     columnsToDisplay = ['name', 'weight', 'symbol', 'position'];
     dataSource = [
         {
@@ -109,9 +107,6 @@ export class AccountInformationTableComponent implements AfterViewInit {
               two-thirds the density of air.`
         },
       ];
-
-    @ViewChild(MatPaginator) paginator: MatPaginator;
-
 
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;

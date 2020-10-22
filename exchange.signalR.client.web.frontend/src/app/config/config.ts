@@ -5,7 +5,7 @@ export class AppConfig {
     private _config: { [key: string]: string };
     constructor() {
         this._config = {
-            HubUrl: 'https://localhost:5001/hubs',
+            HubUrl: 'http://192.168.1.203:5000/hubs',
             HubName: 'exchange'
         };
     }

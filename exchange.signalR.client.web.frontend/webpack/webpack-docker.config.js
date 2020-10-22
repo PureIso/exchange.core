@@ -40,7 +40,7 @@ module.exports = {
         historyApiFallback: true,
         port: 9000,
         stats: "minimal",
-        host: 'localhost'
+        host: '0.0.0.0'
     },
     devtool: "inline-source-map",
     module: {
