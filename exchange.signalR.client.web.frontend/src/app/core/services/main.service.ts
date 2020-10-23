@@ -8,6 +8,16 @@ import { HubClient } from "./hub.client";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
 import * as NotificationContainerActions from "@actions/notification-container.actions";
+//import * as log from "gelf-pro";
+// import * as graylog2 from "graylog2";
+// var logger = new graylog2.graylog({
+//     servers: [
+//         { host: "192.168.1.203", port: 12201 },
+//     ]
+// });
+// const a:any = log;
+// a.setConfig({adapterOptions: {host: '192.168.1.203'}});
+// a.info("Hello world");
 
 //Interface to the business layer
 @Injectable()
@@ -17,8 +27,9 @@ export class MainService extends HubClient {
     private hubUrlChange: boolean = false;
     private serverHubInitId: any = -1;
     private hubConnection: HubConnection;
-    private hubUrl:string = this.config.setting["HubUrl"];
-    private hubName:string = this.config.setting["HubName"];
+    private hubUrl:string = this.config.HUBURL;
+    private hubName:string = this.config.HUBNAME;
+    //private logger: any = log;
 
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;
@@ -28,6 +39,19 @@ export class MainService extends HubClient {
     constructor(private config: AppConfig, private ngRedux: NgRedux<AppState>) {
         super();
         let url: string = this.hubUrl + "/" + this.hubName;
+        //this.logger = log;
+        //this.logger.info("log");
+        //this.logger = log();
+        // log.setConfig({
+        //     fields: {
+        //       application: 'app-name'
+        //     },
+        //     adapterOptions: {
+        //       host: '192.168.1.203' // graylog host should be configured via secrets
+        //     }
+        //   });
+        //   //log.message.
+        // log.info('Hello world');
         this.hubConnection = new HubConnectionBuilder().withUrl(url).build();
     }
 

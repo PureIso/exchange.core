@@ -23,3 +23,5 @@ FROM base AS final
 COPY --from=build /app/publish ./
 COPY --from=build /app/plugin/exchange.binance.dll ./plugin/
 COPY --from=build /app/plugin/exchange.coinbase.dll ./plugin/
+COPY --from=build /app/plugin/coinbase.config.ini ./plugin/
+COPY --from=build /app/plugin/binance.config.ini ./plugin/

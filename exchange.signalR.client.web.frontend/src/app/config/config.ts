@@ -2,23 +2,15 @@ import { Injectable } from '@angular/core';
 
 @Injectable()
 export class AppConfig {
-    private _config: { [key: string]: string };
+    public APP_ID = "";
+    public LOG_LEVEL = "";
+    public HUBURL = "";
+    public HUBNAME = "";
+
     constructor() {
-        this._config = {
-            HubUrl: 'http://192.168.1.203:5000/hubs',
-            HubName: 'exchange'
-        };
-    }
-
-    get setting(): { [key: string]: string } {
-        return this._config;
-    }
-
-    get(key: any) {
-        return this._config[key];
-    }
-
-    set(key: any, value: any){
-        this._config.HubUrl = value;
+        this.APP_ID = process.env.APP_ID;
+        this.LOG_LEVEL = process.env.LOG_LEVEL;
+        this.HUBURL = process.env.HUBURL;
+        this.HUBNAME = process.env.HUBNAME;
     }
 };

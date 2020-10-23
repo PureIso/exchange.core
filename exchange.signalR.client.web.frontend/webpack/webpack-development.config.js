@@ -17,6 +17,10 @@ let cleanOptions = {
     verbose: true,
     dry: false
 };
+
+const envPath = path.resolve(__dirname, "../.env");
+var dotenv = require('dotenv').config({path: envPath});
+
 module.exports = {
     mode: "development",
     /**Modules webpack need to use to begin building its internal*/
@@ -154,6 +158,9 @@ module.exports = {
             showErrors: true,
             path: buildPath,
             hash: true
+        }),
+        new webpack.DefinePlugin({
+            "process.env": JSON.stringify(dotenv.parsed)
         }),
         new MiniCssExtractPlugin({
             filename: "css/[name].css",
