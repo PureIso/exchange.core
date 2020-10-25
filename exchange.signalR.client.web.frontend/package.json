@@ -11,9 +11,9 @@
         "test:watch": "npm run test -- --auto-watch --no-single-run",
         "e2e": "webdriver-manager update --versions.chrome 2.42 && concurrently --kill-others --success first \"webdriver-manager start --versions.chrome 2.42\" \"protractor e2e/protractor.conf.js\"",
         "protractor": "protractor",
-        "build:dist": "webpack --progress --config webpack/webpack-development.config.js",
-        "electron:start": "npm run build:dist && electron \"../exchange.signalR.client.web.backend/wwwroot/\"",
-        "electron:build:x86": "npm run build:dist && build --projectDir \"../exchange.signalR.client.web.backend/wwwroot/\" --ia32"
+        "build:dist": "webpack --progress --config webpack/webpack-production.config.js",
+        "electron:start": "npm run build:dist && electron \"/build/\"",
+        "electron:build:x86": "npm run build:dist && build --projectDir \"/build/\" --ia32"
     },
     "author": "Olawale Egbeyemi",
     "repository": {

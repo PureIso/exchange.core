@@ -158,6 +158,8 @@ services:
     #frontend
     signalr.webpack.server.frontend:
         container_name: signalr.webpack.server.frontend
+        env_file:
+            - .env
         build:
             context: .
             dockerfile: ./docker/signalr.webpack.server.frontend/Dockerfile

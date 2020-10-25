@@ -14,8 +14,6 @@ RUN dotnet restore "exchange.binance/exchange.binance.csproj"
 RUN dotnet restore "exchange.coinbase/exchange.coinbase.csproj"
 RUN dotnet build "exchange.coinbase/exchange.coinbase.csproj" -c Release -o /app/plugin
 RUN dotnet build "exchange.binance/exchange.binance.csproj" -c Release -o /app/plugin
-WORKDIR "/app/plugin"
-RUN ls
 WORKDIR "/src/exchange.service"
 RUN dotnet publish "exchange.service.csproj" -c Release -o /app/publish
 

@@ -6,11 +6,21 @@ export class AppConfig {
     public LOG_LEVEL = "";
     public HUBURL = "";
     public HUBNAME = "";
+    public HOST = "";
 
     constructor() {
-        this.APP_ID = process.env.APP_ID;
-        this.LOG_LEVEL = process.env.LOG_LEVEL;
-        this.HUBURL = process.env.HUBURL;
-        this.HUBNAME = process.env.HUBNAME;
+        if(process.env != undefined){
+            this.APP_ID = process.env.APP_ID;
+            this.LOG_LEVEL = process.env.LOG_LEVEL;
+            this.HUBURL = process.env.HUBURL;
+            this.HUBNAME = process.env.HUBNAME;
+            this.HOST = process.env.HOST;
+        }else{
+            this.APP_ID ="N/A";
+            this.LOG_LEVEL = "DEBUG";
+            this.HUBURL = "http://192.168.1.203:5000/hubs";
+            this.HUBNAME = "exchange";
+            this.HOST = "0.0.0.0";
+        }     
     }
 };

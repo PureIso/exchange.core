@@ -5,13 +5,12 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
 const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
-
-const buildPath = path.resolve(__dirname, "../../exchange.signalR.client.web.backend/wwwroot/");
+const buildPath = path.resolve(__dirname, "../build/");
 const tsconfigFile = path.join(__dirname, "../tsconfig.json");
-const buildRoot = path.resolve(__dirname, "../../exchange.signalR.client.web.backend/");
+const buildRoot = path.resolve(__dirname, "../build/");
 
 //The directory path that should be cleaned on build
-let pathToClean = ["wwwroot"];
+let pathToClean = ["build"];
 let cleanOptions = {
     root: buildRoot,
     verbose: true,
@@ -39,7 +38,8 @@ module.exports = {
         contentBase: buildPath,
         historyApiFallback: true,
         port: 9000,
-        stats: "minimal"
+        stats: "minimal",
+        host: process.env.HOST
     },
     devtool: "source-map",
     module: {
