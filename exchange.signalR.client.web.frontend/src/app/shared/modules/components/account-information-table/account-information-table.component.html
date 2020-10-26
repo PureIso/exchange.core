@@ -1,5 +1,5 @@
 <table mat-table
-       [dataSource]="dataSource" multiTemplateDataRows
+       [dataSource]="accountInfo" multiTemplateDataRows
        class="mat-elevation-z8" fxFlex="100%" >
   <ng-container matColumnDef="{{column}}" *ngFor="let column of columnsToDisplay">
     <th mat-header-cell *matHeaderCellDef> {{column}} </th>
@@ -12,15 +12,13 @@
       <div class="example-element-detail"
            [@detailExpand]="element == expandedElement ? 'expanded' : 'collapsed'">
         <div class="example-element-diagram">
-          <div class="example-element-position"> {{element.position}} </div>
-          <div class="example-element-symbol"> {{element.symbol}} </div>
-          <div class="example-element-name"> {{element.name}} </div>
-          <div class="example-element-weight"> {{element.weight}} </div>
+          <div class="example-element-symbol"> {{element.asset}} </div>
+          <div class="example-element-name"> {{element.balance}} </div>
         </div>
-        <div class="example-element-description">
+        <!-- <div class="example-element-description">
           {{element.description}}
           <span class="example-element-description-attribution"> -- Wikipedia </span>
-        </div>
+        </div> -->
       </div>
     </td>
   </ng-container>
