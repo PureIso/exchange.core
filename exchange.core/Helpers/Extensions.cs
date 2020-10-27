@@ -81,13 +81,11 @@ namespace exchange.core.helpers
 
             return orders;
         }
+
         public static List<string> ProductsToSymbols(this List<Product> products)
         {
             List<string> symbols = new List<string>();
-            foreach (Product product in products)
-            {
-                symbols.Add(product.ID);
-            }
+            foreach (Product product in products) symbols.Add(product.ID);
             return symbols;
         }
 
@@ -167,10 +165,7 @@ namespace exchange.core.helpers
             if (products == null || !products.Any())
                 return null;
             string productIds = null;
-            foreach (Product product in products)
-            {
-                productIds += $@"""{product.ID}"",";
-            }
+            foreach (Product product in products) productIds += $@"""{product.ID}"",";
 
             return
                 $@"{{""type"": ""subscribe"",""channels"": [{{""name"": ""ticker"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}]}}";
@@ -181,10 +176,7 @@ namespace exchange.core.helpers
             if (products == null || !products.Any())
                 return null;
             string productIds = null;
-            foreach (Product product in products)
-            {
-                productIds += $@"""{product.ID}"",";
-            }
+            foreach (Product product in products) productIds += $@"""{product.ID}"",";
             return
                 $@"{{""type"": ""unsubscribe"",""product_ids"": [{productIds?.Remove(productIds.Length - 1, 1)}]}}";
         }

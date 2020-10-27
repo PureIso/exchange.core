@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using exchange.core.Enums;
+using exchange.core.Indicators;
 using exchange.core.models;
 using exchange.core.Models;
 
@@ -10,16 +11,6 @@ namespace exchange.core.implementations
 {
     public abstract class AbstractExchangePlugin
     {
-        protected AbstractExchangePlugin()
-        {
-            AccountInfo = new Dictionary<string, decimal>();
-            CurrentPrices = new Dictionary<string, decimal>();
-            SubscribedPrices = new Dictionary<string, decimal>();
-            ConnectionAdapter = new ConnectionAdapter();
-            Products = new List<Product>();
-            Statistics = new Dictionary<string, Statistics>();
-        }
-
         #region Actions
 
         //public virtual Action<string, Feed> FeedBroadcast { get; set; }
@@ -35,13 +26,12 @@ namespace exchange.core.implementations
         #endregion
 
         #region Virtual Properties
+        public Dictionary<string, AssetInformation> AssetInformation { get; set; }
+        public List<RelativeStrengthIndex> RelativeStrengthIndices { get; set; }
         public virtual Dictionary<string, decimal> SubscribedPrices { get; set; }
         public virtual Dictionary<string, decimal> CurrentPrices { get; set; }
         public virtual Dictionary<string, decimal> AccountInfo { get; set; }
         protected virtual Dictionary<string, Statistics> Statistics { get; set; }
-
-
-
         public Feed CurrentFeed { get; set; }
         public virtual Authentication Authentication { get; set; }
         public virtual ClientWebSocket ClientWebSocket { get; set; }
@@ -52,7 +42,7 @@ namespace exchange.core.implementations
         public virtual string Version { get; set; }
         public virtual List<Product> Products { get; set; }
         public virtual List<Product> SubscribeProducts { get; set; }
-
+        public virtual string IndicatorSaveDataPath { get; set; }
         public virtual string INIFilePath { get; set; }
         public bool TestMode { get; set; }
 
@@ -67,7 +57,9 @@ namespace exchange.core.implementations
             try
             {
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Closing Feed Subscription.");
-                isClosed = await ConnectionAdapter?.WebSocketCloseAsync();
+                if (ConnectionAdapter != null)
+                    isClosed = await ConnectionAdapter?.WebSocketCloseAsync();
+                else return true;
             }
             catch (Exception e)
             {
@@ -87,12 +79,12 @@ namespace exchange.core.implementations
             GC.SuppressFinalize(this);
         }
 
-        public virtual Task<bool> InitAsync(bool testMode)
+        public virtual Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
         {
             throw new NotImplementedException();
         }
 
-        public virtual bool InitIndicatorsAsync()
+        public virtual bool InitIndicatorsAsync(List<Product> products)
         {
             throw new NotImplementedException();
         }

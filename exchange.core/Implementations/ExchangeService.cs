@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using exchange.core.interfaces;
 using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.core.implementations
 {
-    public 
+    public
         class ExchangeService : IExchangeService
     {
         private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
@@ -32,7 +33,7 @@ namespace exchange.core.implementations
 
         public Task DelegateNotifyTradeInfo(string applicationName, Dictionary<string, decimal> accountInformation)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 }

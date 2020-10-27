@@ -534,10 +534,11 @@ namespace exchange.binance
             {
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                     "Updating 24 hour stats Information.");
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/ticker/24hr?")
-                {
-                    RequestQuery = $"symbol={product.ID}"
-                };
+                Request request =
+                    new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/ticker/24hr?")
+                    {
+                        RequestQuery = $"symbol={product.ID}"
+                    };
                 json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 if (!string.IsNullOrEmpty(json))
                 {
@@ -545,6 +546,7 @@ namespace exchange.binance
                     Statistics[product.ID] = statistics;
                     return statistics;
                 }
+
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
                     $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
             }
@@ -553,6 +555,7 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return null;
         }
 
@@ -572,11 +575,9 @@ namespace exchange.binance
                             "Started Processing Feed Information.");
                         string message = "stream?streams=";
                         if (SubscribeProducts != null && SubscribeProducts.Any())
-                        {
                             //unsubscribe
                             ConnectionAdapter.WebSocketCloseAsync().GetAwaiter();
-                            // await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString());
-                        }
+                        // await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString());
                         SubscribeProducts = products;
                         SubscribeProducts.RemoveAll(x => x == null);
                         foreach (Product product in SubscribeProducts)
@@ -605,7 +606,9 @@ namespace exchange.binance
                                 if (product != null)
                                 {
                                     Statistics twentyFourHourPrice = TwentyFourHoursRollingStatsAsync(product).Result;
-                                    decimal change = ((twentyFourHourPrice.Last.ToDecimal() - twentyFourHourPrice.High.ToDecimal()) / Math.Abs(twentyFourHourPrice.High.ToDecimal()));
+                                    decimal change =
+                                        (twentyFourHourPrice.Last.ToDecimal() - twentyFourHourPrice.High.ToDecimal()) /
+                                        Math.Abs(twentyFourHourPrice.High.ToDecimal());
                                     decimal percentage = change * 100;
                                 }
 
@@ -627,11 +630,12 @@ namespace exchange.binance
             });
         }
 
-        public override async Task<bool> InitAsync(bool testMode)
+        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
         {
             try
             {
                 TestMode = testMode;
+                IndicatorSaveDataPath = indicatorSaveDataPath;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
@@ -663,31 +667,31 @@ namespace exchange.binance
                 //    await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
                 //    await UpdateTickersAsync(products);
 
-                    //BinanceOrder binanceOrderMarket = new BinanceOrder();
-                    //binanceOrderMarket.OrderType = OrderType.Market;
-                    //binanceOrderMarket.OrderSide = OrderSide.Buy;
-                    //binanceOrderMarket.OrderSize = (decimal) 0.1;
-                    //binanceOrderMarket.Symbol = "BNBBTC";
+                //BinanceOrder binanceOrderMarket = new BinanceOrder();
+                //binanceOrderMarket.OrderType = OrderType.Market;
+                //binanceOrderMarket.OrderSide = OrderSide.Buy;
+                //binanceOrderMarket.OrderSize = (decimal) 0.1;
+                //binanceOrderMarket.Symbol = "BNBBTC";
 
-                    //BinanceOrder binanceOrderLimit = new BinanceOrder();
-                    //binanceOrderLimit.OrderType = OrderType.Limit;
-                    //binanceOrderLimit.OrderSide = OrderSide.Buy;
-                    //binanceOrderLimit.OrderSize = (decimal) 0.1;
-                    //binanceOrderLimit.LimitPrice = (decimal) 0.0010000;
-                    //binanceOrderLimit.Symbol = "BNBBTC";
+                //BinanceOrder binanceOrderLimit = new BinanceOrder();
+                //binanceOrderLimit.OrderType = OrderType.Limit;
+                //binanceOrderLimit.OrderSide = OrderSide.Buy;
+                //binanceOrderLimit.OrderSize = (decimal) 0.1;
+                //binanceOrderLimit.LimitPrice = (decimal) 0.0010000;
+                //binanceOrderLimit.Symbol = "BNBBTC";
 
-                    //Product productToCancel = new Product {ID = "BNBBTC"};
+                //Product productToCancel = new Product {ID = "BNBBTC"};
 
-                    //BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
-                    //BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
-                    //BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
+                //BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
+                //BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
+                //BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
 
-                    //List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product {ID = "BNBBTC"});
-                    //if (currentOrders.Any())
-                    //{
-                    //    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
-                    //}
-               // }
+                //List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product {ID = "BNBBTC"});
+                //if (currentOrders.Any())
+                //{
+                //    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
+                //}
+                // }
 
                 return true;
             }
@@ -700,30 +704,39 @@ namespace exchange.binance
             return false;
         }
 
-        public override bool InitIndicatorsAsync()
+        public override bool InitIndicatorsAsync( List<Product> products)
         {
-            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string binanceRSIFile = null;
             string env = TestMode ? "test" : "live";
-            string binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}");
-            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD");
-            if (product != null)
+            if (string.IsNullOrEmpty(IndicatorSaveDataPath))
             {
-                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
-                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
-                    delegate(Dictionary<string, string> input)
-                    {
-                        TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
-                    };
-                relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
-                {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
-                };
-                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-                return true;
+                string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                if(!string.IsNullOrEmpty(directoryName))
+                    binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}");
             }
+            else
+            {
+                binanceRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}");
+            }
+            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD");
+            if (product == null) 
+                return false;
+            if (string.IsNullOrEmpty(binanceRSIFile))
+                return false;
+            RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
+            relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
+                delegate(Dictionary<string, string> input)
+                {
+                    TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                };
+            relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
+            };
+            relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+            relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+            return true;
 
-            return false;
         }
 
         #region Public Properties

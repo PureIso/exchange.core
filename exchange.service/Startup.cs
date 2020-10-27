@@ -21,8 +21,8 @@ namespace exchange.service
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
-            string[] corsOrigins = Configuration.GetSection("CorsOrigins").Get<string[]>(); 
-            if(corsOrigins != null)
+            string[] corsOrigins = Configuration.GetSection("CorsOrigins").Get<string[]>();
+            if (corsOrigins != null)
             {
                 logger.LogInformation($"CORS Origins: {string.Join(",", corsOrigins)}");
                 if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
@@ -36,7 +36,7 @@ namespace exchange.service
             }
             else
             {
-                logger.LogInformation($"CORS Origins: N/A");
+                logger.LogInformation("CORS Origins: N/A");
             }
         }
     }

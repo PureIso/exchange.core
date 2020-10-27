@@ -42,7 +42,7 @@ namespace exchange.core.implementations
                 foreach (string plugin in Directory.GetFiles(folderPath))
                 {
                     FileInfo file = new FileInfo(plugin);
-                    if (!file.Extension.Equals(".dll")) 
+                    if (!file.Extension.Equals(".dll"))
                         continue;
                     Assembly pluginAssembly = Assembly.LoadFrom(plugin); //Load assembly given its full name and path
                     foreach (Type pluginType in pluginAssembly.GetTypes())
@@ -51,7 +51,8 @@ namespace exchange.core.implementations
                         if (pluginType.IsAbstract) continue; //break the for each loop to next iteration if any
                         //search for specified interface while ignoring case sensitivity
                         if (pluginType.BaseType.FullName != null && (pluginType.BaseType == null ||
-                                                                     pluginType.BaseType.FullName.ToLower() != AssemblyBaseTypeFullName))
+                                                                     pluginType.BaseType.FullName.ToLower() !=
+                                                                     AssemblyBaseTypeFullName))
                             continue;
                         //New plug-in information setting
                         AbstractExchangePlugin pluginInterfaceInstance =

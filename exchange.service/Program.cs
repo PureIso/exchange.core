@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -14,14 +12,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Sinks.Graylog;
 
 namespace exchange.service
 {
     public static class Program
     {
 #if DEBUG
-        private const string DefaultEnvironmentName = "Docker";
+        private const string DefaultEnvironmentName = "Development";
 #else
         private const string DefaultEnvironmentName = "Production";
 #endif
@@ -34,8 +31,8 @@ namespace exchange.service
                 if (string.IsNullOrEmpty(environment))
                     environment = DefaultEnvironmentName;
                 IConfigurationRoot config = new ConfigurationBuilder()
-                        .AddJsonFile($"appsettings.{environment}.json", true)
-                        .Build();
+                    .AddJsonFile($"appsettings.{environment}.json", true)
+                    .Build();
                 //Initialize Logger
                 Log.Logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(config)
@@ -56,14 +53,15 @@ namespace exchange.service
                         string grayLogRequestUrl = config.GetSection("GrayLogUrl").Value;
                         if (!string.IsNullOrEmpty(grayLogRequestUrl))
                         {
-                            Log.Information($"Connecting to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
+                            Log.Information(
+                                $"Connecting to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
                             response = client.GetAsync(grayLogRequestUrl).GetAwaiter().GetResult();
                             maxGrayLogConnectionAttempt--;
                             delayInMS += 1000;
                         }
                         else
                         {
-                            Log.Information($"GrayLog url configuration is invalid.\r\nGraylog will not be used.");
+                            Log.Information("GrayLog url configuration is invalid.\r\nGraylog will not be used.");
                             response.StatusCode = HttpStatusCode.OK;
                             maxGrayLogConnectionAttempt = 0;
                         }
@@ -73,8 +71,10 @@ namespace exchange.service
                         maxGrayLogConnectionAttempt--;
                         // ignored
                     }
+
                     Task.Delay(delayInMS).GetAwaiter();
                 }
+
                 Log.Information($"Exchange Server Starting: {Dns.GetHostName()}");
                 Log.Information($"Environment: {environment}");
                 CreateHostBuilder(args).Build().Run();
@@ -102,7 +102,7 @@ namespace exchange.service
                     if (string.IsNullOrEmpty(environment))
                         environment = DefaultEnvironmentName;
                     IConfigurationRoot config = new ConfigurationBuilder()
-                        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                        .AddJsonFile("appsettings.json", true, true)
                         .AddJsonFile($"appsettings.{environment}.json", true)
                         .Build();
                     string[] hostUrls = config.GetSection("HostUrls").Get<string[]>();
@@ -147,7 +147,7 @@ namespace exchange.service
                     }
                     else
                     {
-                        Log.Information($"Service CORS Origins: N/A");
+                        Log.Information("Service CORS Origins: N/A");
                     }
 
                     services.AddSignalR();

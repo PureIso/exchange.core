@@ -2,6 +2,7 @@
 {
     public interface IExchangeSettings
     {
-        bool TestMode { get; set; }
+        public bool TestMode { get; set; }
+        public string IndicatorSavePath { get; set; }
     }
 }

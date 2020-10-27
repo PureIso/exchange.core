@@ -15,26 +15,20 @@ namespace exchange.core.implementations
 
         public ExchangeHubService(IExchangePluginService exchangePluginService, ILogger<ExchangeHubService> logger)
         {
-            if (_exchangePluginService == null)
-            {
-                _exchangePluginService = exchangePluginService;
-                logger.LogInformation("ExchangeHubService exchange plugin service loaded.");
-            }
-            if (_logger == null)
-            {
-                _logger = logger;
-                logger.LogInformation("ExchangeHubService logger loaded.");
-            }  
+            _exchangePluginService = exchangePluginService; 
+            _logger = logger;
         }
 
         public async Task RequestedApplications()
         {
-            List<string> applications =_exchangePluginService.PluginExchanges.Select(x => x.ApplicationName).ToList();
+            List<string> applications = _exchangePluginService.PluginExchanges.Select(x => x.ApplicationName).ToList();
             await Clients.All.NotifyApplications(applications);
-            _logger.LogInformation("ExchangeHubService RequestedApplications request to all clients notification.");
+            _logger.LogInformation($"ExchangeHubService RequestedApplications request to all clients notification.");
         }
+
         public async Task RequestedAccountInfo()
         {
+            _logger.LogInformation($"ExchangeHubService RequestedAccountInfo request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
                 if (abstractExchangePlugin.AccountInfo == null)
@@ -43,8 +37,10 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.AccountInfo);
             }
         }
+
         public async Task RequestedCurrentPrices()
         {
+            _logger.LogInformation($"ExchangeHubService NotifyCurrentPrices request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
                 if (abstractExchangePlugin.CurrentFeed == null)
@@ -53,21 +49,25 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.CurrentFeed.CurrentPrices);
             }
         }
+
         public async Task RequestedSubscription(string applicationName, List<string> symbols)
         {
             AbstractExchangePlugin abstractExchangePlugin =
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
             if (abstractExchangePlugin == null)
                 return;
+            _logger.LogInformation($"ExchangeHubService RequestedSubscription request to all clients notification.");
             List<Product> products = symbols.Select(symbol => new Product {ID = symbol}).ToList();
-            await abstractExchangePlugin.ChangeFeed(products);
+            if(products.Any())
+                await abstractExchangePlugin.ChangeFeed(products);
         }
+
         public async Task RequestedProducts()
         {
+            _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
-            {
-                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName, abstractExchangePlugin.Products);
-            }
+                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
+                    abstractExchangePlugin.Products);
         }
     }
 }

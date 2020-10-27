@@ -27,7 +27,6 @@ namespace exchange.coinbase
 
         public Coinbase()
         {
-            ApplicationName = "Coinbase Exchange";
             Tickers = new List<Ticker>();
             Accounts = new List<Account>();
             AccountHistories = new List<AccountHistory>();
@@ -37,65 +36,62 @@ namespace exchange.coinbase
             Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
-            SubscribeProducts = new List<Product>();
             _ioLock = new object();
         }
 
-        public void LoadINI(string filePath)
+        private void LoadINI(string filePath)
         {
             try
             {
-                if (File.Exists(filePath))
+                if (!File.Exists(filePath)) 
+                    return;
+                Authentication ??= new Authentication();
+                string line;
+                StreamReader streamReader = new StreamReader(filePath);
+                while ((line = streamReader.ReadLine()) != null)
                 {
-                    if (Authentication == null)
-                        Authentication = new Authentication();
-                    string line;
-                    StreamReader streamReader = new StreamReader(filePath);
-                    while ((line = streamReader.ReadLine()) != null)
+                    if (string.IsNullOrEmpty(line))
+                        continue;
+                    string env = TestMode ? "test" : "live";
+                    if (line.StartsWith($"{env}_uri="))
                     {
+                        line = line.Replace($"{env}_uri=", "").Trim();
                         if (string.IsNullOrEmpty(line))
                             continue;
-                        string env = TestMode ? "test" : "live";
-                        if (line.StartsWith($"{env}_uri="))
-                        {
-                            line = line.Replace($"{env}_uri=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.WebSocketUri = new Uri(line);
-                        }
-                        else if (line.StartsWith($"{env}_key="))
-                        {
-                            line = line.Replace($"{env}_key=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.ApiKey = line;
-                        }
-                        else if (line.StartsWith($"{env}_secret="))
-                        {
-                            line = line.Replace($"{env}_secret=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.Secret = line;
-                        }
-                        else if (line.StartsWith($"{env}_endpoint="))
-                        {
-                            line = line.Replace($"{env}_endpoint=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.EndpointUrl = line;
-                        }
-                        else if (line.StartsWith($"{env}_passphrase="))
-                        {
-                            line = line.Replace($"{env}_passphrase=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.Passphrase = line;
-                        }
+                        Authentication.WebSocketUri = new Uri(line);
                     }
-
-                    ConnectionAdapter.Authentication = Authentication;
-                    ConnectionAdapter.ClientWebSocket = ClientWebSocket;
+                    else if (line.StartsWith($"{env}_key="))
+                    {
+                        line = line.Replace($"{env}_key=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.ApiKey = line;
+                    }
+                    else if (line.StartsWith($"{env}_secret="))
+                    {
+                        line = line.Replace($"{env}_secret=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.Secret = line;
+                    }
+                    else if (line.StartsWith($"{env}_endpoint="))
+                    {
+                        line = line.Replace($"{env}_endpoint=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.EndpointUrl = line;
+                    }
+                    else if (line.StartsWith($"{env}_passphrase="))
+                    {
+                        line = line.Replace($"{env}_passphrase=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.Passphrase = line;
+                    }
                 }
+
+                ConnectionAdapter.Authentication = Authentication;
+                ConnectionAdapter.ClientWebSocket = ClientWebSocket;
             }
             catch (Exception e)
             {
@@ -103,7 +99,6 @@ namespace exchange.coinbase
                     $"Method: LoadINI\r\nException Stack Trace: {e.StackTrace}");
             }
         }
-
         private void Save()
         {
             string json = null;
@@ -134,8 +129,7 @@ namespace exchange.coinbase
                     $"Method: Save\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
         }
-
-        public void Load()
+        private void Load()
         {
             string json = null;
             try
@@ -160,7 +154,6 @@ namespace exchange.coinbase
         }
 
         #region Public Properties
-
         public string FileName { get; set; }
         public List<Ticker> Tickers { get; set; }
         public List<Account> Accounts { get; set; }
@@ -171,13 +164,11 @@ namespace exchange.coinbase
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
-
         #endregion
 
         #region Public Methods
 
         #region Trading
-
         public async Task<List<Account>> UpdateAccountsAsync(string accountId = "")
         {
             string json = null;
@@ -199,13 +190,9 @@ namespace exchange.coinbase
                         if (account.Balance.ToDecimal() <= 0)
                             return;
                         if (AccountInfo.ContainsKey(account.Currency))
-                        {
                             AccountInfo[account.Currency] = account.Balance.ToDecimal();
-                        }
                         else
-                        {
                             AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
-                        }
                     });
                     NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
                     Save();
@@ -219,7 +206,6 @@ namespace exchange.coinbase
 
             return Accounts;
         }
-
         public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
         {
             string json = null;
@@ -236,6 +222,7 @@ namespace exchange.coinbase
                     Statistics[product.ID] = statistics;
                     return statistics;
                 }
+
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
                     $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
             }
@@ -244,9 +231,9 @@ namespace exchange.coinbase
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
+
             return null;
         }
-
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
             string json = null;
@@ -269,7 +256,6 @@ namespace exchange.coinbase
 
             return AccountHistories;
         }
-
         public async Task<List<AccountHold>> UpdateAccountHoldsAsync(string accountId)
         {
             string json = null;
@@ -290,7 +276,6 @@ namespace exchange.coinbase
 
             return AccountHolds;
         }
-
         public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
         {
             string json = null;
@@ -310,7 +295,6 @@ namespace exchange.coinbase
 
             return Orders;
         }
-
         public async Task<Order> PostOrdersAsync(Order order)
         {
             string json = null;
@@ -353,7 +337,6 @@ namespace exchange.coinbase
 
             return outputOrder;
         }
-
         public async Task<List<Order>> CancelOrderAsync(Order order)
         {
             string json = null;
@@ -406,7 +389,6 @@ namespace exchange.coinbase
 
             return ordersOutput;
         }
-
         public async Task<List<Order>> CancelOrdersAsync(Product product)
         {
             string json = null;
@@ -459,7 +441,6 @@ namespace exchange.coinbase
 
             return ordersOutput;
         }
-
         public async Task<List<Product>> UpdateProductsAsync()
         {
             string json = null;
@@ -480,7 +461,6 @@ namespace exchange.coinbase
 
             return Products;
         }
-
         public async Task<List<Ticker>> UpdateTickersAsync(List<Product> products)
         {
             string json = null;
@@ -520,7 +500,6 @@ namespace exchange.coinbase
 
             return Tickers;
         }
-
         public async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             string json = null;
@@ -541,7 +520,6 @@ namespace exchange.coinbase
 
             return Fills;
         }
-
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
             string json = null;
@@ -562,11 +540,9 @@ namespace exchange.coinbase
 
             return OrderBook;
         }
-
         #endregion
 
         #region Feed
-
         public override Task ChangeFeed(List<Product> products)
         {
             return Task.Run(() =>
@@ -583,16 +559,23 @@ namespace exchange.coinbase
                             "Subscribing to Feed Information.");
                         if (SubscribeProducts != null && SubscribeProducts.Any())
                         {
+                            foreach (RelativeStrengthIndex relativeStrengthIndex in RelativeStrengthIndices)
+                            {
+                                relativeStrengthIndex.DisableRelativeStrengthIndexUpdater();
+                            }
+                            RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                             //unsubscribe
                             ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
                         }
                         SubscribeProducts = products;
+                        InitIndicatorsAsync(products);
                         json = ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString()).Result;
                         if (string.IsNullOrEmpty(json))
                             return;
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                             "Started Processing Feed Information.");
-                        ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString()).GetAwaiter();
+                        ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString())
+                            .GetAwaiter();
                         while (ConnectionAdapter.IsWebSocketConnected())
                         {
                             json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter()
@@ -600,18 +583,54 @@ namespace exchange.coinbase
                             Feed feed = JsonSerializer.Deserialize<Feed>(json);
                             if (feed == null || feed.Type == "error")
                                 return;
+                            //update current price
+                            if (!AssetInformation.ContainsKey(feed.ProductID))
+                                AssetInformation.Add(feed.ProductID, new AssetInformation());
+                            AssetInformation[feed.ProductID].CurrentPrice = feed.Price.ToDecimal();
+                            if (!CurrentPrices.ContainsKey(feed.ProductID))
+                                CurrentPrices.Add(feed.ProductID, feed.Price.ToDecimal());
                             CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                             SubscribedPrices[feed.ProductID] = feed.Price.ToDecimal();
                             Product product = Products.FirstOrDefault(x => x.ID == feed.ProductID);
                             if (product != null)
                             {
                                 Statistics twentyFourHourPrice = TwentyFourHoursRollingStatsAsync(product).Result;
-                                decimal change = ((twentyFourHourPrice.Last.ToDecimal() - twentyFourHourPrice.High.ToDecimal()) / Math.Abs(twentyFourHourPrice.High.ToDecimal()));
+                                decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
+                                                       twentyFourHourPrice.High.ToDecimal());
+                                decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
                                 decimal percentage = change * 100;
+                                //update stat changes
+                                AssetInformation[feed.ProductID].TwentyFourHourPriceChange = priceChangeDifference;
+                                AssetInformation[feed.ProductID].TwentyFourHourPricePercentageChange = percentage;
+                                //Order Book
+                                OrderBook orderBook = UpdateProductOrderBookAsync(product).GetAwaiter().GetResult();
+                                List<Order> bidOrderList = orderBook.Bids.ToOrderList();
+                                List<Order> askOrderList = orderBook.Asks.ToOrderList();
+                                decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                AssetInformation[feed.ProductID].BidMaxOrderSize = bidMaxOrderSize;
+                                AssetInformation[feed.ProductID].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                AssetInformation[feed.ProductID].AskMaxOrderSize = askMaxOrderSize;
+                                AssetInformation[feed.ProductID].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                //price and size
+                                AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList 
+                                                                                   select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                AssetInformation[feed.ProductID].AskPriceAndSize = (from orderList in askOrderList
+                                                                                    select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                             }
+                            //update order side
+                            if(Enum.TryParse(feed.Side, out OrderSide orderSide))
+                                AssetInformation[feed.ProductID].OrderSide = orderSide;
+                            //update best bid and ask
+                            AssetInformation[feed.ProductID].BestAsk = feed.BestAsk;
+                            AssetInformation[feed.ProductID].BestBid = feed.BestBid;
+                            //update feed and notifications
                             feed.CurrentPrices = CurrentPrices;
                             CurrentFeed = feed;
-
                             NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                             //FeedBroadcast?.Invoke(ApplicationName, feed);
                         }
@@ -624,14 +643,23 @@ namespace exchange.coinbase
                 });
             });
         }
-
         #endregion
 
-        public override async Task<bool> InitAsync(bool testMode)
+        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
         {
             try
             {
+                ApplicationName = "Coinbase Exchange";
+                AccountInfo = new Dictionary<string, decimal>();
+                CurrentPrices = new Dictionary<string, decimal>();
+                SubscribedPrices = new Dictionary<string, decimal>();
+                ConnectionAdapter = new ConnectionAdapter();
+                Products = new List<Product>();
+                Statistics = new Dictionary<string, Statistics>();
+                AssetInformation = new Dictionary<string, AssetInformation>();
+                RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                 TestMode = testMode;
+                IndicatorSaveDataPath = indicatorSaveDataPath;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
@@ -656,31 +684,29 @@ namespace exchange.coinbase
                     };
                     products.RemoveAll(x => x == null);
                     if (products.Any())
-                    {
                         //UpdateProductOrderBookAsync(products[0]).Wait();
                         //UpdateOrdersAsync().Wait();
                         //UpdateFillsAsync(products[0]).Wait();
                         //UpdateTickersAsync(products).Wait();
                         ChangeFeed(products);
-                    }
 
                     ////market order
-                        ////buy
-                        //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
-                        //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
-                        ////sell
-                        //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
-                        //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
-                        ////limit order
-                        //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
-                        //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
-                        ////cancel order
-                        //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
-                        //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
-                        //    DateTime.Now.AddHours(-2).ToUniversalTime(),
-                        //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
-                        // }
-                    }
+                    ////buy
+                    //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
+                    //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
+                    ////sell
+                    //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
+                    //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
+                    ////limit order
+                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
+                    //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
+                    ////cancel order
+                    //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
+                    //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
+                    //    DateTime.Now.AddHours(-2).ToUniversalTime(),
+                    //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
+                    // }
+                }
             }
             catch (Exception e)
             {
@@ -690,7 +716,6 @@ namespace exchange.coinbase
 
             return false;
         }
-
         public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
             HistoricCandlesSearch historicCandlesSearch)
         {
@@ -725,33 +750,43 @@ namespace exchange.coinbase
 
             return HistoricRates;
         }
-
-        public override bool InitIndicatorsAsync()
+        public override bool InitIndicatorsAsync(List<Product> products)
         {
-            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            string coinbaseRSIFile = null;
             string env = TestMode ? "test" : "live";
-            string coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}");
-            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR");
-            RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
-            if (product != null)
+            if (string.IsNullOrEmpty(IndicatorSaveDataPath))
             {
+                string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                if (!string.IsNullOrEmpty(directoryName))
+                    coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}");
+            }
+            else
+            {
+                coinbaseRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}");
+            }
+            if (!string.IsNullOrEmpty(coinbaseRSIFile)) 
+                return false;
+            if (products == null)
+                return false;
+            foreach (Product product in products)
+            {
+                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
                 relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
-                    delegate(Dictionary<string, string> input)
+                    delegate (Dictionary<string, string> input)
                     {
                         TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
                     };
-                relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
+                relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
                 {
                     ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
                 };
                 relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
                 relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-                return true;
+                RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
+                RelativeStrengthIndices.Add(relativeStrengthIndex);
             }
-
-            return false;
+            return true;
         }
-
         #endregion
     }
 }
