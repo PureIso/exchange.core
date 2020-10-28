@@ -79,7 +79,7 @@ namespace exchange.core.implementations
             GC.SuppressFinalize(this);
         }
 
-        public virtual Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
+        public virtual Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath, string iniFilePath)
         {
             throw new NotImplementedException();
         }

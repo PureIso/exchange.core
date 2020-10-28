@@ -645,7 +645,7 @@ namespace exchange.coinbase
         }
         #endregion
 
-        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
+        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath, string iniFilePath)
         {
             try
             {
@@ -660,17 +660,20 @@ namespace exchange.coinbase
                 RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                 TestMode = testMode;
                 IndicatorSaveDataPath = indicatorSaveDataPath;
+                INIFilePath = iniFilePath;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    INIFilePath = Path.Combine(directoryName, "coinbase.config.ini");
-                    LoadINI(INIFilePath);
+                    if (!string.IsNullOrEmpty(directoryName))
+                    {
+                        INIFilePath = Path.Combine(directoryName, "coinbase.config.ini");
+                    }
                 }
                 else
                 {
-                    LoadINI(INIFilePath);
+                    INIFilePath = Path.Combine(INIFilePath, "coinbase.config.ini");
                 }
-
+                LoadINI(INIFilePath); 
                 Load();
                 await UpdateProductsAsync();
                 await UpdateAccountsAsync();

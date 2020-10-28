@@ -630,12 +630,13 @@ namespace exchange.binance
             });
         }
 
-        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath)
+        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath, string iniFilePath)
         {
             try
             {
                 TestMode = testMode;
                 IndicatorSaveDataPath = indicatorSaveDataPath;
+                INIFilePath = iniFilePath;
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);

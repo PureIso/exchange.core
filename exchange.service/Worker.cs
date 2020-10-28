@@ -37,7 +37,7 @@ namespace exchange.service
                     abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
-                    await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode, _exchangeSettings.IndicatorSavePath);
+                    await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode, _exchangeSettings.IndicatorSavePath, _exchangeSettings.INIFilePath);
                     _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
             await base.StartAsync(cancellationToken);
