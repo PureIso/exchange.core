@@ -28,7 +28,6 @@ namespace exchange.binance
 
         public Binance()
         {
-            base.ApplicationName = "Binance Exchange";
             Tickers = new List<Ticker>();
             BinanceAccount = new BinanceAccount();
             HistoricRates = new List<HistoricRate>();
@@ -40,58 +39,58 @@ namespace exchange.binance
             _ioLock = new object();
         }
 
-        public void LoadINI(string filePath)
+        private void LoadINI(string filePath)
         {
             try
             {
-                if (File.Exists(filePath))
+                if (!File.Exists(filePath)) 
+                    return;
+                Authentication ??= new Authentication();
+                string line;
+                StreamReader streamReader = new StreamReader(filePath);
+                while ((line = streamReader.ReadLine()) != null)
                 {
-                    if (Authentication == null)
-                        Authentication = new Authentication();
-                    string line;
-                    StreamReader streamReader = new StreamReader(filePath);
-                    while ((line = streamReader.ReadLine()) != null)
+                    if (string.IsNullOrEmpty(line))
+                        continue;
+                    string env = TestMode ? "test" : "live";
+                    if (line.StartsWith($"{env}_uri="))
                     {
+                        line = line.Replace($"{env}_uri=", "").Trim();
                         if (string.IsNullOrEmpty(line))
                             continue;
-                        string env = TestMode ? "test" : "live";
-                        if (line.StartsWith($"{env}_uri="))
-                        {
-                            line = line.Replace($"{env}_uri=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.WebSocketUri = new Uri(line);
-                        }
-                        else if (line.StartsWith($"{env}_key="))
-                        {
-                            line = line.Replace($"{env}_key=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.ApiKey = line;
-                        }
-                        else if (line.StartsWith($"{env}_secret="))
-                        {
-                            line = line.Replace($"{env}_secret=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.Secret = line;
-                        }
-                        else if (line.StartsWith($"{env}_endpoint="))
-                        {
-                            line = line.Replace($"{env}_endpoint=", "").Trim();
-                            if (string.IsNullOrEmpty(line))
-                                continue;
-                            Authentication.EndpointUrl = line;
-                        }
+                        Authentication.WebSocketUri = new Uri(line);
                     }
-
-                    ClientWebSocket = new ClientWebSocket();
-                    ConnectionAdapter.Authentication = Authentication;
-                    ConnectionAdapter.ClientWebSocket = ClientWebSocket;
+                    else if (line.StartsWith($"{env}_key="))
+                    {
+                        line = line.Replace($"{env}_key=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.ApiKey = line;
+                    }
+                    else if (line.StartsWith($"{env}_secret="))
+                    {
+                        line = line.Replace($"{env}_secret=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.Secret = line;
+                    }
+                    else if (line.StartsWith($"{env}_endpoint="))
+                    {
+                        line = line.Replace($"{env}_endpoint=", "").Trim();
+                        if (string.IsNullOrEmpty(line))
+                            continue;
+                        Authentication.EndpointUrl = line;
+                    }
                 }
+
+                ClientWebSocket = new ClientWebSocket();
+                ConnectionAdapter.Authentication = Authentication;
+                ConnectionAdapter.ClientWebSocket = ClientWebSocket;
             }
-            catch
+            catch (Exception e)
             {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: LoadINI\r\nException Stack Trace: {e.StackTrace}");
             }
         }
 
@@ -102,21 +101,16 @@ namespace exchange.binance
                 lock (_ioLock)
                 {
                     if (string.IsNullOrEmpty(FileName))
+                        return;
+                    BinanceSettings binanceSettings = new BinanceSettings
                     {
-                        string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                        string env = TestMode ? "test" : "live";
-                        FileName = Path.Combine(directoryName, $"data\\binance_{env}.json");
-                        if (!File.Exists(FileName))
-                            File.Create(FileName).Close();
-                    }
-
-                    BinanceSettings binanceSettings = new BinanceSettings();
-                    binanceSettings.Accounts = new List<Account>();
-                    binanceSettings.BinanceAccount = BinanceAccount;
-                    binanceSettings.CurrentPrices = CurrentPrices;
-                    binanceSettings.ExchangeInfo = ExchangeInfo;
-                    binanceSettings.ServerTime = ServerTime;
-                    binanceSettings.Tickers = Tickers;
+                        Accounts = new List<Account>(),
+                        BinanceAccount = BinanceAccount,
+                        CurrentPrices = CurrentPrices,
+                        ExchangeInfo = ExchangeInfo,
+                        ServerTime = ServerTime,
+                        Tickers = Tickers
+                    };
                     string json = JsonSerializer.Serialize(binanceSettings,
                         new JsonSerializerOptions {WriteIndented = true});
                     File.WriteAllText(FileName, json);
@@ -129,7 +123,7 @@ namespace exchange.binance
             }
         }
 
-        public void Load()
+        private void Load()
         {
             string json = null;
             try
@@ -566,20 +560,26 @@ namespace exchange.binance
                 ThreadPool.QueueUserWorkItem(x =>
                 {
                     SubscribedPrices = new Dictionary<string, decimal>();
-                    if (products == null)
+                    if (products == null || !products.Any())
                         return;
                     string json = null;
                     try
                     {
-                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                            "Started Processing Feed Information.");
+                        if (SubscribeProducts != null && SubscribeProducts.Any())
+                        {
+                            foreach (RelativeStrengthIndex relativeStrengthIndex in RelativeStrengthIndices)
+                            {
+                                relativeStrengthIndex.DisableRelativeStrengthIndexUpdater();
+                            }
+                            RelativeStrengthIndices = new List<RelativeStrengthIndex>();
+                            //unsubscribe
+                            ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
+                        }
+                        SubscribeProducts = products;
+                        InitIndicatorsAsync(products);
                         string message = "stream?streams=";
                         if (SubscribeProducts != null && SubscribeProducts.Any())
-                            //unsubscribe
                             ConnectionAdapter.WebSocketCloseAsync().GetAwaiter();
-                        // await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString());
-                        SubscribeProducts = products;
-                        SubscribeProducts.RemoveAll(x => x == null);
                         foreach (Product product in SubscribeProducts)
                             message += product.ID.ToLower() + "@trade/";
                         if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
@@ -634,20 +634,58 @@ namespace exchange.binance
         {
             try
             {
+                ApplicationName = "Binance Exchange";
+                AccountInfo = new Dictionary<string, decimal>();
+                CurrentPrices = new Dictionary<string, decimal>();
+                SubscribedPrices = new Dictionary<string, decimal>();
+                ConnectionAdapter = new ConnectionAdapter();
+                Products = new List<Product>();
+                Statistics = new Dictionary<string, Statistics>();
+                AssetInformation = new Dictionary<string, AssetInformation>();
+                RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                 TestMode = testMode;
                 IndicatorSaveDataPath = indicatorSaveDataPath;
                 INIFilePath = iniFilePath;
+                string env = TestMode ? "test" : "live";
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
                     string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    INIFilePath = Path.Combine(directoryName, "binance.config.ini");
-                    LoadINI(INIFilePath);
+                    if (!string.IsNullOrEmpty(directoryName))
+                    {
+                        INIFilePath = Path.Combine(directoryName, "binance.config.ini");
+                    }
                 }
                 else
                 {
-                    LoadINI(INIFilePath);
+                    INIFilePath = Path.Combine(INIFilePath, "binance.config.ini");
+                    if (!File.Exists(INIFilePath))
+                    {
+                        string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                        if (!string.IsNullOrEmpty(directoryName))
+                        {
+                            string tempPath = Path.Combine(directoryName, "binance.config.ini");
+                            if (File.Exists(tempPath))
+                            {
+                                FileInfo file = new FileInfo(INIFilePath);
+                                file.Directory?.Create();
+                                File.Copy(tempPath, INIFilePath, true);
+                            }
+                        }
+                    }
                 }
-
+                LoadINI(INIFilePath); 
+                if (!string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
+                {
+                    FileInfo file = new FileInfo(INIFilePath);
+                    if (file.Directory != null)
+                    {
+                        string connectionContainsEnvironment =
+                            ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
+                            ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
+                                ? "t_endpoint" : "l_endpoint";
+                        FileName = Path.Combine(file.Directory.FullName, $"binance_{env}_{connectionContainsEnvironment}.json");
+                    }
+                }
                 Load();
                 await UpdateExchangeInfoAsync();
                 await UpdateAccountsAsync();
@@ -705,39 +743,48 @@ namespace exchange.binance
             return false;
         }
 
-        public override bool InitIndicatorsAsync( List<Product> products)
+        public override bool InitIndicatorsAsync(List<Product> products)
         {
             string binanceRSIFile = null;
             string env = TestMode ? "test" : "live";
+            if (string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
+                return false;
+            string connectionContainsEnvironment = ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
+                                                   ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
+                ? "t_endpoint"
+                : "l_endpoint";
             if (string.IsNullOrEmpty(IndicatorSaveDataPath))
             {
                 string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                if(!string.IsNullOrEmpty(directoryName))
-                    binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}");
+                if (!string.IsNullOrEmpty(directoryName))
+                    binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}_{connectionContainsEnvironment}");
             }
             else
             {
-                binanceRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}");
+                binanceRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
             }
-            Product product = Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD");
-            if (product == null) 
-                return false;
             if (string.IsNullOrEmpty(binanceRSIFile))
                 return false;
-            RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
-            relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
-                delegate(Dictionary<string, string> input)
-                {
-                    TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
-                };
-            relativeStrengthIndex.ProcessLogBroadcast += delegate(MessageType messageType, string message)
+            if (products == null)
+                return false;
+            foreach (Product product in products)
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
-            };
-            relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-            relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
+                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
+                    delegate (Dictionary<string, string> input)
+                    {
+                        TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                    };
+                relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                {
+                    ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
+                };
+                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
+                RelativeStrengthIndices.Add(relativeStrengthIndex);
+            }
             return true;
-
         }
 
         #region Public Properties

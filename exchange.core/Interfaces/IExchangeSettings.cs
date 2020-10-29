@@ -3,7 +3,7 @@
     public interface IExchangeSettings
     {
         public bool TestMode { get; set; }
-        public string IndicatorSavePath { get; set; }
-        public string INIFilePath { get; set; }
+        public string IndicatorDirectoryPath { get; set; }
+        public string INIDirectoryPath { get; set; }
     }
 }

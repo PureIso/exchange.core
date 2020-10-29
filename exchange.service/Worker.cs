@@ -31,15 +31,17 @@ namespace exchange.service
         {
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
-                for (int i = _exchangePluginService.PluginExchanges.Count - 1; i >= 0; i--)
+            {
+                foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
                 {
-                    AbstractExchangePlugin abstractExchangePlugin = _exchangePluginService.PluginExchanges[i];
                     abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
-                    await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode, _exchangeSettings.IndicatorSavePath, _exchangeSettings.INIFilePath);
-                    _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
+                    bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode, _exchangeSettings.IndicatorDirectoryPath, _exchangeSettings.INIDirectoryPath);
+                    if (result)
+                        _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
+            }
             await base.StartAsync(cancellationToken);
         }
 

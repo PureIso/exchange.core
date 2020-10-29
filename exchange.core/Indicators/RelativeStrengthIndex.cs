@@ -81,16 +81,14 @@ namespace exchange.core.Indicators
             }
         }
 
-        private RelativeStrengthIndexSettings Load(string fileName, Product product)
+        private static RelativeStrengthIndexSettings Load(string fileName, Product product)
         {
             try
             {
                 string json = File.ReadAllText(fileName + $"_{product.ID.ToLower()}_RSI.json");
-                RelativeStrengthIndexSettings RelativeStrengthIndexSettings =
+                RelativeStrengthIndexSettings relativeStrengthIndexSettings =
                     JsonSerializer.Deserialize<RelativeStrengthIndexSettings>(json);
-                if (RelativeStrengthIndexSettings == null)
-                    return new RelativeStrengthIndexSettings();
-                return RelativeStrengthIndexSettings;
+                return relativeStrengthIndexSettings ?? new RelativeStrengthIndexSettings();
             }
             catch
             {
@@ -111,7 +109,11 @@ namespace exchange.core.Indicators
 
         private void SaveAnalyticData(string filePath, string data)
         {
-            File.AppendAllText(filePath, data);
+            lock (_ioLock)
+            {
+                if (File.Exists(filePath))
+                    File.AppendAllText(filePath, data);
+            }
         }
 
         private async void ProcessHistoryDailyChartDownload()
