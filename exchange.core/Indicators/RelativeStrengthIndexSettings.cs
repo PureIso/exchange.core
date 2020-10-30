@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using exchange.core.models;
 
-namespace exchange.core.Indicators
+namespace exchange.core.indicators
 {
     [Serializable]
     public class RelativeStrengthIndexSettings

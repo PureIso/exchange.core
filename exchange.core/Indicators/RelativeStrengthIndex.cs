@@ -8,12 +8,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using exchange.core.Enums;
-using exchange.core.helpers;
 using exchange.core.models;
-using exchange.core.Models;
+using exchange.core.helpers;
 using Timer = System.Timers.Timer;
 
-namespace exchange.core.Indicators
+namespace exchange.core.indicators
 {
     public class RelativeStrengthIndex
     {

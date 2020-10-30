@@ -37,7 +37,7 @@ namespace exchange.service
                     abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
-                    bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings.TestMode, _exchangeSettings.IndicatorDirectoryPath, _exchangeSettings.INIDirectoryPath);
+                    bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings);
                     if (result)
                         _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
                 }
@@ -49,11 +49,11 @@ namespace exchange.service
         {
             if (messageType == MessageType.Error)
             {
-                _logger.LogError($"Application Name: {applicationName}\r\n {message}");
+                _logger.LogError($"Application Name: {applicationName}\r\n{message}");
             }
             else
             {
-                _logger.LogInformation($"Application Name: {applicationName}\r\n {message}");
+                _logger.LogInformation($"Application Name: {applicationName}\r\n{message}");
             }
         }
 

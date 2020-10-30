@@ -50,9 +50,9 @@ namespace exchange.core.implementations
                         if (!pluginType.IsPublic) continue; //break the for each loop to next iteration if any
                         if (pluginType.IsAbstract) continue; //break the for each loop to next iteration if any
                         //search for specified interface while ignoring case sensitivity
-                        if (pluginType.BaseType.FullName != null && (pluginType.BaseType == null ||
-                                                                     pluginType.BaseType.FullName.ToLower() !=
-                                                                     AssemblyBaseTypeFullName))
+                        if (pluginType.BaseType?.FullName != null && (pluginType.BaseType == null ||
+                                                                      pluginType.BaseType.FullName.ToLower() !=
+                                                                      AssemblyBaseTypeFullName))
                             continue;
                         //New plug-in information setting
                         AbstractExchangePlugin pluginInterfaceInstance =

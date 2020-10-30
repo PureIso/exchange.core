@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using exchange.core.helpers;
-using exchange.core.Interfaces;
+using exchange.core.interfaces;
 
 namespace exchange.core.implementations
 {

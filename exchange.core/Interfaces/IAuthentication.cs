@@ -1,7 +1,7 @@
 ﻿using System;
 using exchange.core.implementations;
 
-namespace exchange.core.Interfaces
+namespace exchange.core.interfaces
 {
     public interface IAuthentication
     {

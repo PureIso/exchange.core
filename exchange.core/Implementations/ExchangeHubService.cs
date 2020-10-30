@@ -25,7 +25,17 @@ namespace exchange.core.implementations
             await Clients.All.NotifyApplications(applications);
             _logger.LogInformation($"ExchangeHubService RequestedApplications request to all clients notification.");
         }
-
+        public async Task RequestedMainCurrency()
+        {
+            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
+            {
+                if (abstractExchangePlugin.AccountInfo == null)
+                    continue;
+                await Clients.All.NotifyMainCurrency(abstractExchangePlugin.ApplicationName,
+                    abstractExchangePlugin.MainCurrency);
+            }
+            _logger.LogInformation($"ExchangeHubService RequestedMainCurrency request to all clients notification.");
+        }
         public async Task RequestedAccountInfo()
         {
             _logger.LogInformation($"ExchangeHubService RequestedAccountInfo request to all clients notification.");
@@ -37,7 +47,6 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.AccountInfo);
             }
         }
-
         public async Task RequestedCurrentPrices()
         {
             _logger.LogInformation($"ExchangeHubService NotifyCurrentPrices request to all clients notification.");
@@ -49,7 +58,6 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.CurrentFeed.CurrentPrices);
             }
         }
-
         public async Task RequestedSubscription(string applicationName, List<string> symbols)
         {
             AbstractExchangePlugin abstractExchangePlugin =
@@ -61,7 +69,6 @@ namespace exchange.core.implementations
             if(products.Any())
                 await abstractExchangePlugin.ChangeFeed(products);
         }
-
         public async Task RequestedProducts()
         {
             _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");

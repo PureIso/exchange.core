@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 
-namespace exchange.core.Interfaces
+namespace exchange.core.interfaces
 {
     public interface IRequest
     {

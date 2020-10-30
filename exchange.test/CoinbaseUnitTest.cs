@@ -10,7 +10,6 @@ using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.models;
-using exchange.core.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -659,7 +658,7 @@ namespace exchange.test
             //Arrange
             _httpMessageHandlerMock
                 .Protected()
-                .Setup<Task<HttpResponseMessage>>("SendAsync", 
+                .Setup<Task<HttpResponseMessage>>("SendAsync",
                     ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
                 {
@@ -732,7 +731,7 @@ namespace exchange.test
 
             Coinbase subjectUnderTest = new Coinbase
             {
-                ClientWebSocket = clientWebSocket, 
+                ClientWebSocket = clientWebSocket,
                 ConnectionAdapter = connectionFactoryMock.Object
             };
             //Act
@@ -747,15 +746,20 @@ namespace exchange.test
             //Arrange
             HttpClient httpClient = new HttpClient();
             ClientWebSocket clientWebSocket = new ClientWebSocket();
-            List<Product> products = new List<Product> { new Product { ID = "BTC-EUR" }};
-            Mock<ConnectionAdapter> connectionFactoryMock = new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
+            List<Product> products = new List<Product> {new Product {ID = "BTC-EUR"}};
+            Mock<ConnectionAdapter> connectionFactoryMock =
+                new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             connectionFactoryMock.Object.Authentication = new Authentication("api_key", "passphrase",
                 "NiWaGaqmhB3lgI/tQmm/gQ==", "https://api.pro.coinbase.com", "wss://ws-feed.gdax.com");
             connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString()))
-                .ReturnsAsync(@"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}");
+                .ReturnsAsync(
+                    @"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}");
             connectionFactoryMock
                 .Setup(x => x.ConnectAsync(connectionFactoryMock.Object.Authentication.WebSocketUri.ToString()))
                 .Returns(Task.CompletedTask);
+            connectionFactoryMock
+                .Setup(x => x.WebSocketCloseAsync())
+                .Returns(Task.FromResult(true));
             connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
             connectionFactoryMock.SetupSequence(f => f.WebSocketReceiveAsync())
                 .Returns(Task.FromResult(@"{
@@ -809,30 +813,32 @@ namespace exchange.test
                                             ""trade_id"":25684403,
                                             ""last_size"":""0.00133587""
                                             }")); // will be returned on 3rd invocation
-            
+
             Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = connectionFactoryMock.Object};
             bool eventRaised = false;
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             subjectUnderTest.ClientWebSocket = clientWebSocket;
-            subjectUnderTest.NotifyCurrentPrices += delegate(string applicationName, Dictionary<string, decimal> subscribedPrices) { 
-                eventRaised = true;
-                TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
-                taskCompletionSource.SetResult(false);
-                if (applicationName != "Coinbase Exchange") 
+            subjectUnderTest.NotifyCurrentPrices +=
+                delegate(string applicationName, Dictionary<string, decimal> subscribedPrices)
+                {
+                    eventRaised = true;
+                    TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
+                    taskCompletionSource.SetResult(false);
+                    eventRaisedCount++;
+                    if (eventRaisedCount < 3)
+                        return taskCompletionSource.Task;
+                    subjectUnderTest.SubscribeProducts = new List<Product>();
+                    autoEvent.Set();
+                    taskCompletionSource.SetResult(true);
                     return taskCompletionSource.Task;
-                eventRaisedCount++;
-                if (eventRaisedCount < 3) 
-                    return taskCompletionSource.Task;
-                autoEvent.Set();
-                taskCompletionSource.SetResult(true);
-                return taskCompletionSource.Task;
-            };
+                };
             //Act
             subjectUnderTest.ChangeFeed(products);
             autoEvent.WaitOne();
             Assert.IsTrue(eventRaised);
         }
+
         [TestMethod]
         public void TwentyFourHoursRollingStats_ShouldReturnStatistics()
         {
@@ -856,12 +862,13 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdapter.HttpClient = httpClient;
             Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = _connectionAdapter};
-            Product product = new Product { ID = "BTC-EUR" };
+            Product product = new Product {ID = "BTC-EUR"};
             //Act
             Statistics statistics = subjectUnderTest.TwentyFourHoursRollingStatsAsync(product).Result;
             //Assert
             Assert.IsNotNull(statistics);
         }
+
         #endregion
     }
 }

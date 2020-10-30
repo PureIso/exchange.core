@@ -2,7 +2,7 @@
 using System.Net.Http;
 using System.Text;
 using exchange.core.helpers;
-using exchange.core.Interfaces;
+using exchange.core.interfaces;
 
 namespace exchange.core.implementations
 {

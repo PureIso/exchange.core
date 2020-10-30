@@ -1,4 +1,4 @@
-﻿namespace exchange.core.Models
+﻿namespace exchange.core.models
 {
     public class PriceAndSize
     {

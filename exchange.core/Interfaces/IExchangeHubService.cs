@@ -11,6 +11,7 @@ namespace exchange.core.interfaces
         Task RequestedProducts();
         Task RequestedApplications();
         Task RequestedSubscription(string applicationName, List<string> symbols);
+        Task NotifyMainCurrency(string applicationName, string mainCurrency);
         Task NotifyApplications(List<string> applicationNames);
         Task NotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);
         Task NotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);

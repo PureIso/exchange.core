@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,18 +12,29 @@ using exchange.coinbase.models;
 using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
-using exchange.core.Indicators;
+using exchange.core.indicators;
+using exchange.core.interfaces;
 using exchange.core.models;
-using exchange.core.Models;
 
 namespace exchange.coinbase
 {
     public class Coinbase : AbstractExchangePlugin, IDisposable
     {
         #region Fields
-
         private readonly object _ioLock;
+        #endregion
 
+        #region Public Properties
+        public string FileName { get; set; }
+        public List<Ticker> Tickers { get; set; }
+        public List<Account> Accounts { get; set; }
+        public List<AccountHistory> AccountHistories { get; set; }
+        public List<AccountHold> AccountHolds { get; set; }
+        public List<HistoricRate> HistoricRates { get; set; }
+        public List<Fill> Fills { get; set; }
+        public List<Order> Orders { get; set; }
+        public OrderBook OrderBook { get; set; }
+        public Product SelectedProduct { get; set; }
         #endregion
 
         public Coinbase()
@@ -39,6 +51,7 @@ namespace exchange.coinbase
             _ioLock = new object();
         }
 
+        #region Private Methods
         private void LoadINI(string filePath)
         {
             try
@@ -145,18 +158,6 @@ namespace exchange.coinbase
                     $"Method: Load\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
         }
-
-        #region Public Properties
-        public string FileName { get; set; }
-        public List<Ticker> Tickers { get; set; }
-        public List<Account> Accounts { get; set; }
-        public List<AccountHistory> AccountHistories { get; set; }
-        public List<AccountHold> AccountHolds { get; set; }
-        public List<HistoricRate> HistoricRates { get; set; }
-        public List<Fill> Fills { get; set; }
-        public List<Order> Orders { get; set; }
-        public OrderBook OrderBook { get; set; }
-        public Product SelectedProduct { get; set; }
         #endregion
 
         #region Public Methods
@@ -195,29 +196,6 @@ namespace exchange.coinbase
             }
 
             return Accounts;
-        }
-        public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
-        {
-            string json = null;
-            try
-            {
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/products/{product.ID}/stats");
-                json = await ConnectionAdapter.RequestAsync(request);
-                if (!string.IsNullOrEmpty(json))
-                {
-                    Statistics statistics = JsonSerializer.Deserialize<Statistics>(json);
-                    Statistics[product.ID] = statistics;
-                    return statistics;
-                }
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return null;
         }
         public async Task<List<AccountHistory>> UpdateAccountHistoryAsync(string accountId)
         {
@@ -330,7 +308,7 @@ namespace exchange.coinbase
                     string orderId = JsonSerializer.Deserialize<string>(json);
                     if (string.IsNullOrEmpty(orderId))
                         return ordersOutput;
-                    ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
+                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
                     int removed = Orders.RemoveAll(x => x.ID == orderId);
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
@@ -345,14 +323,14 @@ namespace exchange.coinbase
                     List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
                     if (orderIds == null)
                         return ordersOutput;
-                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
                     int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderIds} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order {ID = id})?.ToList();
+                        ordersOutput = (from id in orderIds select new Order {ID = id}).ToList();
                     return ordersOutput;
                 }
             }
@@ -380,7 +358,7 @@ namespace exchange.coinbase
                     string orderId = JsonSerializer.Deserialize<string>(json);
                     if (string.IsNullOrEmpty(orderId))
                         return ordersOutput;
-                    ordersOutput = Orders.Where(x => x.ID == orderId)?.ToList();
+                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
                     int removed = Orders.RemoveAll(x => x.ID == orderId);
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
@@ -395,14 +373,14 @@ namespace exchange.coinbase
                     List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
                     if (orderIds == null)
                         return ordersOutput;
-                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID))?.ToList();
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
                     int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
                     ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                         removed > 0
                             ? $"Removing Order IDs: {orderIds} from Orders."
                             : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
                     if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order {ID = id})?.ToList();
+                        ordersOutput = (from id in orderIds select new Order {ID = id}).ToList();
                     return ordersOutput;
                 }
             }
@@ -458,7 +436,12 @@ namespace exchange.coinbase
 
                 foreach (Ticker ticker in Tickers)
                     if (decimal.TryParse(ticker.Price, out decimal decimalPrice))
+                    {
+                        CurrentPrices ??= new Dictionary<string, decimal>();
+                        if (!CurrentPrices.ContainsKey(ticker.ProductID))
+                            CurrentPrices.Add(ticker.ProductID, decimalPrice);
                         CurrentPrices[ticker.ProductID] = decimalPrice;
+                    }
             }
             catch (Exception e)
             {
@@ -507,12 +490,14 @@ namespace exchange.coinbase
         }
         #endregion
 
+        #region Override
+
         #region Feed
         public override Task ChangeFeed(List<Product> products)
         {
             return Task.Run(() =>
             {
-                ThreadPool.QueueUserWorkItem(x =>
+                ThreadPool.QueueUserWorkItem(async x =>
                 {
                     SubscribedPrices = new Dictionary<string, decimal>();
                     if (products == null)
@@ -532,19 +517,22 @@ namespace exchange.coinbase
                         }
                         SubscribeProducts = products;
                         InitIndicatorsAsync(products);
-                        json = ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString()).Result;
-                        if (string.IsNullOrEmpty(json))
-                            return;
-                        ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                            $"Started Processing Feed Information.\r\nJSON: {json}");
-                        ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString())
-                            .GetAwaiter();
-                        while (ConnectionAdapter.IsWebSocketConnected())
+                        if (SubscribeProducts != null && SubscribeProducts.Any())
+                            await ConnectionAdapter.WebSocketCloseAsync();
+                        //Prepare subscription
+                        SubscribeProducts ??= new List<Product>();
+                        //Begin Processing
+                        while (SubscribeProducts.Any())
                         {
-                            try
+                            json = await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString());
+                            if (string.IsNullOrEmpty(json))
+                                return;
+                            await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
+                            ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                                $"Started Processing Feed Information.\r\nJSON: {json}");
+                            while (ConnectionAdapter.IsWebSocketConnected())
                             {
-                                json = ConnectionAdapter.WebSocketReceiveAsync().ConfigureAwait(false).GetAwaiter()
-                                    .GetResult();
+                                json = await ConnectionAdapter.WebSocketReceiveAsync();
                                 if (string.IsNullOrEmpty(json))
                                     continue;
                                 Feed feed = JsonSerializer.Deserialize<Feed>(json);
@@ -555,14 +543,17 @@ namespace exchange.coinbase
                                 if (!AssetInformation.ContainsKey(feed.ProductID))
                                     AssetInformation.Add(feed.ProductID, new AssetInformation());
                                 AssetInformation[feed.ProductID].CurrentPrice = feed.Price.ToDecimal();
+                                CurrentPrices ??= new Dictionary<string, decimal>();
                                 if (!CurrentPrices.ContainsKey(feed.ProductID))
                                     CurrentPrices.Add(feed.ProductID, feed.Price.ToDecimal());
                                 CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
                                 SubscribedPrices[feed.ProductID] = feed.Price.ToDecimal();
-                                Product product = Products.FirstOrDefault(x => x.ID == feed.ProductID);
+                                //update product data
+                                Products ??= new List<Product>();
+                                Product product = Products.FirstOrDefault(currentProduct => currentProduct.ID == feed.ProductID);
                                 if (product != null)
                                 {
-                                    Statistics twentyFourHourPrice = TwentyFourHoursRollingStatsAsync(product).Result;
+                                    Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(product);
                                     decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
                                                                      twentyFourHourPrice.High.ToDecimal());
                                     decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
@@ -585,13 +576,13 @@ namespace exchange.coinbase
                                     AssetInformation[feed.ProductID].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
                                     askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
                                     //price and size
-                                    AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList 
-                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList
+                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                                     AssetInformation[feed.ProductID].AskPriceAndSize = (from orderList in askOrderList
-                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                                 }
                                 //update order side
-                                if(Enum.TryParse(feed.Side, out OrderSide orderSide))
+                                if (Enum.TryParse(feed.Side, out OrderSide orderSide))
                                     AssetInformation[feed.ProductID].OrderSide = orderSide;
                                 //update best bid and ask
                                 AssetInformation[feed.ProductID].BestAsk = feed.BestAsk;
@@ -602,15 +593,12 @@ namespace exchange.coinbase
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                                 //FeedBroadcast?.Invoke(ApplicationName, feed);
                             }
-                            catch (Exception e)
-                            {
-                                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                                    $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-                            }
                         }
                     }
                     catch (Exception e)
                     {
+                        //TODO
+                        //Notify
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                             $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
                     }
@@ -619,7 +607,7 @@ namespace exchange.coinbase
         }
         #endregion
 
-        public override async Task<bool> InitAsync(bool testMode, string indicatorSaveDataPath, string iniFilePath)
+        public override async Task<bool> InitAsync(IExchangeSettings exchangeSettings)
         {
             try
             {
@@ -632,9 +620,9 @@ namespace exchange.coinbase
                 Statistics = new Dictionary<string, Statistics>();
                 AssetInformation = new Dictionary<string, AssetInformation>();
                 RelativeStrengthIndices = new List<RelativeStrengthIndex>();
-                TestMode = testMode;
-                IndicatorSaveDataPath = indicatorSaveDataPath;
-                INIFilePath = iniFilePath;
+                TestMode = exchangeSettings.TestMode;
+                IndicatorSaveDataPath = exchangeSettings.IndicatorDirectoryPath;
+                INIFilePath = exchangeSettings.INIDirectoryPath;
                 string env = TestMode ? "test" : "live";
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
@@ -721,38 +709,6 @@ namespace exchange.coinbase
 
             return false;
         }
-        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
-            HistoricCandlesSearch historicCandlesSearch)
-        {
-            string json = null;
-            try
-            {
-                if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double) historicCandlesSearch
-                    .Granularity) >= historicCandlesSearch.EndingDateTime)
-                    return null;
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int) historicCandlesSearch.Granularity}");
-                json = await ConnectionAdapter.RequestAsync(request);
-                if (json.StartsWith('[') && json.EndsWith(']'))
-                {
-                    ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
-                    HistoricRates = candles.ToHistoricRateList();
-                    HistoricRates.Reverse();
-                }
-                else
-                {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                        $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
-                }
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return HistoricRates;
-        }
         public override bool InitIndicatorsAsync(List<Product> products)
         {
             string coinbaseRSIFile = null;
@@ -796,6 +752,66 @@ namespace exchange.coinbase
             }
             return true;
         }
+        public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
+        {
+            string json = null;
+            try
+            {
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{product.ID}/stats");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                {
+                    Statistics statistics = JsonSerializer.Deserialize<Statistics>(json);
+                    Statistics ??= new Dictionary<string, Statistics>();
+                    if (!Statistics.ContainsKey(product.ID))
+                        Statistics.Add(product.ID, statistics);
+                    Statistics[product.ID] = statistics;
+                    return statistics;
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return null;
+        }
+        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
+            HistoricCandlesSearch historicCandlesSearch)
+        {
+            string json = null;
+            try
+            {
+                if (historicCandlesSearch.StartingDateTime.AddMilliseconds((double)historicCandlesSearch
+                    .Granularity) >= historicCandlesSearch.EndingDateTime)
+                    return null;
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int)historicCandlesSearch.Granularity}");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (json.StartsWith('[') && json.EndsWith(']'))
+                {
+                    ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
+                    HistoricRates = candles.ToHistoricRateList();
+                    HistoricRates.Reverse();
+                }
+                else
+                {
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
+                        $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return HistoricRates;
+        }
+        #endregion
+
         #endregion
     }
 }

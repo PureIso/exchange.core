@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using exchange.core.Enums;
 using exchange.core.implementations;
 
-namespace exchange.core.Interfaces
+namespace exchange.core.interfaces
 {
     public interface IConnectionAdapter
     {

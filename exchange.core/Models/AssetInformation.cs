@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using exchange.core.Enums;
 
-namespace exchange.core.Models
+namespace exchange.core.models
 {
     public class AssetInformation
     {

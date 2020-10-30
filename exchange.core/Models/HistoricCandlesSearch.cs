@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace exchange.core.Models
+namespace exchange.core.models
 {
     public class HistoricCandlesSearch
     {

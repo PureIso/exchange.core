@@ -10,7 +10,6 @@ using exchange.core.Enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.models;
-using exchange.core.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
@@ -648,6 +647,7 @@ namespace exchange.test
             //Assert
             Assert.IsNotNull(statistics);
         }
+
         #region Fields
 
         private Mock<HttpMessageHandler> _httpMessageHandlerMock;
