@@ -17,6 +17,8 @@ namespace exchange.core.implementations
         public virtual Action<string, MessageType, string> ProcessLogBroadcast { get; set; }
         public virtual Func<string, Dictionary<string, decimal>, Task> NotifyAccountInfo { get; set; }
         public virtual Func<string, Dictionary<string, decimal>, Task> NotifyCurrentPrices { get; set; }
+        public virtual Func<string, Dictionary<string, AssetInformation>, Task> NotifyAssetInformation { get; set; }
+        public virtual Func<string, string, Task> NotifyMainCurrency { get; set; }
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 

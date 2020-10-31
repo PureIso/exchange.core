@@ -251,6 +251,7 @@ namespace exchange.binance
                                 AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
                         });
                         NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
+                        NotifyMainCurrency?.Invoke(ApplicationName, MainCurrency);
                         Save();
                     }
 
@@ -567,9 +568,9 @@ namespace exchange.binance
                                     decimal percentage = change * 100;
                                     //update stat changes
                                     AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPriceChange = priceChangeDifference;
-                                    AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = percentage;
+                                    AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = Math.Round(percentage,2);
                                     //Order Book
-                                    OrderBook orderBook = UpdateProductOrderBookAsync(product).GetAwaiter().GetResult();
+                                    OrderBook orderBook = await UpdateProductOrderBookAsync(product);
                                     List<Order> bidOrderList = orderBook.Bids.ToOrderList();
                                     List<Order> askOrderList = orderBook.Asks.ToOrderList();
                                     decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
@@ -596,6 +597,19 @@ namespace exchange.binance
                                 //update best bid and ask
                                 AssetInformation[feed.ProductID].BestAsk = feed.BestAsk;
                                 AssetInformation[feed.ProductID].BestBid = feed.BestBid;
+                                //Indicator
+                                RelativeStrengthIndex relativeStrengthIndex = RelativeStrengthIndices.FirstOrDefault(currentProduct =>
+                                    currentProduct.RelativeStrengthIndexSettings.Product.ID == feed.ProductID);
+                                if (relativeStrengthIndex != null)
+                                {
+                                    AssetInformation[feed.ProductID].RelativeIndexQuarterly = relativeStrengthIndex
+                                        .RelativeStrengthIndexSettings.RelativeIndexQuarterly;
+                                    AssetInformation[feed.ProductID].RelativeIndexHourly = relativeStrengthIndex
+                                        .RelativeStrengthIndexSettings.RelativeIndexHourly;
+                                    AssetInformation[feed.ProductID].RelativeIndexDaily = relativeStrengthIndex
+                                        .RelativeStrengthIndexSettings.RelativeIndexDaily;
+                                }
+                                NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
                                 //update feed and notifications
                                 feed.CurrentPrices = CurrentPrices;
                                 CurrentFeed = feed;

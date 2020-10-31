@@ -36,6 +36,8 @@ namespace exchange.service
                 {
                     abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
+                    abstractExchangePlugin.NotifyMainCurrency += _exchangeService.DelegateNotifyMainCurrency;
+                    abstractExchangePlugin.NotifyAssetInformation += _exchangeService.DelegateNotifyAssetInformation;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings);
                     if (result)

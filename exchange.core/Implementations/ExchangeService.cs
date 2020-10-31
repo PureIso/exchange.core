@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using exchange.core.interfaces;
+using exchange.core.models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace exchange.core.implementations
 {
-    public
-        class ExchangeService : IExchangeService
+    public class ExchangeService : IExchangeService
     {
         private readonly IHubContext<ExchangeHubService, IExchangeHubService> _exchangeHubService;
 
@@ -23,17 +22,24 @@ namespace exchange.core.implementations
             await _exchangeHubService.Clients.All.NotifyCurrentPrices(applicationName, currentPrices);
         }
 
-        public async Task DelegateNotifyAccountInfo(string applicationName,
-            Dictionary<string, decimal> accountInformation)
+        public async Task DelegateNotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation)
         {
             if (_exchangeHubService.Clients == null)
                 return;
             await _exchangeHubService.Clients.All.NotifyAccountInfo(applicationName, accountInformation);
         }
-
-        public Task DelegateNotifyTradeInfo(string applicationName, Dictionary<string, decimal> accountInformation)
+        public async Task DelegateNotifyAssetInformation(string applicationName, Dictionary<string, AssetInformation> assetInformation)
         {
-            throw new NotImplementedException();
+            if (_exchangeHubService.Clients == null)
+                return;
+            await _exchangeHubService.Clients.All.NotifyAssetInformation(applicationName, assetInformation);
+        }
+
+        public async Task DelegateNotifyMainCurrency(string applicationName, string mainCurrency)
+        {
+            if (_exchangeHubService.Clients == null)
+                return;
+            await _exchangeHubService.Clients.All.NotifyMainCurrency(applicationName, mainCurrency);
         }
     }
 }
