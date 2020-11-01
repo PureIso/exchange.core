@@ -3,6 +3,8 @@ import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface
 import { Price } from "@interfaces/price.interface";
 import { AccountInfo } from "@interfaces/account-info.interface";
 import { ProductInfo } from "@interfaces/product-info.interface";
+import { MainCurrency } from "@interfaces/main-currency.interface";
+import { AssetInformation } from "@interfaces/asset-information.interface";
 
 export const CRUDEXCHANGEUICONTAINER = "CRUDEXCHANGEUICONTAINER";
 
@@ -20,6 +22,16 @@ export class CRUDExchangeUIContainer implements Action {
     private getAccountInfoIndex(accountInfo: AccountInfo): number {
         return this.payload.accountInfo.findIndex((x: AccountInfo) => {
             return x.asset === accountInfo.asset && x.applicationName === accountInfo.applicationName;
+        });
+    }
+    private getCurrencyIndex(mainCurrency: MainCurrency): number {
+        return this.payload.mainCurrencies.findIndex((x: MainCurrency) => {
+            return x.application_name === mainCurrency.application_name;
+        });
+    }
+    private getAssetInfoIndex(assetInfo: AssetInformation): number {
+        return this.payload.assetInformation.findIndex((x: AssetInformation) => {
+            return x.id === assetInfo.id && x.application_name === assetInfo.application_name;
         });
     }
     private getProductInfoIndex(productInfo: ProductInfo): number {
@@ -82,8 +94,37 @@ export class CRUDExchangeUIContainer implements Action {
             return this.sort(applicationName1,applicationName2)
         });
     }
-    updateProductInfo(productInfoList:ProductInfo[]) {
-        
+    updateApplicationMainCurrency(mainCurrency:MainCurrency) {
+        this.payload.mainCurrencies.forEach((x:MainCurrency) => {
+            let index = this.getCurrencyIndex(x);
+            if (index == -1) {
+                this.payload.mainCurrencies.push(mainCurrency);
+            } else {
+                this.payload.mainCurrencies[index] = mainCurrency;
+            }
+        });
+        // console.log(this.payload.mainCurrencies);
+    }
+    updateAssetInformation(assetInformationList:AssetInformation[]){
+        assetInformationList.forEach((assetInformation:AssetInformation) => {
+            let index = this.getAssetInfoIndex(assetInformation);
+            if (index == -1) {
+                if(assetInformation != undefined){
+                    this.payload.assetInformation.push(assetInformation);
+                }
+            } else {
+                if(assetInformation != undefined){
+                    this.payload.assetInformation[index] = assetInformation;
+                    console.log( this.payload.assetInformation[index] );
+                }
+            }
+        });
+        //sort
+        this.payload.assetInformation.sort((assetInformation1:AssetInformation, assetInformation2:AssetInformation) => {
+            return this.sort(assetInformation1.id,assetInformation2.id);
+        });
+    }
+    updateProductInfo(productInfoList:ProductInfo[]) {  
         productInfoList.forEach((productInfo:ProductInfo) => {
             let index = this.getProductInfoIndex(productInfo);
             if (index == -1) {

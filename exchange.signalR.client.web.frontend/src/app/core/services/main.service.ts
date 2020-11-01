@@ -40,6 +40,9 @@ export class MainService extends HubClient {
             this.hubConnection.on("notifyInformation", super.notifyInformation);
             this.hubConnection.on("notifyApplications", super.notifyApplications);
             this.hubConnection.on("notifyProductChange", super.notifyProductChange);
+            this.hubConnection.on("notifyAssetInformation", super.notifyAssetInformation);
+            this.hubConnection.on("notifyMainCurrency", super.notifyMainCurrency);
+
             this.initialiseSubscriptions();
             this.hub_connecting();
             return true;
@@ -122,5 +125,10 @@ export class MainService extends HubClient {
         if(!this.connected)
             return;
         this.hubConnection.invoke("RequestedSubscription",applicationName, symbols).catch((err) => console.error(err));
+    }
+    hub_requestedMainCurrency(applicationName:string, mainCurrency: string) {
+        if(!this.connected)
+            return;
+        this.hubConnection.invoke("RequestedMainCurrency",applicationName, mainCurrency).catch((err) => console.error(err));
     }
 }

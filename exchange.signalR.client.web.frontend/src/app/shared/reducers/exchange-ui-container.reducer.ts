@@ -5,7 +5,9 @@ export const initialState: ExchangeUIContainer = {
     prices: [],
     accountInfo: [],
     applicationNames: [],
-    productInfo: []
+    productInfo: [],
+    assetInformation: [],
+    mainCurrencies: []
 };
 /**
  * Exchange UI Container Reducer

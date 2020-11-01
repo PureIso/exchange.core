@@ -7,6 +7,8 @@ import * as NotificationContainerActions from "@actions/exchange-ui-container.ac
 import { Price } from "@interfaces/price.interface";
 import { AccountInfo } from "@interfaces/account-info.interface";
 import { ProductInfo } from "@interfaces/product-info.interface";
+import { AssetInformation } from "@interfaces/asset-information.interface";
+import { MainCurrency } from "@interfaces/main-currency.interface";
 
 export class HubClient {
     static redux: NgRedux<AppState>;
@@ -66,6 +68,39 @@ export class HubClient {
             HubClient.exchangeUIContainer
         );
         exchangeUIContainerActions.updateApplicationNames(applicationNames);
+        HubClient.redux.dispatch({
+            type: exchangeUIContainerActions.type,
+            payload: exchangeUIContainerActions.payload,
+        });
+    }
+    notifyMainCurrency(applicationName:string,currency:string){
+        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
+            HubClient.exchangeUIContainer
+        );
+        let mainCurrency: MainCurrency = {
+            application_name: applicationName,
+            currency: currency
+        }
+        exchangeUIContainerActions.updateApplicationMainCurrency(mainCurrency);
+        HubClient.redux.dispatch({
+            type: exchangeUIContainerActions.type,
+            payload: exchangeUIContainerActions.payload,
+        });
+    }
+    notifyAssetInformation(applicationName:string,assetInformation: Record<string, AssetInformation>){
+        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
+            HubClient.exchangeUIContainer
+        );
+        let assets: AssetInformation[] = new Array();
+        let keyValuePairs = Object.keys(assetInformation);
+        keyValuePairs.forEach((key) => {
+            let value = assetInformation[key];
+            let asset: AssetInformation = value;
+            asset.id = key;
+            asset.application_name = applicationName;
+            assets.push(asset);
+        });
+        exchangeUIContainerActions.updateAssetInformation(assets);
         HubClient.redux.dispatch({
             type: exchangeUIContainerActions.type,
             payload: exchangeUIContainerActions.payload,
