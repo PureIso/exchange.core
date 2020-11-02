@@ -2,6 +2,14 @@ table {
   width: 100%;
 }
 
+.green{
+  color:rgb(3, 92, 3) !important;
+}
+.red{
+  color:rgb(131, 3, 3) !important;
+}
+
+
 tr.example-detail-row {
   height: 0 !important;
 }

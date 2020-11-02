@@ -47,7 +47,6 @@ exports.config = {
     onPrepare: () => {
         let globals = require('protractor');
         let browser = globals.browser;
-        browser.ignoreSynchronization = true;
         browser.baseUrl = 'http://localhost:9000';
         browser.manage().timeouts().implicitlyWait(5000);
 

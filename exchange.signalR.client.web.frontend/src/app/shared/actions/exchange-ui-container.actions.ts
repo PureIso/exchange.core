@@ -103,7 +103,6 @@ export class CRUDExchangeUIContainer implements Action {
                 this.payload.mainCurrencies[index] = mainCurrency;
             }
         });
-        // console.log(this.payload.mainCurrencies);
     }
     updateAssetInformation(assetInformationList:AssetInformation[]){
         assetInformationList.forEach((assetInformation:AssetInformation) => {
@@ -115,7 +114,6 @@ export class CRUDExchangeUIContainer implements Action {
             } else {
                 if(assetInformation != undefined){
                     this.payload.assetInformation[index] = assetInformation;
-                    console.log( this.payload.assetInformation[index] );
                 }
             }
         });

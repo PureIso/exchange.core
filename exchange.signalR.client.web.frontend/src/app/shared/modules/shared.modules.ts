@@ -10,7 +10,7 @@ import { NotificationComponent } from "./components/notification/notification.co
 import { PriceCardComponent } from "./components/price-card/price-card.component";
 import { AccountInformationComponent } from "./components/account-information/account-information.component";
 import { ProductInformationComponent } from "./components/product-information/product-information.component";
-
+import { MatSliderModule } from '@angular/material/slider';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -44,7 +44,7 @@ import { MatTableModule } from "@angular/material/table";
         ReactiveFormsModule,
         MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,
         MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
-        MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule
+        MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule,MatSliderModule
     ],
     exports: [
         FormsModule,
@@ -58,7 +58,7 @@ import { MatTableModule } from "@angular/material/table";
         MatNativeDateModule ,
         MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,
         MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
-        MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule
+        MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule,MatSliderModule
     ],
     providers: [MatDatepickerModule],
     declarations: [NotificationComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
