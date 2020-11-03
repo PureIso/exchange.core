@@ -95,7 +95,6 @@ namespace exchange.core.implementations
                 if (webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
                 {
                     ClientWebSocket.Abort();
-                    ClientWebSocket.Dispose();
                     return null;
                 }
 
@@ -130,7 +129,6 @@ namespace exchange.core.implementations
                 if (webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
                 {
                     ClientWebSocket.Abort();
-                    ClientWebSocket.Dispose();
                     return null;
                 }
 
@@ -160,7 +158,7 @@ namespace exchange.core.implementations
                     return false;
                 await ClientWebSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
                     CancellationToken.None);
-                Dispose();
+                ClientWebSocket = new ClientWebSocket();
                 return true;
             }
             catch (Exception ex)
@@ -178,8 +176,7 @@ namespace exchange.core.implementations
 
         public virtual bool IsWebSocketConnected()
         {
-            if (ClientWebSocket == null)
-                ClientWebSocket = new ClientWebSocket();
+            ClientWebSocket ??= new ClientWebSocket();
             return ClientWebSocket.State == WebSocketState.Open;
         }
 

@@ -31,7 +31,8 @@ namespace exchange.service
                 if (string.IsNullOrEmpty(environment))
                     environment = DefaultEnvironmentName;
                 IConfigurationRoot config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.{environment}.json", true)
+                    .AddJsonFile($"appsettings.{environment}.json", true,reloadOnChange:true)
+                    .AddEnvironmentVariables()
                     .Build();
                 //Initialize Logger
                 Log.Logger = new LoggerConfiguration()

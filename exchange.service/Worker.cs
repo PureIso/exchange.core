@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,18 +33,24 @@ namespace exchange.service
             _logger.LogInformation($"Worker started at: {DateTime.Now}");
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
             {
-                foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
+                AbstractExchangePlugin[] plugins = _exchangePluginService.PluginExchanges.ToArray();
+                _exchangePluginService.PluginExchanges.Clear();
+                for (int index = plugins.Length-1; index >= 0; index--)
                 {
+                    AbstractExchangePlugin abstractExchangePlugin = plugins[index];
                     abstractExchangePlugin.NotifyAccountInfo += _exchangeService.DelegateNotifyAccountInfo;
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
                     abstractExchangePlugin.NotifyMainCurrency += _exchangeService.DelegateNotifyMainCurrency;
                     abstractExchangePlugin.NotifyAssetInformation += _exchangeService.DelegateNotifyAssetInformation;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings);
-                    if (result)
-                        _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
+                    if (!result) continue;
+                    _logger.LogInformation($"Plugin {abstractExchangePlugin.ApplicationName} loaded.");
+                    plugins = plugins.Where(plugin => plugin.ApplicationName != abstractExchangePlugin.ApplicationName).ToArray();
+                    _exchangePluginService.PluginExchanges.Add(abstractExchangePlugin);
                 }
             }
+            _logger.LogInformation($"Plugin Loading completed.");
             await base.StartAsync(cancellationToken);
         }
 

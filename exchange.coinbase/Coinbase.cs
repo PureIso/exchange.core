@@ -480,6 +480,8 @@ namespace exchange.coinbase
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{product.ID}/book?level={level}");
                 json = await ConnectionAdapter.RequestAsync(request);
+                if (string.IsNullOrEmpty(json))
+                    return OrderBook;
                 OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
             }
             catch (Exception e)
@@ -501,6 +503,7 @@ namespace exchange.coinbase
             {
                 ThreadPool.QueueUserWorkItem(async x =>
                 {
+                    await UpdateAccountsAsync();
                     SubscribedPrices = new Dictionary<string, decimal>();
                     if (products == null)
                         return;
@@ -526,10 +529,10 @@ namespace exchange.coinbase
                         //Begin Processing
                         while (SubscribeProducts.Any())
                         {
+                            await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
                             json = await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString());
                             if (string.IsNullOrEmpty(json))
                                 return;
-                            await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
                             ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                                 $"Started Processing Feed Information.\r\nJSON: {json}");
                             while (ConnectionAdapter.IsWebSocketConnected())
@@ -556,32 +559,38 @@ namespace exchange.coinbase
                                 if (product != null)
                                 {
                                     Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(product);
-                                    decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
-                                                                     twentyFourHourPrice.High.ToDecimal());
-                                    decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
-                                    decimal percentage = change * 100;
-                                    //update stat changes
-                                    AssetInformation[feed.ProductID].TwentyFourHourPriceChange = priceChangeDifference;
-                                    AssetInformation[feed.ProductID].TwentyFourHourPricePercentageChange = Math.Round(percentage,2);
+                                    if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
+                                    {
+                                        decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
+                                                                         twentyFourHourPrice.High.ToDecimal());
+                                        decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
+                                        decimal percentage = change * 100;
+                                        //update stat changes
+                                        AssetInformation[feed.ProductID].TwentyFourHourPriceChange = priceChangeDifference;
+                                        AssetInformation[feed.ProductID].TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
+                                    }
                                     //Order Book
                                     OrderBook orderBook = await UpdateProductOrderBookAsync(product);
-                                    List<Order> bidOrderList = orderBook.Bids.ToOrderList();
-                                    List<Order> askOrderList = orderBook.Asks.ToOrderList();
-                                    decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
-                                    int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
-                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                    AssetInformation[feed.ProductID].BidMaxOrderSize = bidMaxOrderSize;
-                                    AssetInformation[feed.ProductID].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
-                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
-                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                    AssetInformation[feed.ProductID].AskMaxOrderSize = askMaxOrderSize;
-                                    AssetInformation[feed.ProductID].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
-                                    //price and size
-                                    AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    AssetInformation[feed.ProductID].AskPriceAndSize = (from orderList in askOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    if (orderBook?.Bids != null && orderBook?.Asks != null)
+                                    {
+                                        List<Order> bidOrderList = orderBook.Bids.ToOrderList();
+                                        List<Order> askOrderList = orderBook.Asks.ToOrderList();
+                                        decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                        int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                        bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                        AssetInformation[feed.ProductID].BidMaxOrderSize = bidMaxOrderSize;
+                                        AssetInformation[feed.ProductID].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                        decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                        int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                        AssetInformation[feed.ProductID].AskMaxOrderSize = askMaxOrderSize;
+                                        AssetInformation[feed.ProductID].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                        askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                        //price and size
+                                        AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList
+                                                                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                        AssetInformation[feed.ProductID].AskPriceAndSize = (from orderList in askOrderList
+                                                                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    }
                                 }
                                 //NotifyTradeInfo
                                 //update order side
@@ -617,6 +626,7 @@ namespace exchange.coinbase
                         //Notify
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                             $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+                        SubscribeProducts = new List<Product>();
                     }
                 });
             });
@@ -631,7 +641,10 @@ namespace exchange.coinbase
                 AccountInfo = new Dictionary<string, decimal>();
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
-                ConnectionAdapter = new ConnectionAdapter();
+                ConnectionAdapter = new ConnectionAdapter
+                {
+                    ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType,message);}
+                };
                 Products = new List<Product>();
                 Statistics = new Dictionary<string, Statistics>();
                 AssetInformation = new Dictionary<string, AssetInformation>();
@@ -806,16 +819,11 @@ namespace exchange.coinbase
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
                     $"/products/{historicCandlesSearch.Symbol}/candles?start={historicCandlesSearch.StartingDateTime:o}&end={historicCandlesSearch.EndingDateTime:o}&granularity={(int)historicCandlesSearch.Granularity}");
                 json = await ConnectionAdapter.RequestAsync(request);
-                if (json.StartsWith('[') && json.EndsWith(']'))
+                if (!string.IsNullOrEmpty(json) && json.StartsWith('[') && json.EndsWith(']'))
                 {
                     ArrayList[] candles = JsonSerializer.Deserialize<ArrayList[]>(json);
                     HistoricRates = candles.ToHistoricRateList();
                     HistoricRates.Reverse();
-                }
-                else
-                {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                        $"Method: UpdateProductHistoricCandlesAsync\r\nJSON: {json}");
                 }
             }
             catch (Exception e)
@@ -823,7 +831,6 @@ namespace exchange.coinbase
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
-
             return HistoricRates;
         }
         #endregion

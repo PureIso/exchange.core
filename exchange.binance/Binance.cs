@@ -15,6 +15,7 @@ using exchange.core.implementations;
 using exchange.core.indicators;
 using exchange.core.interfaces;
 using exchange.core.models;
+using exchange.core.Models;
 
 namespace exchange.binance
 {
@@ -230,52 +231,51 @@ namespace exchange.binance
                     $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
-                if (BinanceAccount != null && BinanceAccount.Balances != null && BinanceAccount.Balances.Any())
+                if (BinanceAccount?.Balances == null || !BinanceAccount.Balances.Any()) 
+                    return BinanceAccount;
+                List<Asset> assets = BinanceAccount.Balances.Where(x => x.Free.ToDecimal() > 0 || x.ID == "BTC")
+                    .ToList();
+                Accounts = new List<Account>();
+                foreach (Asset asset in assets)
+                    Accounts.Add(new Account
+                        {Hold = asset.Free, Balance = asset.Free, ID = asset.ID, Currency = asset.ID});
+                if (Accounts != null)
                 {
-                    List<Asset> assets = BinanceAccount.Balances.Where(x => x.Free.ToDecimal() > 0 || x.ID == "BTC")
-                        .ToList();
-                    Accounts = new List<Account>();
-                    foreach (Asset asset in assets)
-                        Accounts.Add(new Account
-                            {Hold = asset.Free, Balance = asset.Free, ID = asset.ID, Currency = asset.ID});
-                    if (Accounts != null)
+                    Accounts.ForEach(account =>
                     {
-                        Accounts.ForEach(account =>
-                        {
-                            AccountInfo ??= new Dictionary<string, decimal>();
-                            if (account.Balance.ToDecimal() <= 0)
-                                return;
-                            if (AccountInfo.ContainsKey(account.Currency))
-                                AccountInfo[account.Currency] = account.Balance.ToDecimal();
-                            else
-                                AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
-                        });
-                        NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
-                        NotifyMainCurrency?.Invoke(ApplicationName, MainCurrency);
-                        Save();
-                    }
+                        AccountInfo ??= new Dictionary<string, decimal>();
+                        if (account.Balance.ToDecimal() <= 0)
+                            return;
+                        if (AccountInfo.ContainsKey(account.Currency))
+                            AccountInfo[account.Currency] = account.Balance.ToDecimal();
+                        else
+                            AccountInfo.Add(account.Currency, account.Balance.ToDecimal());
+                    });
+                    NotifyAccountInfo?.Invoke(ApplicationName, AccountInfo);
+                    NotifyMainCurrency?.Invoke(ApplicationName, MainCurrency);
+                    Save();
+                }
 
-                    if (ExchangeInfo.Symbols == null || !ExchangeInfo.Symbols.Any())
-                        return BinanceAccount;
-                    foreach (Symbol symbol in ExchangeInfo.Symbols)
+                if (ExchangeInfo.Symbols == null || !ExchangeInfo.Symbols.Any())
+                    return BinanceAccount;
+                foreach (Symbol symbol in ExchangeInfo.Symbols)
+                {
+                    if (!BinanceAccount.Balances.Any(x => x.Free.ToDecimal() > 0 && x.ID == symbol.QuoteAsset
+                                                          || x.ID == "BTC" || x.ID == "LTC" || x.ID == "ETH"))
+                        continue;
                     {
-                        if (!BinanceAccount.Balances.Any(x => x.Free.ToDecimal() > 0 && x.ID == symbol.QuoteAsset
-                                                              || x.ID == "BTC" || x.ID == "LTC" || x.ID == "ETH"))
-                            continue;
+                        Filter filter = symbol.Filters.FirstOrDefault(x => x.FilterType == "PRICE_FILTER");
+                        if (filter != null)
                         {
-                            Filter filter = symbol.Filters.FirstOrDefault(x => x.FilterType == "PRICE_FILTER");
-                            if (filter != null)
+                            Products.Add(new Product
                             {
-                                Products.Add(new Product
-                                {
-                                    ID = symbol.ID,
-                                    BaseCurrency = symbol.BaseAsset,
-                                    QuoteCurrency = symbol.QuoteAsset,
-                                    BaseMaxSize = filter.MaxPrice,
-                                    BaseMinSize = filter.MinPrice,
-                                    QuoteIncrement = filter.TickSize
-                                });
-                            }
+                                ID = symbol.ID,
+                                BaseCurrency = symbol.BaseAsset,
+                                QuoteCurrency = symbol.QuoteAsset,
+                                BaseMaxSize = filter.MaxPrice,
+                                BaseMinSize = filter.MinPrice,
+                                QuoteIncrement = filter.TickSize
+                            });
                         }
                     }
                 }
@@ -469,19 +469,17 @@ namespace exchange.binance
 
             return BinanceFill;
         }
-        public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
+        public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 20)
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                    "[Binance] Updating Product Order Book.");
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/depth?")
                 {
                     RequestQuery = $"symbol={product.ID}&limit={level}"
                 };
                 string json = await ConnectionAdapter.RequestUnsignedAsync(request);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"UpdateProductOrderBookAsync JSON:\r\n{json}");
+                if (string.IsNullOrEmpty(json))
+                    return OrderBook;
                 //check if we do not have any error messages
                 OrderBook = JsonSerializer.Deserialize<OrderBook>(json);
             }
@@ -504,6 +502,7 @@ namespace exchange.binance
             {
                 ThreadPool.QueueUserWorkItem(async x =>
                 {
+                    await UpdateAccountsAsync();
                     SubscribedPrices = new Dictionary<string, decimal>();
                     if (products == null || !products.Any())
                         return;
@@ -562,32 +561,38 @@ namespace exchange.binance
                                 if (product != null)
                                 {
                                     Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(product);
-                                    decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
-                                                                     twentyFourHourPrice.High.ToDecimal());
-                                    decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
-                                    decimal percentage = change * 100;
-                                    //update stat changes
-                                    AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPriceChange = priceChangeDifference;
-                                    AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = Math.Round(percentage,2);
+                                    if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
+                                    {
+                                        decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
+                                                                         twentyFourHourPrice.High.ToDecimal());
+                                        decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
+                                        decimal percentage = change * 100;
+                                        //update stat changes
+                                        AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPriceChange = priceChangeDifference;
+                                        AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
+                                    }
                                     //Order Book
                                     OrderBook orderBook = await UpdateProductOrderBookAsync(product);
-                                    List<Order> bidOrderList = orderBook.Bids.ToOrderList();
-                                    List<Order> askOrderList = orderBook.Asks.ToOrderList();
-                                    decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
-                                    int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
-                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                    AssetInformation[feed.BinanceData.Symbol].BidMaxOrderSize = bidMaxOrderSize;
-                                    AssetInformation[feed.BinanceData.Symbol].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
-                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
-                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                    AssetInformation[feed.BinanceData.Symbol].AskMaxOrderSize = askMaxOrderSize;
-                                    AssetInformation[feed.BinanceData.Symbol].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
-                                    //price and size
-                                    AssetInformation[feed.BinanceData.Symbol].BidPriceAndSize = (from orderList in bidOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    AssetInformation[feed.BinanceData.Symbol].AskPriceAndSize = (from orderList in askOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    if (orderBook?.Bids != null && orderBook?.Asks != null)
+                                    {
+                                        List<Order> bidOrderList = orderBook.Bids.ToOrderList();
+                                        List<Order> askOrderList = orderBook.Asks.ToOrderList();
+                                        decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                        int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                        bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                        AssetInformation[feed.BinanceData.Symbol].BidMaxOrderSize = bidMaxOrderSize;
+                                        AssetInformation[feed.BinanceData.Symbol].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                        decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                        int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                        AssetInformation[feed.BinanceData.Symbol].AskMaxOrderSize = askMaxOrderSize;
+                                        AssetInformation[feed.BinanceData.Symbol].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                        askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                        //price and size
+                                        AssetInformation[feed.BinanceData.Symbol].BidPriceAndSize = (from orderList in bidOrderList
+                                                                                                     select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                        AssetInformation[feed.BinanceData.Symbol].AskPriceAndSize = (from orderList in askOrderList
+                                                                                                     select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    }
                                 }
                                 //update order side
                                 if (Enum.TryParse(feed.Side, out OrderSide orderSide))
@@ -624,6 +629,7 @@ namespace exchange.binance
                         //Notify
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                             $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+                        SubscribeProducts = new List<Product>();
                     }
                 });
             });
@@ -638,7 +644,10 @@ namespace exchange.binance
                 AccountInfo = new Dictionary<string, decimal>();
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
-                ConnectionAdapter = new ConnectionAdapter();
+                ConnectionAdapter = new ConnectionAdapter
+                {
+                    ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType, message); }
+                };
                 Products = new List<Product>();
                 Statistics = new Dictionary<string, Statistics>();
                 AssetInformation = new Dictionary<string, AssetInformation>();
@@ -808,10 +817,7 @@ namespace exchange.binance
                         $"endTime={historicCandlesSearch.EndingDateTime.GenerateDateTimeOffsetToUnixTimeMilliseconds()}"
                 };
                 string json = await ConnectionAdapter.RequestUnsignedAsync(request);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"UpdateProductOrderBookAsync JSON:\r\n{json}");
-                //check if we do not have any error messages
-                if (json.StartsWith("[") && json.EndsWith("]"))
+                if (!string.IsNullOrEmpty(json) && json.StartsWith("[") && json.EndsWith("]"))
                 {
                     ArrayList[] arrayListOfHistory = JsonSerializer.Deserialize<ArrayList[]>(json);
                     HistoricRates = arrayListOfHistory.ToHistoricCandleList();
@@ -840,14 +846,19 @@ namespace exchange.binance
                 json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 if (!string.IsNullOrEmpty(json))
                 {
-                    Statistics statistics = JsonSerializer.Deserialize<Statistics>(json);
+                    Statistics statistics = new Statistics();
+                    BinanceStatistics binanceStatistics = JsonSerializer.Deserialize<BinanceStatistics>(json);
+                    statistics.Volume = binanceStatistics.Volume;
+                    statistics.Open = binanceStatistics.OpenPrice;
+                    statistics.High = binanceStatistics.HighPrice;
+                    statistics.Low = binanceStatistics.LowPrice;
+                    statistics.Last = binanceStatistics.LastPrice;
                     Statistics ??= new Dictionary<string, Statistics>();
                     if (!Statistics.ContainsKey(product.ID))
                         Statistics.Add(product.ID, statistics);
                     Statistics[product.ID] = statistics;
                     return statistics;
                 }
-
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
                     $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
             }

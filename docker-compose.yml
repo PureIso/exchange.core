@@ -47,6 +47,20 @@ volumes:
             device: 'D:\Docker\exchange\service\logs'
             o: 'bind'
             type: 'none'
+    exchange_service_config:
+        name: exchange_service_config
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\exchange\service\config'
+            o: 'bind'
+            type: 'none'
+    exchange_service_indicators:
+        name: exchange_service_indicators
+        driver: local
+        driver_opts:
+            device: 'D:\Docker\exchange\service\indicators'
+            o: 'bind'
+            type: 'none'
 
 services:
     # nginx: 
@@ -146,6 +160,8 @@ services:
             dockerfile: ./docker/exchange.service/Dockerfile
         volumes:
             - exchange_service_logs:/exchange/service/logs:rw
+            - exchange_service_indicators:/exchange/service/indicators:rw
+            - exchange_service_config:/exchange/service/config:rw
         ports:
             - 5000:5000
             - 5001:5001
