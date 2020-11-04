@@ -1,4 +1,4 @@
-export interface ProductInfo {
+export interface ProductInformation {
     id: string;
     application_name: string;
     base_currency: string;
