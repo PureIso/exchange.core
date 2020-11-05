@@ -1,13 +1,14 @@
 import { Component,OnInit,Input,AfterViewInit } from "@angular/core";
-import { NgRedux, select } from "@angular-redux/store";
-import { AppState } from "@store/app.state";
+import { select } from "@angular-redux/store";
 import { Observable } from "rxjs";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
 import { MainService } from "@services/main.service";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
 import { FormControl } from '@angular/forms';
-import { ProductInfo } from "@interfaces/product-info.interface";
-import { AccountInfo } from "@interfaces/account-info.interface";
+import { ProductInformation } from "@interfaces/product-information.interface";
+import { AccountInformation } from "@interfaces/account-information.interface";
+import { ProductInformationContainer } from "@interfaces/product-information-container.interface";
+import { AccountInformationContainer } from "@interfaces/account-information-container.interface";
 
 @Component({
     selector: "product-information-component",
@@ -19,97 +20,192 @@ export class ProductInformationComponent implements AfterViewInit, OnInit {
     notificationContainer: NotificationContainer;
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
-    assetListFormControl: FormControl;
-    quoteCurrenriesFormControl: FormControl;
-    currentCurrenriesFormControl: FormControl;
+    @select("productInformationContainer") productInformationContainer$: Observable<ProductInformationContainer>;
+    productInformationContainer: ProductInformationContainer;
+    @select("accountInformationContainer") accountInformationContainer$: Observable<AccountInformationContainer>;
+    accountInformationContainer: AccountInformationContainer;
+    //
+    productListFormControl: FormControl;
+    quoteCurrenciesFormControl: FormControl;
+    currentProductListFormControl: FormControl;
+    //
     quoteCurrencies: string[];
-    assetList: string[];
-    currentAssetList: string[];
+    productList: string[];
+    currentProductList: string[];
+    masterProductList: string[];
+    masterCurrentProductList: string[];
+    //
     selectedCurrencies: string[];
     subscribeIsDisabled: boolean;
 
     constructor(private mainService: MainService) {
-        this.assetListFormControl = new FormControl({value: '', disabled: true});
-        this.quoteCurrenriesFormControl = new FormControl();
-        this.currentCurrenriesFormControl = new FormControl();
-        this.assetList = new Array();
-        this.currentAssetList = new Array();
+        this.productListFormControl = new FormControl({value: '', disabled: true});
+        this.quoteCurrenciesFormControl = new FormControl();
+        this.currentProductListFormControl = new FormControl();
+        //
         this.quoteCurrencies = new Array();
+        this.productList = new Array();
+        this.currentProductList = new Array();
+        this.masterCurrentProductList = new Array();
+        this.masterProductList = new Array();
+        //
         this.selectedCurrencies = new Array();
         this.subscribeIsDisabled = true;
     }
-
     ngOnInit() {
         this.notificationContainer$.subscribe((x: NotificationContainer) => {
             this.notificationContainer = x;
         });
-        this.exchangeUIContainer$.subscribe((x: ExchangeUIContainer) => {
-            this.exchangeUIContainer = x;
-            this.assetList = new Array();
-            this.currentAssetList = new Array();
-            this.quoteCurrencies = new Array();
-            //requires ES6 support, Babel or TypeScript
-            x.productInfo.forEach((productInfo: ProductInfo)=>{
-                if(productInfo.application_name == this.applicationName){
-                    this.assetList.push(productInfo.id);
-                    this.quoteCurrencies.push(productInfo.quote_currency);
-                    x.accountInfo.forEach((accountInfo: AccountInfo) => {
-                        if(accountInfo.applicationName == this.applicationName){
-                            if(productInfo.id.indexOf(accountInfo.asset) !== -1)
-                            {
-                                let index: number = this.currentAssetList.findIndex((asset: string) => {
-                                    return asset === productInfo.id;
-                                });
-                                if(index === -1){
-                                    this.currentAssetList.push(productInfo.id);
-                                }
-                            } 
-                        }
-                    });
-                };
-                //filter - duplicates
-                this.quoteCurrencies = this.quoteCurrencies.filter((quotedCurrency:string, index:number, quoteCurrencies:string[]) => {
-                    return quoteCurrencies.indexOf(quotedCurrency) === index;
+        this.productInformationContainer$.subscribe((x: ProductInformationContainer) => {
+            this.productInformationContainer = x;
+            this.productInformationContainer.productInfo.forEach((productInformation: ProductInformation)=>{
+                if(productInformation.application_name != this.applicationName)
+                    return;
+                let index: number = this.productList.findIndex((productId: string) => {
+                    return productInformation.id === productId;
                 });
+                if(index === -1){
+                    this.productList.push(productInformation.id);
+                }
+                //quotedCurrency = EUR      
+                index = this.quoteCurrencies.findIndex((quotedCurrency: string) => {
+                    return productInformation.quote_currency === quotedCurrency;
+                });
+                if(index === -1){
+                    this.quoteCurrencies.push(productInformation.quote_currency);
+                }
+                this.productListFormControl.enable();
+            });
+            //set master record
+            this.masterProductList = this.productList;
+            this.masterProductList.sort((value1:string, value2:string) => {
+                return this.sort(value1,value2);
             });
         });
+        this.accountInformationContainer$.subscribe((x: AccountInformationContainer) => {
+            this.accountInformationContainer = x;
+            if(this.productList == undefined || this.productList == [])
+                return;
+            this.accountInformationContainer.accountInfo.forEach((accountInformation: AccountInformation)=>{
+                if(accountInformation.applicationName != this.applicationName)
+                    return;
+                //list of products
+                this.productList.forEach((productId: string)=>{
+                    let index: number = this.quoteCurrencies.findIndex((quotedCurrency: string) => {
+                        return productId === quotedCurrency;
+                    });
+                    if(index === -1){
+                        this.quoteCurrencies.push(productId);
+                    }
+                    if(this.quoteCurrenciesFormControl.value != undefined && this.quoteCurrenciesFormControl.value != []){
+                        let quoteCurrencies: string[] = this.quoteCurrenciesFormControl.value;
+                        quoteCurrencies.forEach((quotedCurrency: string) =>{
+                            if(!productId.startsWith(accountInformation.asset) && !productId.endsWith(quotedCurrency))
+                                return;
+                            index = this.currentProductList.findIndex((asset: string) => {
+                                return asset === productId;
+                            });
+                            if(index === -1){
+                                this.currentProductList.push(productId);
+                            }
+                        });
+                    }
+                    else{
+                        if(!productId.startsWith(accountInformation.asset))
+                            return;
+                        index = this.currentProductList.findIndex((asset: string) => {
+                            return asset === productId;
+                        });
+                        if(index === -1){
+                            this.currentProductList.push(productId);
+                        }
+                    }
+                    this.productListFormControl.enable();
+                });  
+            }); 
+            //set master record
+            this.masterCurrentProductList = this.currentProductList;   
+            this.masterCurrentProductList.sort((value1:string, value2:string) => {
+                return this.sort(value1,value2);
+            });  
+        });
     }
-
     ngAfterViewInit() {
         this.mainService.hub_requestedProducts();
     }
-
-    onFilterAssets(){
-        if(this.quoteCurrenriesFormControl.value == undefined || this.quoteCurrenriesFormControl.value == [])
-            return;
-        this.assetList = new Array();
-        let currentValues: string[] = this.quoteCurrenriesFormControl.value;
-        let filteredAssetList: ProductInfo[] = this.exchangeUIContainer.productInfo.filter((productInfo:ProductInfo) => {
-            if(productInfo.application_name == this.applicationName){
-                return currentValues.includes(productInfo.quote_currency);
-            }
-            return false;
-        });
-        filteredAssetList.forEach((productInfo: ProductInfo)=>{          
-            if(productInfo.application_name == this.applicationName){
-                this.assetList.push(productInfo.id);
-            }
-            this.assetListFormControl.enable();
-        });
+    private sort(string1:string,string2:string):number{
+        if (string1 > string2)
+            return 1;
+        else if (string1 < string2)
+            return -1;
+        return 0;
     }
-
-    onFilterSelectedAssets(){
+    onUpdateSubscribeProductList(){
+        this.quoteCurrenciesFormControl.disable();
+        this.productListFormControl.disable();
+        this.currentProductListFormControl.disable();
         this.subscribeIsDisabled = true;
+        //
         this.selectedCurrencies = new Array();
-        if(this.assetListFormControl.value != undefined && this.assetListFormControl.value != [])
-            this.selectedCurrencies = this.selectedCurrencies.concat(this.assetListFormControl.value)
-        if(this.currentCurrenriesFormControl.value != undefined && this.currentCurrenriesFormControl.value != [])
-            this.selectedCurrencies = this.selectedCurrencies.concat(this.currentCurrenriesFormControl.value)
-        if(this.selectedCurrencies.length == 0)
+        if(this.productListFormControl.value != undefined && this.productListFormControl.value != [])
+            this.selectedCurrencies = this.selectedCurrencies.concat(this.productListFormControl.value)
+        if(this.currentProductListFormControl.value != undefined && this.currentProductListFormControl.value != [])
+            this.selectedCurrencies = this.selectedCurrencies.concat(this.currentProductListFormControl.value)
+        if(this.selectedCurrencies.length == 0){
+            this.subscribeIsDisabled = false;
+            this.quoteCurrenciesFormControl.enable();
+            this.productListFormControl.enable();
+            this.currentProductListFormControl.enable();
             return;
+        }
         this.subscribeIsDisabled = false;
+        this.quoteCurrenciesFormControl.enable();
+        this.productListFormControl.enable();
+        this.currentProductListFormControl.enable();
     }
-
+    onFilteredProductList(){
+        if(this.quoteCurrenciesFormControl.value == undefined || this.quoteCurrenciesFormControl.value == [])
+            return;
+        this.quoteCurrenciesFormControl.disable();
+        this.productListFormControl.disable();
+        this.currentProductListFormControl.disable();
+        this.subscribeIsDisabled = true;
+        //
+        let filteredProductList: string[] = new Array();
+        let filteredCurrentProductList: string[] = new Array();
+        //
+        let quoteCurrencies: string[] = this.quoteCurrenciesFormControl.value;
+        quoteCurrencies.forEach((quotedCurrency: string) =>{
+            //
+            let tempFilteredProductList = this.masterProductList.filter((productId:string) => {
+                if(!productId.endsWith(quotedCurrency))
+                    return false; 
+                return true;
+            });
+            filteredProductList = filteredProductList.concat(tempFilteredProductList);
+            //
+            let tempFilteredCurrentProductList = this.masterCurrentProductList.filter((currentProduct:string) => {
+                if(!currentProduct.endsWith(quotedCurrency))
+                    return false;
+                return true;
+            });
+            filteredCurrentProductList = filteredCurrentProductList.concat(tempFilteredCurrentProductList);
+        });
+        this.productList = filteredProductList;
+        this.currentProductList = filteredCurrentProductList;
+        //
+        this.productList.sort((value1:string, value2:string) => {
+            return this.sort(value1,value2);
+        });
+        this.currentProductList.sort((value1:string, value2:string) => {
+            return this.sort(value1,value2);
+        });
+        //
+        this.subscribeIsDisabled = false;
+        this.quoteCurrenciesFormControl.enable();
+        this.productListFormControl.enable();
+        this.currentProductListFormControl.enable();
+    }
     subscribe(){
         if(this.selectedCurrencies.length == 0)
             return;

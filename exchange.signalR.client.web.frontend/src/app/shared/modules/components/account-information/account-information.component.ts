@@ -5,8 +5,8 @@ import { Observable } from "rxjs";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
 import { MatAccordion } from '@angular/material/expansion';
 import { MainService } from "@services/main.service";
-import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
-import { AccountInfo } from "@interfaces/account-info.interface";
+import { AccountInformationContainer } from "@interfaces/account-information-container.interface";
+import { AccountInformation } from "@interfaces/account-information.interface";
 
 @Component({
     selector: "account-information-component",
@@ -15,22 +15,21 @@ import { AccountInfo } from "@interfaces/account-info.interface";
 export class AccountInformationComponent implements AfterViewInit {
     @Input() applicationName: string;
     @ViewChild(MatAccordion) accordion: MatAccordion;
-
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;
-    @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
-    exchangeUIContainer: ExchangeUIContainer;
-    accountInfo: AccountInfo[];
+    @select("accountInformationContainer") accountInformationContainer$: Observable<AccountInformationContainer>;
+    accountInformationContainer: AccountInformationContainer;
+    accountInformationList: AccountInformation[];
 
     constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
-        this.accountInfo = new Array();
+        this.accountInformationList = new Array();
         this.notificationContainer$.subscribe((x: NotificationContainer) => {
             this.notificationContainer = x;
         });
-        this.exchangeUIContainer$.subscribe((x: ExchangeUIContainer) => {
-            this.exchangeUIContainer = x;
-            this.accountInfo = x.accountInfo.filter((accountInfo:AccountInfo) => {
-                return accountInfo.applicationName == this.applicationName;
+        this.accountInformationContainer$.subscribe((x: AccountInformationContainer) => {
+            this.accountInformationContainer = x;
+            this.accountInformationList = this.accountInformationContainer.accountInfo.filter((accountInformation:AccountInformation) => {
+                return accountInformation.applicationName == this.applicationName;
             });
         });
     }

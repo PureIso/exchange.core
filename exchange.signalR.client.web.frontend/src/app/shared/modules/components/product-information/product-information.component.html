@@ -2,10 +2,10 @@
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
             <mat-label>Quote Currency</mat-label>      
-            <mat-select [formControl]="quoteCurrenriesFormControl" (selectionChange)="onFilterAssets()" multiple>
-                <mat-select-trigger>{{quoteCurrenriesFormControl.value ? quoteCurrenriesFormControl.value[0] : ''}}
-                    <span *ngIf="quoteCurrenriesFormControl.value?.length > 1">
-                        (+{{quoteCurrenriesFormControl.value.length - 1}} {{quoteCurrenriesFormControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-select [formControl]="quoteCurrenciesFormControl" (selectionChange)="onFilteredProductList()" multiple>
+                <mat-select-trigger>{{quoteCurrenciesFormControl.value ? quoteCurrenciesFormControl.value[0] : ''}}
+                    <span *ngIf="quoteCurrenciesFormControl.value?.length > 1">
+                        (+{{quoteCurrenciesFormControl.value.length - 1}} {{quoteCurrenciesFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
                 </mat-select-trigger>             
                 <mat-option *ngFor="let quoteCurrency of quoteCurrencies" [value]="quoteCurrency">{{quoteCurrency}}</mat-option>
@@ -15,29 +15,28 @@
 
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
-            <mat-label>All Assets</mat-label>      
-            <mat-select [formControl]="assetListFormControl" (selectionChange)="onFilterSelectedAssets()" multiple>
-                <mat-select-trigger>{{assetListFormControl.value ? assetListFormControl.value[0] : ''}}
-                    <span *ngIf="assetListFormControl.value?.length > 1">
-                        (+{{assetListFormControl.value.length - 1}} {{assetListFormControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-label>Product List</mat-label>      
+            <mat-select [formControl]="productListFormControl" (selectionChange)="onUpdateSubscribeProductList()" multiple>
+                <mat-select-trigger>{{productListFormControl.value ? productListFormControl.value[0] : ''}}
+                    <span *ngIf="productListFormControl.value?.length > 1">
+                        (+{{productListFormControl.value.length - 1}} {{productListFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
-                </mat-select-trigger>
-                
-                <mat-option *ngFor="let asset of assetList" [value]="asset">{{asset}}</mat-option>
+                </mat-select-trigger>       
+                <mat-option *ngFor="let product of productList" [value]="product">{{product}}</mat-option>
             </mat-select>      
         </mat-form-field>
     </div>
 
     <div fxFlex="35%">
         <mat-form-field appearance="fill">
-            <mat-label>Assets</mat-label>
-            <mat-select [formControl]="currentCurrenriesFormControl" (selectionChange)="onFilterSelectedAssets()" multiple>
-                <mat-select-trigger>{{currentCurrenriesFormControl.value ? currentCurrenriesFormControl.value[0] : ''}}
-                    <span *ngIf="currentCurrenriesFormControl.value?.length > 1">
-                        (+{{currentCurrenriesFormControl.value.length - 1}} {{currentCurrenriesFormControl.value?.length === 2 ? 'other' : 'others'}})
+            <mat-label>Current Account Asset</mat-label>
+            <mat-select [formControl]="currentProductListFormControl" (selectionChange)="onUpdateSubscribeProductList()" multiple>
+                <mat-select-trigger>{{currentProductListFormControl.value ? currentProductListFormControl.value[0] : ''}}
+                    <span *ngIf="currentProductListFormControl.value?.length > 1">
+                        (+{{currentProductListFormControl.value.length - 1}} {{currentProductListFormControl.value?.length === 2 ? 'other' : 'others'}})
                     </span>
                 </mat-select-trigger>        
-                <mat-option *ngFor="let currentAsset of currentAssetList" [value]="currentAsset">{{currentAsset}}</mat-option>
+                <mat-option *ngFor="let currentAsset of currentProductList" [value]="currentAsset">{{currentAsset}}</mat-option>
             </mat-select>
         </mat-form-field>
     </div>

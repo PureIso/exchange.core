@@ -2,18 +2,27 @@ import { AppState } from "@store/app.state";
 import { NgRedux } from "@angular-redux/store";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
-import * as ExchangeUIContainerActions from "@actions/exchange-ui-container.actions";
-import * as NotificationContainerActions from "@actions/exchange-ui-container.actions";
+import { ProductInformationContainer } from "@interfaces/product-information-container.interface";
+import { AccountInformationContainer } from "@interfaces/account-information-container.interface";
 import { Price } from "@interfaces/price.interface";
-import { AccountInfo } from "@interfaces/account-info.interface";
-import { ProductInfo } from "@interfaces/product-info.interface";
+import { AccountInformation } from "@interfaces/account-information.interface";
+import { ProductInformation } from "@interfaces/product-information.interface";
 import { AssetInformation } from "@interfaces/asset-information.interface";
 import { MainCurrency } from "@interfaces/main-currency.interface";
+import { AssetInformationContainer } from "@interfaces/asset-information-container.interface";
+import * as ExchangeUIContainerActions from "@actions/exchange-ui-container.actions";
+import * as NotificationContainerActions from "@actions/exchange-ui-container.actions";
+import * as AccountInformationContainerActions from "@actions/account-information-container.actions";
+import * as ProductInformationContainerActions from "@actions/product-information-container.actions";
+import * as AssetInformationContainerActions from "@actions/asset-information-container.actions";
 
 export class HubClient {
     static redux: NgRedux<AppState>;
     static exchangeUIContainer: ExchangeUIContainer;
     static notificationContainer: NotificationContainer;
+    static accountInformationContainer: AccountInformationContainer;
+    static productInformationContainer: ProductInformationContainer;
+    static assetInformationContainer: AssetInformationContainer;
     constructor() {}
 
     setRedux(redux: NgRedux<AppState>) {
@@ -22,9 +31,17 @@ export class HubClient {
     setExchangeUIContainer(exchangeUIContainer: ExchangeUIContainer) {
         HubClient.exchangeUIContainer = exchangeUIContainer;
     }
-
     setNotificationContainer(notificationContainer: NotificationContainer) {
         HubClient.notificationContainer = notificationContainer;
+    }
+    setAccountInformationContainer(accountInformationContainer: AccountInformationContainer) {
+        HubClient.accountInformationContainer = accountInformationContainer;
+    }
+    setProductInformationContainer(productInformationContainer: ProductInformationContainer) {
+        HubClient.productInformationContainer = productInformationContainer;
+    }
+    setAssetInformationContainer(assetInformationContainer: AssetInformationContainer) {
+        HubClient.assetInformationContainer = assetInformationContainer;
     }
 
     notifyCurrentPrices(applicationName:string, priceRecords: Record<string, number>) {
@@ -45,20 +62,20 @@ export class HubClient {
         });
     }
     notifyAccountInfo(applicationName:string, accountInfo: Record<string, number>) {
-        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
-            HubClient.exchangeUIContainer
+        let accountInformationContainerActions: AccountInformationContainerActions.Actions = new AccountInformationContainerActions.CRUDAccountInformationContainer(
+            HubClient.accountInformationContainer
         );
-        let accounts: AccountInfo[] = new Array();
+        let accountInformationList: AccountInformation[] = new Array();
         let keyValuePairs = Object.keys(accountInfo);
         keyValuePairs.forEach((key) => {
             let value = accountInfo[key];
-            let account: AccountInfo = {applicationName: applicationName, asset: key, balance: value };
-            accounts.push(account);
+            let account: AccountInformation = {applicationName: applicationName, asset: key, balance: value };
+            accountInformationList.push(account);
         });
-        exchangeUIContainerActions.updateAccountInfo(accounts);
+        accountInformationContainerActions.updateAccountInformation(accountInformationList);
         HubClient.redux.dispatch({
-            type: exchangeUIContainerActions.type,
-            payload: exchangeUIContainerActions.payload,
+            type: accountInformationContainerActions.type,
+            payload: accountInformationContainerActions.payload,
         });
     }
     notifyInformation(applicationName:string, messageType: MessageType, message: string) {
@@ -88,8 +105,8 @@ export class HubClient {
         });
     }
     notifyAssetInformation(applicationName:string,assetInformation: Record<string, AssetInformation>){
-        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
-            HubClient.exchangeUIContainer
+        let assetInformationContainerActions: AssetInformationContainerActions.Actions = new AssetInformationContainerActions.CRUDAssetInformationContainer(
+            HubClient.assetInformationContainer
         );
         let assets: AssetInformation[] = new Array();
         let keyValuePairs = Object.keys(assetInformation);
@@ -100,33 +117,33 @@ export class HubClient {
             asset.application_name = applicationName;
             assets.push(asset);
         });
-        exchangeUIContainerActions.updateAssetInformation(assets);
+        assetInformationContainerActions.updateAssetInformation(assets);
         HubClient.redux.dispatch({
-            type: exchangeUIContainerActions.type,
-            payload: exchangeUIContainerActions.payload,
+            type: assetInformationContainerActions.type,
+            payload: assetInformationContainerActions.payload,
         });
     }
-    notifyProductChange(applicationName:string, productInfoList: ProductInfo[]){
-        let exchangeUIContainerActions: ExchangeUIContainerActions.Actions = new ExchangeUIContainerActions.CRUDExchangeUIContainer(
-            HubClient.exchangeUIContainer
+    notifyProductChange(applicationName:string, productInfoList: ProductInformation[]){
+        let productInformationContainerActions: ProductInformationContainerActions.Actions = new ProductInformationContainerActions.CRUDProductInformationContainer(
+            HubClient.productInformationContainer
         );
         //map
-        let productInfo: ProductInfo[] = productInfoList.map((productInfo: ProductInfo) => {
-            let product: ProductInfo = {
+        let productInformationList: ProductInformation[] = productInfoList.map((productInformation: ProductInformation) => {
+            let product: ProductInformation = {
                 application_name: applicationName,
-                id: productInfo.id,
-                base_currency: productInfo.base_currency,
-                base_max_size: productInfo.base_max_size,
-                base_min_size: productInfo.base_min_size,
-                quote_currency: productInfo.quote_currency,
-                quote_increment: productInfo.quote_increment
+                id: productInformation.id,
+                base_currency: productInformation.base_currency,
+                base_max_size: productInformation.base_max_size,
+                base_min_size: productInformation.base_min_size,
+                quote_currency: productInformation.quote_currency,
+                quote_increment: productInformation.quote_increment
             };
             return product;
         });
-        exchangeUIContainerActions.updateProductInfo(productInfo);
+        productInformationContainerActions.updateProductInformation(productInformationList);
         HubClient.redux.dispatch({
-            type: exchangeUIContainerActions.type,
-            payload: exchangeUIContainerActions.payload,
+            type: productInformationContainerActions.type,
+            payload: productInformationContainerActions.payload,
         });
     }
 }

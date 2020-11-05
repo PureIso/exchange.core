@@ -7,6 +7,9 @@ import { AppState } from "@store/app.state";
 import { HubClient } from "./hub.client";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
 import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface";
+import { AccountInformationContainer } from "@interfaces/account-information-container.interface";
+import { ProductInformationContainer } from "@interfaces/product-information-container.interface";
+import { AssetInformationContainer } from "@interfaces/asset-information-container.interface";
 import * as NotificationContainerActions from "@actions/notification-container.actions";
 
 //Interface to the business layer
@@ -24,6 +27,12 @@ export class MainService extends HubClient {
     notificationContainer: NotificationContainer;
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
+    @select("accountInformationContainer") accountInformationContainer$: Observable<AccountInformationContainer>;
+    accountInformationContainer: AccountInformationContainer;
+    @select("productInformationContainer") productInformationContainer$: Observable<ProductInformationContainer>;
+    productInformationContainer: ProductInformationContainer;
+    @select("assetInformationContainer") assetInformationContainer$: Observable<AssetInformationContainer>;
+    assetInformationContainer: AssetInformationContainer;
 
     constructor(private config: AppConfig, private ngRedux: NgRedux<AppState>) {
         super();
@@ -59,6 +68,18 @@ export class MainService extends HubClient {
         this.exchangeUIContainer$.subscribe((x: ExchangeUIContainer) => {
             this.exchangeUIContainer = x;
             super.setExchangeUIContainer(x);
+        });
+        this.accountInformationContainer$.subscribe((x: AccountInformationContainer) => {
+            this.accountInformationContainer = x;
+            super.setAccountInformationContainer(x);
+        });
+        this.productInformationContainer$.subscribe((x: ProductInformationContainer) => {
+            this.productInformationContainer = x;
+            super.setProductInformationContainer(x);
+        });
+        this.assetInformationContainer$.subscribe((x: AssetInformationContainer) => {
+            this.assetInformationContainer = x;
+            super.setAssetInformationContainer(x);
         });
     }
 

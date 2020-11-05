@@ -20,14 +20,12 @@ export class DashboardComponent implements OnInit {
     notificationContainer: NotificationContainer;
     @select("exchangeUIContainer") exchangeUIContainer$: Observable<ExchangeUIContainer>;
     exchangeUIContainer: ExchangeUIContainer;
-   
 
     /**
      * DashboardComponent - Constructor call on initialisation
      * @param router - Router to help us navigate to different pages
      */
-    constructor(private router: Router, private mainService: MainService) {
-        
+    constructor(private router: Router, private mainService: MainService) {       
     }
     /**
      * Function called after the constructor and initial ngOnChanges()
@@ -42,13 +40,10 @@ export class DashboardComponent implements OnInit {
     }
     ngAfterViewInit() {
     }
-
     onAccountInformationRefresh(){
         this.mainService.hub_requestedAccountInfo();
     }
     onCurrentPricesRefresh(){
         this.mainService.hub_requestedCurrentPrices();
     }
-
-    
 }
