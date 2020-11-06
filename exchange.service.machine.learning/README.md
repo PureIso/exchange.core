@@ -5,6 +5,11 @@ Sequential Data \
 Recurrent Neural Network (RNN - layer) \
 Long Short Term Memory (LSTM - cells)
 
+## Solutions
+
+- [Frontend Solution](exchange.signalR.client.web.frontend/README.md#section)
+- [Backend Solution](exchange.service/README.md#section)
+
 ## Prerequisites
 
 Make sure that you have:

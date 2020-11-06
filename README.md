@@ -1,14 +1,17 @@
 # exchange.core
 
-**Build status**
-**master**:
+## Build status
+
+**Master Branch**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=master)](https://travis-ci.org/PureIso/exchange.core)
-**development**:
+
+**Development Branch**:
 [![Build Status](https://travis-ci.org/PureIso/exchange.core.svg?branch=development)](https://travis-ci.org/PureIso/exchange.core)
+
 
 **Version: 1.0.0**
 
-Cryptocurrency exchange API
+Cryptocurrency Exchange API
 
 System will connect to various exchanges for real-time trade information.\
 System will record trading information to be later used for supervised machine learning.\
@@ -84,6 +87,8 @@ The following development process seems to work well for this project.
 
 ## Technologies
 
+**[Frontend Solution](exchange.signalR.client.web.frontend/README.md#section)**
+
 - [Angular](https://angular.io/) - (Framework - Frontend)
 - [TypeScript](https://www.typescriptlang.org/) - (Language - Frontend)
 - [Webpack](https://webpack.js.org/) - (Bundler)
@@ -93,42 +98,26 @@ The following development process seems to work well for this project.
 - [Rxjs](https://github.com/ReactiveX/rxjs) - Reactive library for handling asynchronous data calls, callbacks and event-based programs
 - [Sass](http://sass-lang.com/)
 - [Angular Material](https://material.angular.io/) - UI component Library
-- [Font Awesome](https://fontawesome.com/)
+
+**[Backend Solution](exchange.service/README.md#section)**
+
 - [.Net 5 C#](https://devblogs.microsoft.com/dotnet/announcing-net-5-0-preview-1/) - (Language - Backend)
 - [AspNetCore SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-5.0) - (Real-Time web functionality library)
+
+**[Machine Learning Solution](exchange.service.machine.learning/README.md#section)**
+
 - [Python 3](https://www.python.org/) - (Language - Backend/Machine Learning)
 - [Keras](https://keras.io/) - (Dead Learning Library)
 - [Tensorflow](https://www.tensorflow.org/) - (Artificial Intelligence Library)
 - [Flask](https://flask.palletsprojects.com/en/1.1.x/) - (MicroWeb Framework)
 - [Celery](http://www.celeryproject.org/) - (Distributed Task Queue)
 - [RabbitMQ](https://www.rabbitmq.com/) - (Message Broker)
+
+**Database**
 - [MongoDB](https://www.mongodb.com/) - (Database Engine)
+
+**Centralized Logging**
 - [GrayLog](https://www.graylog.org/) - (Centralized Log Management)
-
-## Configuration
-
-Open exchange.service/appsettings[Environment].json change the -> "ExchangeSettings" in order to connect to exchange API.
-
-Service setting to determine what API endpoints to use
-
-```json
-"ExchangeSettings": {
-    "TestMode": true
-  }
-```
-
-```ini
-test_uri=wss://ws-feed-public.sandbox.pro.coinbase.com
-test_key=
-test_passphrase=
-test_secret=
-test_endpoint=https://api-public.sandbox.pro.coinbase.com
-live_uri=wss://ws-feed.pro.coinbase.com
-live_key=
-live_passphrase=
-live_secret=
-live_endpoint=https://api.pro.coinbase.com
-```
 
 ## Setup - Visual Studios and Visual Studio Code
 

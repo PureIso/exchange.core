@@ -2,6 +2,12 @@
 
 [Angular API](https://angular.io/api)
 
+
+## Solutions
+
+- [Backend Solution](exchange.service/README.md#section)
+- [Machine Learning Solution](exchange.service.machine.learning/README.md#section)
+
 ## Prerequisites
 
 Node.js and npm are essential to Angular development.
