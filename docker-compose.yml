@@ -63,16 +63,19 @@ volumes:
             type: 'none'
 
 services:
-    # nginx: 
-    #     image: nginx:latest
-    #     container_name: nginx
-    #     volumes:
-    #       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-    #     ports:
-    #       - 80:80
-    #       - 443:443
-    #     networks:
-    #         bridge:
+    nginx.reverse.proxy: 
+        image: nginx:latest
+        container_name: nginx.reverse.proxy
+        volumes:
+          - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+        ports:
+          - 80:80
+        links:
+            - frontend
+        volumes_from:
+            - frontend
+        networks:
+            bridge:
 
     # mongo Database
     service.mongodb:
