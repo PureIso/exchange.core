@@ -76,5 +76,16 @@ namespace exchange.core.implementations
                 await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.Products);
         }
+        public async Task RequestedFills(string applicationName, string symbol)
+        {
+            _logger.LogInformation($"ExchangeHubService RequestedFills request to all clients notification.");
+            AbstractExchangePlugin abstractExchangePlugin =
+                _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
+            if (abstractExchangePlugin == null)
+                return;
+            Product product = new Product {ID = symbol};
+            List<Fill> fills = await abstractExchangePlugin.UpdateFillsAsync(product);
+            await Clients.All.NotifyFills(abstractExchangePlugin.ApplicationName, fills);
+        }
     }
 }

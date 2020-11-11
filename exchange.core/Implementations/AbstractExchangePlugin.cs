@@ -30,6 +30,7 @@ namespace exchange.core.implementations
         public virtual Dictionary<string, decimal> AccountInfo { get; set; }
         public virtual Dictionary<string, Statistics> Statistics { get; set; }
         public virtual Feed CurrentFeed { get; set; }
+        public virtual List<Fill> Fills { get; set; }
         public virtual Authentication Authentication { get; set; }
         public virtual ClientWebSocket ClientWebSocket { get; set; }
         public virtual ConnectionAdapter ConnectionAdapter { get; set; }
@@ -74,6 +75,11 @@ namespace exchange.core.implementations
             Products = null;
             // Suppress finalization.
             GC.SuppressFinalize(this);
+        }
+
+        public virtual Task<List<Fill>> UpdateFillsAsync(Product product)
+        {
+            throw new NotImplementedException();
         }
         public virtual Task<bool> InitAsync(IExchangeSettings exchangeSettings)
         {

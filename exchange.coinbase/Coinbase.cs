@@ -32,7 +32,6 @@ namespace exchange.coinbase
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
-        public List<Fill> Fills { get; set; }
         public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
@@ -453,7 +452,7 @@ namespace exchange.coinbase
 
             return Tickers;
         }
-        public async Task<List<Fill>> UpdateFillsAsync(Product product)
+        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             string json = null;
             try
@@ -649,6 +648,7 @@ namespace exchange.coinbase
                 Statistics = new Dictionary<string, Statistics>();
                 AssetInformation = new Dictionary<string, AssetInformation>();
                 RelativeStrengthIndices = new List<RelativeStrengthIndex>();
+                Fills = new List<Fill>();
                 TestMode = exchangeSettings.TestMode;
                 IndicatorSaveDataPath = exchangeSettings.IndicatorDirectoryPath;
                 INIFilePath = exchangeSettings.INIDirectoryPath;

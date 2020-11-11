@@ -15,7 +15,6 @@ namespace exchange.core.interfaces
 
         #endregion
 
-
         #region Methods
 
         void AddPluginFromFolder(string folderPath);

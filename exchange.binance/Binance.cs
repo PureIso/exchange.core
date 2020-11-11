@@ -35,7 +35,6 @@ namespace exchange.binance
         public BinanceAccount BinanceAccount { get; set; }
         public ExchangeInfo ExchangeInfo { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
-        public List<Fill> Fills { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
         public List<BinanceOrder> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
@@ -442,7 +441,7 @@ namespace exchange.binance
 
             return Tickers;
         }
-        public async Task<List<BinanceFill>> UpdateFillsAsync(Product product)
+        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             try
             {
@@ -466,8 +465,24 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
+            Fills ??= new List<Fill>();
+            if (BinanceFill == null) 
+                return Fills;
+            DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            Fills = BinanceFill.Select(binanceFill => new Fill
+            {
+                Size = binanceFill.Quantity,
+                Side = binanceFill.IsBuyer ? OrderSide.Buy.ToString() : OrderSide.Sell.ToString(),
+                OrderID = binanceFill.TradeID.ToString(),
+                Price = binanceFill.Price,
+                Fee = binanceFill.Commission,
+                ProductID = binanceFill.ID,
+                Settled = true,
+                Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
+                TradeID = binanceFill.TradeID
+            }).ToList();
 
-            return BinanceFill;
+            return Fills;
         }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 20)
         {
@@ -652,6 +667,7 @@ namespace exchange.binance
                 Statistics = new Dictionary<string, Statistics>();
                 AssetInformation = new Dictionary<string, AssetInformation>();
                 RelativeStrengthIndices = new List<RelativeStrengthIndex>();
+                Fills = new List<Fill>();
                 TestMode = exchangeSettings.TestMode;
                 IndicatorSaveDataPath = exchangeSettings.IndicatorDirectoryPath;
                 INIFilePath = exchangeSettings.INIDirectoryPath;
