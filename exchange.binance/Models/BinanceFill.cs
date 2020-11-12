@@ -14,7 +14,7 @@ namespace exchange.binance.models
 
         [JsonPropertyName("price")] public string Price { get; set; }
 
-        [JsonPropertyName("qty")] public string Quality { get; set; }
+        [JsonPropertyName("qty")] public string Quantity { get; set; }
 
         [JsonPropertyName("quoteQty")] public string QuoteQuality { get; set; }
 

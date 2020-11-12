@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.indicators;
 using exchange.core.interfaces;
 using exchange.core.models;
@@ -19,6 +19,7 @@ namespace exchange.core.implementations
         public virtual Func<string, Dictionary<string, decimal>, Task> NotifyCurrentPrices { get; set; }
         public virtual Func<string, Dictionary<string, AssetInformation>, Task> NotifyAssetInformation { get; set; }
         public virtual Func<string, string, Task> NotifyMainCurrency { get; set; }
+        public virtual Func<string, List<Fill>, Task> NotifyFills { get; set; }
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 

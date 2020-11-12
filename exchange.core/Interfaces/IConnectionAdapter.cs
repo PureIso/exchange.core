@@ -2,7 +2,7 @@
 using System.Net.Http;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.implementations;
 
 namespace exchange.core.interfaces

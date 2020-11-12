@@ -1,8 +1,6 @@
-﻿
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,7 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase.models;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.indicators;
@@ -462,6 +460,7 @@ namespace exchange.coinbase
                 json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     Fills = JsonSerializer.Deserialize<List<Fill>>(json);
+                NotifyFills?.Invoke(ApplicationName, Fills);
             }
             catch (Exception e)
             {

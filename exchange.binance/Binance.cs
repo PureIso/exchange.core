@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance.models;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.indicators;
@@ -218,8 +218,6 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                    "[Binance] Updating Account Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/account?")
                 {
@@ -293,7 +291,6 @@ namespace exchange.binance
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Orders Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 if (product != null)
                 {
@@ -319,7 +316,6 @@ namespace exchange.binance
             BinanceOrder binanceOrder = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "[Binance] Post Order Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST",
                     "/api/v3/order?");
@@ -348,7 +344,6 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Cancelling order.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "DELETE",
@@ -376,7 +371,6 @@ namespace exchange.binance
             List<BinanceOrder> binanceOrders = new List<BinanceOrder>();
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Cancelling order.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request =
                     new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE", "/api/v3/openOrders?")
@@ -387,8 +381,6 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     binanceOrders = JsonSerializer.Deserialize<BinanceOrder[]>(json).ToList();
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"CancelOrdersAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
@@ -402,8 +394,6 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                    "Updating Update Tickers Information.");
                 if (products == null || !products.Any())
                     return Tickers;
                 Tickers ??= new List<Ticker>();
@@ -422,7 +412,6 @@ namespace exchange.binance
                     ticker.ProductID = product.ID;
                     Tickers.Add(ticker);
                 }
-
                 foreach (Ticker ticker in Tickers)
                 {
                     if (!decimal.TryParse(ticker.Price, out decimal decimalPrice)) 
@@ -445,7 +434,6 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Updating Fills Information.");
                 ServerTime serverTime = await UpdateTimeServerAsync();
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
                     "GET",
@@ -457,31 +445,30 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"UpdateAccountsAsync JSON:\r\n{json}");
+
+                Fills ??= new List<Fill>();
+                if (BinanceFill == null)
+                    return Fills;
+                DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                Fills = BinanceFill.Select(binanceFill => new Fill
+                {
+                    Size = binanceFill.Quantity,
+                    Side = binanceFill.IsBuyer ? OrderSide.Buy.ToString() : OrderSide.Sell.ToString(),
+                    OrderID = binanceFill.TradeID.ToString(),
+                    Price = binanceFill.Price,
+                    Fee = binanceFill.Commission,
+                    ProductID = binanceFill.ID,
+                    Settled = true,
+                    Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
+                    TradeID = binanceFill.TradeID
+                }).ToList();
+                NotifyFills?.Invoke(ApplicationName, Fills);
             }
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
-            Fills ??= new List<Fill>();
-            if (BinanceFill == null) 
-                return Fills;
-            DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            Fills = BinanceFill.Select(binanceFill => new Fill
-            {
-                Size = binanceFill.Quantity,
-                Side = binanceFill.IsBuyer ? OrderSide.Buy.ToString() : OrderSide.Sell.ToString(),
-                OrderID = binanceFill.TradeID.ToString(),
-                Price = binanceFill.Price,
-                Fee = binanceFill.Commission,
-                ProductID = binanceFill.ID,
-                Settled = true,
-                Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
-                TradeID = binanceFill.TradeID
-            }).ToList();
-
             return Fills;
         }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 20)

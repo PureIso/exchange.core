@@ -1,9 +1,8 @@
 using System;
-using System.Collections;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.implementations;
 using exchange.core.interfaces;
 using Microsoft.Extensions.Hosting;
@@ -42,6 +41,7 @@ namespace exchange.service
                     abstractExchangePlugin.NotifyCurrentPrices += _exchangeService.DelegateNotifyCurrentPrices;
                     abstractExchangePlugin.NotifyMainCurrency += _exchangeService.DelegateNotifyMainCurrency;
                     abstractExchangePlugin.NotifyAssetInformation += _exchangeService.DelegateNotifyAssetInformation;
+                    abstractExchangePlugin.NotifyFills += _exchangeService.DelegateNotifyFills;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings);
                     if (!result) continue;

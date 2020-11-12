@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using exchange.binance;
 using exchange.binance.models;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.models;

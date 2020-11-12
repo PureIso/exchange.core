@@ -6,7 +6,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using exchange.coinbase;
-using exchange.core.Enums;
+using exchange.core.enums;
 using exchange.core.helpers;
 using exchange.core.implementations;
 using exchange.core.models;

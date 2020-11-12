@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using exchange.core.Enums;
+using exchange.core.enums;
 
 namespace exchange.core.models
 {

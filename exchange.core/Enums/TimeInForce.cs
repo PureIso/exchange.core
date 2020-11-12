@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using exchange.core.helpers;
 
-namespace exchange.core.Enums
+namespace exchange.core.enums
 {
     [Flags]
     [JsonConverter(typeof(JsonStringEnumConverter))]
