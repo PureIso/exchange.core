@@ -29,6 +29,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatSelectModule } from '@angular/material/select';
 import { AccountInformationTableComponent } from "./components/account-information-table/account-information-table.component";
 import { MatTableModule } from "@angular/material/table";
+import { FillsComponent } from "./components/fills/fills.component";
 
 
 @NgModule({
@@ -51,6 +52,7 @@ import { MatTableModule } from "@angular/material/table";
         CommonModule,
         BrowserAnimationsModule,
         NotificationComponent,
+        FillsComponent,
         PriceCardComponent,
         AccountInformationComponent,
         ProductInformationComponent,
@@ -61,6 +63,6 @@ import { MatTableModule } from "@angular/material/table";
         MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule,MatSliderModule
     ],
     providers: [MatDatepickerModule],
-    declarations: [NotificationComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
+    declarations: [NotificationComponent, FillsComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
 })
 export class SharedModule {}

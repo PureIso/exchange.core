@@ -5,12 +5,16 @@ import { exchangeUIContainerReducer } from "./exchange-ui-container.reducer";
 import { productInformationContainerReducer } from "./product-information-container.reducer";
 import { accountInformationContainerReducer } from "./account-information-container.reducer";
 import { assetInformationContainerReducer } from "./asset-information-container.reducer";
+import { fillsContainerReducer } from "./fills-container.reducer";
+import { displayContainerReducer } from "./display-container.reducer";
 
 export const combinedReducers = combineReducers<AppState>({
 	notificationContainer: notificationContainerReducer,
 	exchangeUIContainer: exchangeUIContainerReducer,
 	productInformationContainer: productInformationContainerReducer,
 	accountInformationContainer: accountInformationContainerReducer,
-	assetInformationContainer: assetInformationContainerReducer
+	assetInformationContainer: assetInformationContainerReducer,
+	fillsContainer: fillsContainerReducer,
+	displayContainer: displayContainerReducer
 });
 export const store = createStore(combinedReducers, INITIALSTATE);
