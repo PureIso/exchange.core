@@ -80,13 +80,14 @@ namespace exchange.service
             return base.StopAsync(cancellationToken);
         }
 
-        public override void Dispose()
+        public override async void Dispose()
         {
             _logger.LogInformation($"Worker disposed at: {DateTime.Now}");
             if (_exchangePluginService.PluginExchanges != null && _exchangePluginService.PluginExchanges.Any())
                 for (int i = _exchangePluginService.PluginExchanges.Count - 1; i >= 0; i--)
                 {
                     AbstractExchangePlugin abstractExchangePlugin = _exchangePluginService.PluginExchanges[i];
+                    await abstractExchangePlugin.CloseFeed();
                     abstractExchangePlugin.Dispose();
                 }
 
