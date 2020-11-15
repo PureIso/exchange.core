@@ -202,8 +202,9 @@ services:
             bridge:
         
     #machine learning web application
-    service.machine.learning:
-        container_name: service.machine.learning
+    machinelearning:
+        container_name: machinelearning
+        hostname: machinelearning
         build: 
             context: .
             dockerfile: ./docker/service.machine.learning/Dockerfile    

@@ -29,7 +29,7 @@ class Exchange():
             print(self.root_dir)
             # Load file from the path.
             load_dotenv(self.root_dir)
-            self.celery = Celery('exchange.machine.learning')
+            self.celery = Celery('machinelearning')
             self.config = Config()
             self.mi_host = os.getenv("MI_HOST")
             self.mi_port = os.getenv("MI_PORT")
