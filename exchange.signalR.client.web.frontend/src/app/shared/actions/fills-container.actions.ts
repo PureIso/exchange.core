@@ -16,11 +16,11 @@ export class CRUDFillsContainer implements Action {
             currentFill.application_name === fill.application_name;
         });
     }
-    private sort(date1:Date,date2:Date):number {
+    private reverse_sort(date1:Date,date2:Date):number {
         if (date1 === date2) {
             return 0;
         }
-        return (date1 > date2) ? 1 : -1
+        return (date1 > date2) ? -1 : 1
     }
     updateFills(newFills: Fill[]) {
         newFills.forEach((fill: Fill) => {
@@ -33,7 +33,7 @@ export class CRUDFillsContainer implements Action {
         });
         //sort
         this.payload.fills.sort((fill1:Fill, fill2:Fill) => {
-            return this.sort(fill1.created_at,fill2.created_at);
+            return this.reverse_sort(fill1.created_at,fill2.created_at);
         });
     }
 }

@@ -29,6 +29,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatSelectModule } from '@angular/material/select';
 import { AccountInformationTableComponent } from "./components/account-information-table/account-information-table.component";
 import { MatTableModule } from "@angular/material/table";
+import { MatPaginatorModule } from '@angular/material/paginator'; 
 import { FillsComponent } from "./components/fills/fills.component";
 
 
@@ -42,7 +43,7 @@ import { FillsComponent } from "./components/fills/fills.component";
         MatExpansionModule,
         BrowserAnimationsModule,
         MatNativeDateModule ,
-        ReactiveFormsModule,
+        ReactiveFormsModule,MatPaginatorModule,
         MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,
         MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
         MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule,MatSliderModule
@@ -57,7 +58,7 @@ import { FillsComponent } from "./components/fills/fills.component";
         AccountInformationComponent,
         ProductInformationComponent,
         AccountInformationTableComponent,
-        MatNativeDateModule ,
+        MatNativeDateModule , MatPaginatorModule,
         MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,
         MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
         MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule,MatSliderModule

@@ -1,0 +1,40 @@
+<div fxLayout="column">
+    <div>
+        <table mat-table [dataSource]="dataSource" class="mat-elevation-z8" fxFlex="100%" multiTemplateDataRows #table1>
+            <!-- Position Column -->
+            <ng-container matColumnDef="side">
+                <th mat-header-cell *matHeaderCellDef> Side </th>
+                <td mat-cell *matCellDef="let element" 
+                [ngClass]="element.side == 'buy' ? 'green': 'red'"> {{element.side}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="size">
+                <th mat-header-cell *matHeaderCellDef> Size </th>
+                <td mat-cell *matCellDef="let element"> {{element.size}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="price">
+                <th mat-header-cell *matHeaderCellDef> Price </th>
+                <td mat-cell *matCellDef="let element"> {{element.price}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="fee">
+                <th mat-header-cell *matHeaderCellDef> Fee </th>
+                <td mat-cell *matCellDef="let element"> {{element.fee}} </td>
+            </ng-container>
+            
+            <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef> Created At </th>
+                <td mat-cell *matCellDef="let element"> {{element.created_at}} </td>
+            </ng-container>
+            
+            <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+            <tr mat-row *matRowDef="let row; columns: columnsToDisplay" class="example-detail-row"></tr>
+            
+            </table>
+    </div>
+    <div>
+        <mat-paginator class="mat-elevation-z8" fxFlex="100%" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+    </div>
+  </div>
+
