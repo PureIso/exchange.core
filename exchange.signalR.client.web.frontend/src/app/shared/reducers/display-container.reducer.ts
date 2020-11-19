@@ -2,7 +2,7 @@ import * as DisplayContainerActions from "@actions/display-container.actions";
 import { DisplayContainer } from "@interfaces/display-container.interface";
 
 export const initialState: DisplayContainer = {
-    display: { showFillsView: false},
+    display: { showFillsView: false, showProductTradeView: false},
     selected_product_id: undefined,
     application_name: undefined,
 };

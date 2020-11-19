@@ -1,0 +1,104 @@
+<div fxLayout="column mat-elevation-z8" fxFlex="50%">
+    <mat-tab-group dynamicHeight>
+
+        <mat-tab label="Buy" class="green-background">
+            <mat-card class="example-card">
+                <mat-card-header>
+                  <div mat-card-avatar class="example-header-image"></div>
+                  <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
+                  <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
+                </mat-card-header>
+
+                <mat-card-content>
+                    <div class="row">
+                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">AutoTrade</mat-checkbox>
+                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">Profit Trades Only</mat-checkbox>
+                    </div>
+                    <div class="row">
+                        <div fxFlex="50%">
+                            <mat-form-field appearance="outline" style="width:50%">
+                                <mat-label>Buy Amount: {{ displayContainer.selected_product_id }}</mat-label>
+                                <input matInput placeholder="Placeholder">
+                            </mat-form-field>
+                            <br>
+                            <button mat-raised-button class="green-background" style="width:50%">Max Amount</button>
+                        </div>
+                        <div fxFlex="50%">
+                            <mat-form-field appearance="outline" style="width:50%">
+                                <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
+                                <input matInput placeholder="Placeholder">
+                            </mat-form-field>
+                            <br>
+                            <button mat-raised-button class="green-background" style="width:50%">Max Amount Limit</button>
+                        </div>
+                    </div>
+                </mat-card-content>
+
+                <mat-card-actions>
+                    <div class="row">
+                        <div fxFlex="100%">
+                            <button mat-raised-button class="green-background" style="width:100%">Buy</button>
+                        </div>
+                    </div>
+                </mat-card-actions>
+
+            </mat-card>     
+        </mat-tab>
+
+        <mat-tab label="Buy Information" class="red-background">
+
+        </mat-tab>
+    </mat-tab-group>
+</div>
+
+<div fxLayout="column mat-elevation-z8" fxFlex="50%">
+    <mat-tab-group dynamicHeight>
+
+        <mat-tab label="Sell" class="red-background">
+            <mat-card class="example-card">
+                <mat-card-header>
+                  <div mat-card-avatar class="example-header-image"></div>
+                  <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
+                  <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
+                </mat-card-header>
+
+                <mat-card-content>
+                    <div class="row">
+                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">AutoTrade</mat-checkbox>
+                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">Profit Trades Only</mat-checkbox>
+                    </div>
+                    <div class="row">
+                        <div fxFlex="50%">
+                            <mat-form-field appearance="outline" style="width:50%">
+                                <mat-label>Buy Amount: {{ displayContainer.selected_product_id }}</mat-label>
+                                <input matInput placeholder="Placeholder">
+                            </mat-form-field>
+                            <br>
+                            <button mat-raised-button class="red-background" style="width:50%">Max Amount</button>
+                        </div>
+                        <div fxFlex="50%">
+                            <mat-form-field appearance="outline" style="width:50%">
+                                <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
+                                <input matInput placeholder="Placeholder">
+                            </mat-form-field>
+                            <br>
+                            <button mat-raised-button class="red-background" style="width:50%">Max Amount Limit</button>
+                        </div>
+                    </div>
+                </mat-card-content>
+
+                <mat-card-actions>
+                    <div class="row">
+                        <div fxFlex="100%">
+                            <button mat-raised-button class="red-background" style="width:100%">Buy</button>
+                        </div>
+                    </div>
+                </mat-card-actions>
+
+            </mat-card>     
+        </mat-tab>
+
+        <mat-tab label="Sell Information" class="red-background">
+        </mat-tab>
+    </mat-tab-group>
+</div>

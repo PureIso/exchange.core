@@ -27,11 +27,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatSelectModule } from '@angular/material/select';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { AccountInformationTableComponent } from "./components/account-information-table/account-information-table.component";
 import { MatTableModule } from "@angular/material/table";
 import { MatPaginatorModule } from '@angular/material/paginator'; 
 import { FillsComponent } from "./components/fills/fills.component";
-
+import { ProductTradeComponent } from "./components/product-trade/product-trade.component";
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @NgModule({
     imports: [
@@ -43,9 +46,9 @@ import { FillsComponent } from "./components/fills/fills.component";
         MatExpansionModule,
         BrowserAnimationsModule,
         MatNativeDateModule ,
-        ReactiveFormsModule,MatPaginatorModule,
-        MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,
-        MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
+        ReactiveFormsModule,MatPaginatorModule,MatTabsModule,
+        MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,MatCheckboxModule,
+        MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,MatButtonToggleModule,
         MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule,MatSliderModule
     ],
     exports: [
@@ -54,16 +57,19 @@ import { FillsComponent } from "./components/fills/fills.component";
         BrowserAnimationsModule,
         NotificationComponent,
         FillsComponent,
+        ProductTradeComponent,
         PriceCardComponent,
         AccountInformationComponent,
         ProductInformationComponent,
         AccountInformationTableComponent,
-        MatNativeDateModule , MatPaginatorModule,
-        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,
-        MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,
+        MatNativeDateModule , MatPaginatorModule,MatTabsModule,
+        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,MatButtonToggleModule,
+        MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,MatCheckboxModule,
         MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule,MatSliderModule
     ],
     providers: [MatDatepickerModule],
-    declarations: [NotificationComponent, FillsComponent, PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
+    declarations: [
+        NotificationComponent, FillsComponent, ProductTradeComponent, 
+        PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
 })
 export class SharedModule {}
