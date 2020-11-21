@@ -12,7 +12,7 @@ export class CRUDDisplayContainer implements Action {
     }
     updateDisplayState(display: Display, productId: string, application: string) {
         this.payload.display = display;
-        if(display.showFillsView){
+        if(display.showProductTradeView || display.showFillsView){
             this.payload.selected_product_id = productId;
             this.payload.application_name = application;
         }else{
