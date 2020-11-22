@@ -26,10 +26,19 @@
     
       <div class="content" fxLayout="row wrap">
         <div fxFlex="50%" *ngFor="let applicationName of exchangeUIContainer.applicationNames">
-          <account-information-table-component [applicationName]="applicationName">Loading account-information-table-component</account-information-table-component>
+            <account-information-table-component [applicationName]="applicationName">Loading account-information-table-component</account-information-table-component>
+        </div>  
+        
+        <div fxFlex="100%" *ngIf="displayContainer.display.showFillsView">
+          <fills-component [applicationName]="displayContainer.application_name">Loading fills-component</fills-component>
         </div>
+
+        <div fxFlex="100%" *ngIf="displayContainer.display.showProductTradeView">
+          <product-trade-component [applicationName]="displayContainer.application_name">Loading product-trade-component</product-trade-component>
+        </div>
+  
       </div>
-      
+
     </mat-sidenav-content>
   
   </mat-sidenav-container>
