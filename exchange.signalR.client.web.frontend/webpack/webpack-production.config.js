@@ -3,16 +3,15 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const CleanWebpackPlugin = require("clean-webpack-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const buildPath = path.resolve(__dirname, "../build/");
 const tsconfigFile = path.join(__dirname, "../tsconfig.json");
-const buildRoot = path.resolve(__dirname, "../build/");
 
 //The directory path that should be cleaned on build
 let pathToClean = ["build"];
 let cleanOptions = {
-    root: buildRoot,
+    root: buildPath,
     verbose: true,
     dry: false
 };
@@ -68,7 +67,6 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            minimize: true,
                             sourceMap: true
                         }
                     },]
@@ -81,14 +79,14 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            minimize: true,
+                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "sass-loader",
                         options: {
-                            minimize: true,
+                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -101,14 +99,14 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            minimize: true,
+                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "less-loader",
                         options: {
-                            minimize: true,
+                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -144,7 +142,8 @@ module.exports = {
         ]
     },
     optimization: {
-        noEmitOnErrors: true
+        noEmitOnErrors: true,
+        splitChunks: { chunks: "all" }
     },
     plugins: [
         new HtmlWebpackPlugin({
@@ -158,16 +157,18 @@ module.exports = {
             filename: "css/[name].css",
             chunkFilename: "css/[id].css"
         }),
-        new CopyWebpackPlugin([
-            { from: "**/*.jpg", to: "img/[name].[ext]" },
-            { from: "**/*.ico", to: "img/[name].[ext]" },
-            { from: '**/src/electron/*', to: '[name].[ext]' }
-        ]),
+        new CopyWebpackPlugin({
+            patterns:[
+                { from: "**/*.jpg", to: "img/[name].[ext]" },
+                { from: "**/*.ico", to: "img/[name].[ext]" },
+                { from: '**/src/electron/*', to: '[name].[ext]' }
+            ],
+        }),
         new webpack.HashedModuleIdsPlugin(), // so that file hashes don't change unexpectedly
         new webpack.ContextReplacementPlugin(
             /\@angular(\\|\/)core(\\|\/)fesm5/,
             path.resolve(__dirname, "../src")
         ),
-        new CleanWebpackPlugin(pathToClean, cleanOptions)
+        new CleanWebpackPlugin(cleanOptions)
     ]
 };
