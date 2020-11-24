@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using exchange.core.enums;
+using exchange.core.models;
 
 namespace exchange.binance.models
 {
@@ -22,7 +23,6 @@ namespace exchange.binance.models
         [JsonPropertyName("transactTime")] public long TransactTime { get; set; }
         [JsonPropertyName("side")] public OrderSide OrderSide { get; set; }
         [JsonPropertyName("type")] public OrderType OrderType { get; set; }
-        public decimal OrderSize { get; set; }
-        public decimal LimitPrice { get; set; }
+        [JsonPropertyName("fills")] public Fill[] Fills { get; set; }
     }
 }

@@ -20,6 +20,7 @@ namespace exchange.core.implementations
         public virtual Func<string, Dictionary<string, AssetInformation>, Task> NotifyAssetInformation { get; set; }
         public virtual Func<string, string, Task> NotifyMainCurrency { get; set; }
         public virtual Func<string, List<Fill>, Task> NotifyFills { get; set; }
+        public virtual Func<string, List<Order>, Task> NotifyOrders { get; set; }
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 
@@ -40,6 +41,7 @@ namespace exchange.core.implementations
         public virtual string Author { get; set; }
         public virtual string Version { get; set; }
         public virtual List<Product> Products { get; set; }
+        public virtual List<Order> Orders { get; set; }
         public virtual List<Product> SubscribeProducts { get; set; }
         public virtual string IndicatorSaveDataPath { get; set; }
         public virtual string INIFilePath { get; set; }
@@ -77,8 +79,11 @@ namespace exchange.core.implementations
             // Suppress finalization.
             GC.SuppressFinalize(this);
         }
-
         public virtual Task<List<Fill>> UpdateFillsAsync(Product product)
+        {
+            throw new NotImplementedException();
+        }
+        public virtual Task<Order> PostOrdersAsync(Order order)
         {
             throw new NotImplementedException();
         }

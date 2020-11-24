@@ -27,10 +27,6 @@ namespace exchange.core.models
 
         [JsonPropertyName("best_ask")] public string BestAsk { get; set; }
 
-        [JsonPropertyName("data")] public BinanceData BinanceData { get; set; }
-
-        [JsonPropertyName("stream")] public string Stream { get; set; }
-
         public Dictionary<string, decimal> CurrentPrices { get; set; }
     }
 }

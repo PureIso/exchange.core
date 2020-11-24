@@ -279,10 +279,10 @@ namespace exchange.test
             Product product = new Product {ID = "LENDBTC"};
             subjectUnderTest.UpdateOrdersAsync(product).Wait();
             //Assert
-            Assert.IsNotNull(subjectUnderTest.Orders);
-            Assert.AreEqual(2, subjectUnderTest.Orders.Count);
-            Assert.AreEqual(16298376, subjectUnderTest.Orders[0].ID);
-            Assert.AreEqual(16304287, subjectUnderTest.Orders[1].ID);
+            Assert.IsNotNull(subjectUnderTest.BinanceOrders);
+            Assert.AreEqual(2, subjectUnderTest.BinanceOrders.Count);
+            Assert.AreEqual(16298376, subjectUnderTest.BinanceOrders[0].ID);
+            Assert.AreEqual(16304287, subjectUnderTest.BinanceOrders[1].ID);
         }
 
         [TestMethod]
@@ -495,12 +495,13 @@ namespace exchange.test
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
-            binanceOrder.OrderSize = (decimal) 0.1;
+            binanceOrder.OrigQty = "0.1";
             binanceOrder.Symbol = "BNBBTC";
             //Act
             BinanceOrder binanceOrderResult = subjectUnderTest.PostOrdersAsync(binanceOrder).Result;
             //Assert
             Assert.IsNotNull(binanceOrderResult);
+            Assert.IsNotNull(binanceOrderResult.Fills);
         }
 
         [TestMethod]
@@ -542,7 +543,7 @@ namespace exchange.test
             BinanceOrder binanceOrder = new BinanceOrder();
             binanceOrder.OrderType = OrderType.Market;
             binanceOrder.OrderSide = OrderSide.Buy;
-            binanceOrder.OrderSize = (decimal) 0.1;
+            binanceOrder.OrigQty = "0.1";
             binanceOrder.Symbol = "BNBBTC";
             //Act
             BinanceOrder binanceOrderResult = subjectUnderTest.CancelOrderAsync(binanceOrder).Result;

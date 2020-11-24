@@ -69,6 +69,20 @@ namespace exchange.core.implementations
             if(products.Any())
                 await abstractExchangePlugin.ChangeFeed(products);
         }
+        public async Task RequestedOrder(string applicationName, Order order)
+        {
+            _logger.LogInformation($"ExchangeHubService RequestedOrder request to all clients notification.");
+            AbstractExchangePlugin abstractExchangePlugin =
+                _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
+            if (abstractExchangePlugin == null)
+                return;
+            Product product = new Product {ID = order.ProductID};
+            await abstractExchangePlugin.PostOrdersAsync(order);
+            List<Order> postedOrders = abstractExchangePlugin.Orders;
+            await Clients.Caller.NotifyOrders(applicationName, postedOrders);
+            List<Fill> fills = await abstractExchangePlugin.UpdateFillsAsync(product);
+            await Clients.Caller.NotifyFills(applicationName, fills);
+        }
         public async Task RequestedProducts()
         {
             _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");

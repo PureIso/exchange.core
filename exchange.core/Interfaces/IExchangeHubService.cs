@@ -11,8 +11,11 @@ namespace exchange.core.interfaces
         Task RequestedProducts();
         Task RequestedApplications();
         Task RequestedFills(string applicationName, string symbol);
+        Task RequestedOrder(string applicationName, Order order);
         Task RequestedSubscription(string applicationName, List<string> symbols);
+
         Task NotifyFills(string applicationName, List<Fill> fills);
+        Task NotifyOrders(string applicationName, List<Order> orders);
         Task NotifyMainCurrency(string applicationName, string mainCurrency);
         Task NotifyApplications(List<string> applicationNames);
         Task NotifyAssetInformation(string applicationName, Dictionary<string, AssetInformation> assetInformation);
