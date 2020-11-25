@@ -9,14 +9,13 @@ namespace exchange.service
 {
     public class Startup
     {
-        public static readonly string AllowSpecificOrigins = "AllowedOrigins";
+        public const string AllowSpecificOrigins = "AllowedOrigins";
+        public IConfiguration Configuration { get; }
 
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
-
-        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)

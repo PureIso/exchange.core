@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using exchange.binance.helpers;
 using exchange.binance.models;
 using exchange.core.enums;
 using exchange.core.helpers;
@@ -15,7 +16,6 @@ using exchange.core.implementations;
 using exchange.core.indicators;
 using exchange.core.interfaces;
 using exchange.core.models;
-using exchange.core.Models;
 
 namespace exchange.binance
 {
@@ -36,7 +36,7 @@ namespace exchange.binance
         public ExchangeInfo ExchangeInfo { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
-        public List<BinanceOrder> Orders { get; set; }
+        public List<BinanceOrder> BinanceOrders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
         #endregion
@@ -46,8 +46,7 @@ namespace exchange.binance
             Tickers = new List<Ticker>();
             BinanceAccount = new BinanceAccount();
             HistoricRates = new List<HistoricRate>();
-            Fills = new List<Fill>();
-            Orders = new List<BinanceOrder>();
+            BinanceOrders = new List<BinanceOrder>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
@@ -300,7 +299,8 @@ namespace exchange.binance
                             RequestQuery = $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}"
                         };
                     json = await ConnectionAdapter.RequestAsync(request);
-                    Orders = JsonSerializer.Deserialize<List<BinanceOrder>>(json);
+                    BinanceOrders = JsonSerializer.Deserialize<List<BinanceOrder>>(json);
+                    Orders = BinanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
                 }
             }
             catch (Exception e)
@@ -309,7 +309,7 @@ namespace exchange.binance
                     $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
 
-            return Orders;
+            return BinanceOrders;
         }
         public async Task<BinanceOrder> PostOrdersAsync(BinanceOrder order)
         {
@@ -322,11 +322,11 @@ namespace exchange.binance
                 if (order.OrderType == OrderType.Market)
                     request.RequestQuery = $"timestamp={serverTime.ServerTimeLong}&symbol={order.Symbol.ToUpper()}" +
                                            $"&side={order.OrderSide.ToString().ToUpper()}" +
-                                           $"&type={order.OrderType.ToString().ToUpper()}&quantity={order.OrderSize}";
+                                           $"&type={order.OrderType.ToString().ToUpper()}&quantity={order.OrigQty}";
                 else
                     request.RequestQuery = $"timestamp={serverTime.ServerTimeLong}&symbol={order.Symbol.ToUpper()}" +
                                            $"&side={order.OrderSide.ToString().ToUpper()}&type={order.OrderType.ToString().ToUpper()}" +
-                                           $"&quantity={order.OrderSize}&price={order.LimitPrice}&timeInForce=GTC";
+                                           $"&quantity={order.OrigQty}&price={order.Price}&timeInForce=GTC";
                 string json = await ConnectionAdapter.RequestAsync(request);
                 binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
@@ -430,47 +430,6 @@ namespace exchange.binance
 
             return Tickers;
         }
-        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
-        {
-            try
-            {
-                ServerTime serverTime = await UpdateTimeServerAsync();
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
-                    "GET",
-                    "/api/v3/myTrades?")
-                {
-                    RequestQuery =
-                        $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}&limit=10"
-                };
-                string json = await ConnectionAdapter.RequestAsync(request);
-                if (!string.IsNullOrEmpty(json))
-                    BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
-
-                Fills ??= new List<Fill>();
-                if (BinanceFill == null)
-                    return Fills;
-                DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                Fills = BinanceFill.Select(binanceFill => new Fill
-                {
-                    Size = binanceFill.Quantity,
-                    Side = binanceFill.IsBuyer ? OrderSide.Buy.ToString() : OrderSide.Sell.ToString(),
-                    OrderID = binanceFill.TradeID.ToString(),
-                    Price = binanceFill.Price,
-                    Fee = binanceFill.Commission,
-                    ProductID = binanceFill.ID,
-                    Settled = true,
-                    Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
-                    TradeID = binanceFill.TradeID
-                }).ToList();
-                NotifyFills?.Invoke(ApplicationName, Fills);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
-            }
-            return Fills;
-        }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 20)
         {
             try
@@ -546,20 +505,21 @@ namespace exchange.binance
                                 json = await ConnectionAdapter.WebSocketReceiveAsync();
                                 if (string.IsNullOrEmpty(json))
                                     continue;
-                                Feed feed = JsonSerializer.Deserialize<Feed>(json);
-                                if (feed == null || feed.Type == "error" || string.IsNullOrEmpty(feed.BinanceData.Symbol) || string.IsNullOrEmpty(feed.BinanceData.Price))
+                                BinanceFeed binanceFeed = JsonSerializer.Deserialize<BinanceFeed>(json);
+                                if (binanceFeed == null || binanceFeed.Type == "error" || string.IsNullOrEmpty(binanceFeed.BinanceData.Symbol) || string.IsNullOrEmpty(binanceFeed.BinanceData.Price))
                                     return;
                                 //update current price
                                 AssetInformation ??= new Dictionary<string, AssetInformation>();
-                                if (!AssetInformation.ContainsKey(feed.BinanceData.Symbol))
-                                    AssetInformation.Add(feed.BinanceData.Symbol, new AssetInformation());
-                                AssetInformation[feed.BinanceData.Symbol].CurrentPrice = feed.BinanceData.Price.ToDecimal();
+                                if (!AssetInformation.ContainsKey(binanceFeed.BinanceData.Symbol))
+                                    AssetInformation.Add(binanceFeed.BinanceData.Symbol, new AssetInformation());
+                                AssetInformation[binanceFeed.BinanceData.Symbol].CurrentPrice = binanceFeed.BinanceData.Price.ToDecimal();
                                 CurrentPrices ??= new Dictionary<string, decimal>();
-                                CurrentPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
-                                SubscribedPrices[feed.BinanceData.Symbol] = feed.BinanceData.Price.ToDecimal();
+                                CurrentPrices[binanceFeed.BinanceData.Symbol] = binanceFeed.BinanceData.Price.ToDecimal();
+                                SubscribedPrices[binanceFeed.BinanceData.Symbol] = binanceFeed.BinanceData.Price.ToDecimal();
                                 //update product data
                                 Products ??= new List<Product>();
-                                Product product = Products.FirstOrDefault(currentProduct => currentProduct.ID == feed.BinanceData.Symbol);
+                                CurrentFeed ??= new Feed();
+                                Product product = Products.FirstOrDefault(currentProduct => currentProduct.ID == binanceFeed.BinanceData.Symbol);
                                 if (product != null)
                                 {
                                     Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(product);
@@ -570,8 +530,8 @@ namespace exchange.binance
                                         decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
                                         decimal percentage = change * 100;
                                         //update stat changes
-                                        AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPriceChange = priceChangeDifference;
-                                        AssetInformation[feed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].TwentyFourHourPriceChange = priceChangeDifference;
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
                                     }
                                     //Order Book
                                     OrderBook orderBook = await UpdateProductOrderBookAsync(product);
@@ -582,44 +542,45 @@ namespace exchange.binance
                                         decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
                                         int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
                                         bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                        AssetInformation[feed.BinanceData.Symbol].BidMaxOrderSize = bidMaxOrderSize;
-                                        AssetInformation[feed.BinanceData.Symbol].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].BidMaxOrderSize = bidMaxOrderSize;
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
                                         decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
                                         int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                        AssetInformation[feed.BinanceData.Symbol].AskMaxOrderSize = askMaxOrderSize;
-                                        AssetInformation[feed.BinanceData.Symbol].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].AskMaxOrderSize = askMaxOrderSize;
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
                                         askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
                                         //price and size
-                                        AssetInformation[feed.BinanceData.Symbol].BidPriceAndSize = (from orderList in bidOrderList
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].BidPriceAndSize = (from orderList in bidOrderList
                                                                                                      select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                        AssetInformation[feed.BinanceData.Symbol].AskPriceAndSize = (from orderList in askOrderList
+                                        AssetInformation[binanceFeed.BinanceData.Symbol].AskPriceAndSize = (from orderList in askOrderList
                                                                                                      select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                                     }
                                 }
                                 //update order side
-                                if (Enum.TryParse(feed.Side, out OrderSide orderSide))
-                                    AssetInformation[feed.BinanceData.Symbol].OrderSide = orderSide;
-                                feed.ProductID = feed.BinanceData.Symbol;
-                                feed.Price = feed.BinanceData.Price;
+                                if (Enum.TryParse(binanceFeed.Side, out OrderSide orderSide))
+                                    AssetInformation[binanceFeed.BinanceData.Symbol].OrderSide = orderSide;
+                                CurrentFeed.ProductID = binanceFeed.BinanceData.Symbol;
+                                CurrentFeed.Price = binanceFeed.BinanceData.Price;
                                 //update best bid and ask
-                                AssetInformation[feed.ProductID].BestAsk = feed.BestAsk;
-                                AssetInformation[feed.ProductID].BestBid = feed.BestBid;
+                                CurrentFeed.BestAsk = binanceFeed.BestAsk;
+                                CurrentFeed.BestBid = binanceFeed.BestBid;
+                                AssetInformation[CurrentFeed.ProductID].BestAsk = binanceFeed.BestAsk;
+                                AssetInformation[CurrentFeed.ProductID].BestBid = binanceFeed.BestBid;
                                 //Indicator
                                 RelativeStrengthIndex relativeStrengthIndex = RelativeStrengthIndices.FirstOrDefault(currentProduct =>
-                                    currentProduct.RelativeStrengthIndexSettings.Product.ID == feed.ProductID);
+                                    currentProduct.RelativeStrengthIndexSettings.Product.ID == CurrentFeed.ProductID);
                                 if (relativeStrengthIndex != null)
                                 {
-                                    AssetInformation[feed.ProductID].RelativeIndexQuarterly = relativeStrengthIndex
+                                    AssetInformation[CurrentFeed.ProductID].RelativeIndexQuarterly = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexQuarterly;
-                                    AssetInformation[feed.ProductID].RelativeIndexHourly = relativeStrengthIndex
+                                    AssetInformation[CurrentFeed.ProductID].RelativeIndexHourly = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexHourly;
-                                    AssetInformation[feed.ProductID].RelativeIndexDaily = relativeStrengthIndex
+                                    AssetInformation[CurrentFeed.ProductID].RelativeIndexDaily = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexDaily;
                                 }
                                 NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
                                 //update feed and notifications
-                                feed.CurrentPrices = CurrentPrices;
-                                CurrentFeed = feed;
+                                CurrentFeed.CurrentPrices = CurrentPrices;
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                                 //FeedBroadcast?.Invoke(ApplicationName, feed);
                             }
@@ -646,6 +607,7 @@ namespace exchange.binance
                 AccountInfo = new Dictionary<string, decimal>();
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
+                Orders = new List<Order>();
                 ConnectionAdapter = new ConnectionAdapter
                 {
                     ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType, message); }
@@ -873,7 +835,63 @@ namespace exchange.binance
 
             return null;
         }
+        public override async Task<Order> PostOrdersAsync(Order order)
+        {
+            BinanceOrder currentBinanceOrder = new BinanceOrder
+            {
+                OrderType = Enum.Parse<OrderType>(order.Type),
+                OrderSide = Enum.Parse<OrderSide>(order.Side),
+                OrigQty = order.Size,
+                Price = order.Price,
+                Symbol = order.ProductID
+            };
+            BinanceOrder postedOrder = await PostOrdersAsync(currentBinanceOrder);
+            Product product = new Product {ID = currentBinanceOrder.Symbol};
+            List<BinanceOrder> binanceOrders =  await UpdateOrdersAsync(product);
+            Orders = binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
+            return postedOrder.ToOrder();
+        }
+        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
+        {
+            try
+            {
+                ServerTime serverTime = await UpdateTimeServerAsync();
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl,
+                    "GET",
+                    "/api/v3/myTrades?")
+                {
+                    RequestQuery =
+                        $"symbol={product.ID}&recvWindow=5000&timestamp={serverTime.ServerTimeLong}&limit=10"
+                };
+                string json = await ConnectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                    BinanceFill = JsonSerializer.Deserialize<List<BinanceFill>>(json);
 
+                Fills ??= new List<Fill>();
+                if (BinanceFill == null)
+                    return Fills;
+                DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                Fills = BinanceFill.Select(binanceFill => new Fill
+                {
+                    Size = binanceFill.Quantity,
+                    Side = binanceFill.IsBuyer ? OrderSide.Buy.ToString() : OrderSide.Sell.ToString(),
+                    OrderID = binanceFill.TradeID.ToString(),
+                    Price = binanceFill.Price,
+                    Fee = binanceFill.Commission,
+                    ProductID = binanceFill.ID,
+                    Settled = true,
+                    Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
+                    TradeID = binanceFill.TradeID
+                }).ToList();
+                NotifyFills?.Invoke(ApplicationName, Fills);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return Fills;
+        }
         #endregion
 
         #endregion

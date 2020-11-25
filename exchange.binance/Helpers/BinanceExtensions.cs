@@ -5,7 +5,7 @@ using System.Linq;
 using exchange.binance.models;
 using exchange.core.models;
 
-namespace exchange.binance.Helpers
+namespace exchange.binance.helpers
 {
     public static class BinanceExtensions
     {

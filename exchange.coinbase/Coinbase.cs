@@ -30,7 +30,6 @@ namespace exchange.coinbase
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
         public List<HistoricRate> HistoricRates { get; set; }
-        public List<Order> Orders { get; set; }
         public OrderBook OrderBook { get; set; }
         public Product SelectedProduct { get; set; }
         #endregion
@@ -42,8 +41,6 @@ namespace exchange.coinbase
             AccountHistories = new List<AccountHistory>();
             AccountHolds = new List<AccountHold>();
             HistoricRates = new List<HistoricRate>();
-            Fills = new List<Fill>();
-            Orders = new List<Order>();
             OrderBook = new OrderBook();
             SelectedProduct = new Product();
             _ioLock = new object();
@@ -250,47 +247,6 @@ namespace exchange.coinbase
 
             return Orders;
         }
-        public async Task<Order> PostOrdersAsync(Order order)
-        {
-            string json = null;
-            Order outputOrder = null;
-            try
-            {
-                object data;
-                if (order.Type == OrderType.Market.GetStringValue() || string.IsNullOrEmpty(order.Price))
-                    data = new
-                    {
-                        size = order.Size,
-                        side = order.Side,
-                        type = OrderType.Market.GetStringValue(),
-                        product_id = order.ProductID,
-                        stp = order.SelfTradePreventionType
-                    };
-                else
-                    data = new
-                    {
-                        size = order.Size,
-                        price = order.Price,
-                        side = order.Side,
-                        type = OrderType.Limit.GetStringValue(),
-                        product_id = order.ProductID,
-                        stp = order.SelfTradePreventionType
-                    };
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST", "/orders")
-                {
-                    RequestBody = JsonSerializer.Serialize(data)
-                };
-                json = await ConnectionAdapter.RequestAsync(request);
-                outputOrder = JsonSerializer.Deserialize<Order>(json);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: PostOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return outputOrder;
-        }
         public async Task<List<Order>> CancelOrderAsync(Order order)
         {
             string json = null;
@@ -449,26 +405,6 @@ namespace exchange.coinbase
             }
 
             return Tickers;
-        }
-        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
-        {
-            string json = null;
-            try
-            {
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/fills?product_id={product.ID ?? string.Empty}");
-                json = await ConnectionAdapter.RequestAsync(request);
-                if (!string.IsNullOrEmpty(json))
-                    Fills = JsonSerializer.Deserialize<List<Fill>>(json);
-                NotifyFills?.Invoke(ApplicationName, Fills);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return Fills;
         }
         public async Task<OrderBook> UpdateProductOrderBookAsync(Product product, int level = 2)
         {
@@ -639,6 +575,7 @@ namespace exchange.coinbase
                 AccountInfo = new Dictionary<string, decimal>();
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
+                Orders = new List<Order>();
                 ConnectionAdapter = new ConnectionAdapter
                 {
                     ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType,message);}
@@ -831,6 +768,67 @@ namespace exchange.coinbase
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
             return HistoricRates;
+        }
+        public override async Task<List<Fill>> UpdateFillsAsync(Product product)
+        {
+            string json = null;
+            try
+            {
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/fills?product_id={product.ID ?? string.Empty}");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (!string.IsNullOrEmpty(json))
+                    Fills = JsonSerializer.Deserialize<List<Fill>>(json);
+                NotifyFills?.Invoke(ApplicationName, Fills);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return Fills;
+        }
+        public override async Task<Order> PostOrdersAsync(Order order)
+        {
+            string json = null;
+            Order outputOrder = null;
+            try
+            {
+                object data;
+                if (order.Type == OrderType.Market.GetStringValue() || string.IsNullOrEmpty(order.Price))
+                    data = new
+                    {
+                        size = order.Size,
+                        side = order.Side,
+                        type = OrderType.Market.GetStringValue(),
+                        product_id = order.ProductID,
+                        stp = order.SelfTradePreventionType
+                    };
+                else
+                    data = new
+                    {
+                        size = order.Size,
+                        price = order.Price,
+                        side = order.Side,
+                        type = OrderType.Limit.GetStringValue(),
+                        product_id = order.ProductID,
+                        stp = order.SelfTradePreventionType
+                    };
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "POST", "/orders")
+                {
+                    RequestBody = JsonSerializer.Serialize(data)
+                };
+                json = await ConnectionAdapter.RequestAsync(request);
+                outputOrder = JsonSerializer.Deserialize<Order>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: PostOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return outputOrder;
         }
         #endregion
 

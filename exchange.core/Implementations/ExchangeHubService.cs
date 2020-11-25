@@ -58,6 +58,13 @@ namespace exchange.core.implementations
                     abstractExchangePlugin.CurrentFeed.CurrentPrices);
             }
         }
+        public async Task RequestedProducts()
+        {
+            _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");
+            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
+                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
+                    abstractExchangePlugin.Products);
+        }
         public async Task RequestedSubscription(string applicationName, List<string> symbols)
         {
             AbstractExchangePlugin abstractExchangePlugin =
@@ -83,13 +90,6 @@ namespace exchange.core.implementations
             List<Fill> fills = await abstractExchangePlugin.UpdateFillsAsync(product);
             await Clients.Caller.NotifyFills(applicationName, fills);
         }
-        public async Task RequestedProducts()
-        {
-            _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");
-            foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
-                await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
-                    abstractExchangePlugin.Products);
-        }
         public async Task RequestedFills(string applicationName, string symbol)
         {
             _logger.LogInformation($"ExchangeHubService RequestedFills request to all clients notification.");
@@ -99,7 +99,7 @@ namespace exchange.core.implementations
                 return;
             Product product = new Product {ID = symbol};
             List<Fill> fills = await abstractExchangePlugin.UpdateFillsAsync(product);
-            await Clients.All.NotifyFills(abstractExchangePlugin.ApplicationName, fills);
+            await Clients.Caller.NotifyFills(abstractExchangePlugin.ApplicationName, fills);
         }
     }
 }

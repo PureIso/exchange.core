@@ -10,7 +10,6 @@ using System.Timers;
 using exchange.core.enums;
 using exchange.core.models;
 using exchange.core.helpers;
-using Timer = System.Timers.Timer;
 
 namespace exchange.core.indicators
 {
@@ -19,7 +18,7 @@ namespace exchange.core.indicators
         public RelativeStrengthIndex(string fileName, Product product)
         {
             RelativeStrengthIndexSettings = Load(fileName, product);
-            _updater = new Timer();
+            _updater = new System.Timers.Timer();
             _ioLock = new object();
             _processHistorySemaphoreSlim = new SemaphoreSlim(1, 1);
             FileName = fileName;
@@ -32,7 +31,7 @@ namespace exchange.core.indicators
 
         #region Fields
 
-        private readonly Timer _updater;
+        private readonly System.Timers.Timer _updater;
         private readonly object _ioLock;
         private readonly SemaphoreSlim _processHistorySemaphoreSlim;
 
