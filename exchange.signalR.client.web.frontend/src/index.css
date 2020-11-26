@@ -24,3 +24,38 @@ body { margin: 0; font-family: Roboto, "Helvetica Heue",sans-serif;color: #21252
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
+
+.example-container {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #eee;
+  height: 100%;
+}
+
+
+.content {
+  padding: 16px;
+}
+@media (min-width: 576px) {
+  mat-sidenav{
+    width: 60% !important;
+  }
+}
+@media (min-width: 768px) {
+  mat-sidenav{
+    width: 40% !important;
+  }
+}
+@media (min-width: 992px) {
+  mat-sidenav{
+    width: 30% !important;
+  }
+}
+@media (min-width: 1200px) {
+  mat-sidenav{
+    width: 30% !important;
+  }
+}
