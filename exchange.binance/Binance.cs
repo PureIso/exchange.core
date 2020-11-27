@@ -28,27 +28,17 @@ namespace exchange.binance
         #endregion
 
         #region Public Properties
-        public string FileName { get; set; }
         public ServerTime ServerTime { get; set; }
-        public List<Account> Accounts { get; set; }
-        public List<Ticker> Tickers { get; set; }
         public BinanceAccount BinanceAccount { get; set; }
         public ExchangeInfo ExchangeInfo { get; set; }
-        public List<HistoricRate> HistoricRates { get; set; }
         public List<BinanceFill> BinanceFill { get; set; }
         public List<BinanceOrder> BinanceOrders { get; set; }
-        public OrderBook OrderBook { get; set; }
-        public Product SelectedProduct { get; set; }
         #endregion
         
         public Binance()
         {
-            Tickers = new List<Ticker>();
             BinanceAccount = new BinanceAccount();
-            HistoricRates = new List<HistoricRate>();
             BinanceOrders = new List<BinanceOrder>();
-            OrderBook = new OrderBook();
-            SelectedProduct = new Product();
             ServerTime = new ServerTime(0);
             _ioLock = new object();
         }
@@ -231,7 +221,7 @@ namespace exchange.binance
                     return BinanceAccount;
                 List<Asset> assets = BinanceAccount.Balances.Where(x => x.Free.ToDecimal() > 0 || x.ID == "BTC")
                     .ToList();
-                Accounts = new List<Account>();
+                Accounts ??= new List<Account>();
                 foreach (Asset asset in assets)
                     Accounts.Add(new Account
                         {Hold = asset.Free, Balance = asset.Free, ID = asset.ID, Currency = asset.ID});
@@ -366,7 +356,7 @@ namespace exchange.binance
 
             return binanceOrder;
         }
-        public async Task<List<BinanceOrder>> CancelOrdersAsync(Product product)
+        public async Task<List<BinanceOrder>> CancelBinanceOrdersAsync(Product product)
         {
             List<BinanceOrder> binanceOrders = new List<BinanceOrder>();
             try
@@ -608,6 +598,11 @@ namespace exchange.binance
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
                 Orders = new List<Order>();
+                Accounts = new List<Account>();
+                Tickers = new List<Ticker>();
+                HistoricRates = new List<HistoricRate>();
+                OrderBook = new OrderBook();
+                SelectedProduct = new Product();
                 ConnectionAdapter = new ConnectionAdapter
                 {
                     ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType, message); }
@@ -663,49 +658,6 @@ namespace exchange.binance
                 Load();
                 await UpdateExchangeInfoAsync();
                 await UpdateAccountsAsync();
-                //List<Product> products = new List<Product>
-                //{
-                //    Products.FirstOrDefault(x => x.BaseCurrency == "BNB" && x.QuoteCurrency == "BUSD"),
-                //    Products.FirstOrDefault(x => x.BaseCurrency == "ETH" && x.QuoteCurrency == "BTC")
-                //};
-                //products.RemoveAll(x => x == null);
-                //if (products.Any())
-                //{
-                //    await UpdateProductOrderBookAsync(products[0], 20);
-                //    HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch();
-                //    historicCandlesSearch.Symbol = products[0].ID;
-                //    historicCandlesSearch.StartingDateTime = DateTime.Now.AddHours(-2).ToUniversalTime();
-                //    historicCandlesSearch.EndingDateTime = DateTime.Now.ToUniversalTime();
-                //    historicCandlesSearch.Granularity = (Granularity) 900;
-                //    await UpdateProductHistoricCandlesAsync(historicCandlesSearch);
-                //    await UpdateTickersAsync(products);
-
-                //BinanceOrder binanceOrderMarket = new BinanceOrder();
-                //binanceOrderMarket.OrderType = OrderType.Market;
-                //binanceOrderMarket.OrderSide = OrderSide.Buy;
-                //binanceOrderMarket.OrderSize = (decimal) 0.1;
-                //binanceOrderMarket.Symbol = "BNBBTC";
-
-                //BinanceOrder binanceOrderLimit = new BinanceOrder();
-                //binanceOrderLimit.OrderType = OrderType.Limit;
-                //binanceOrderLimit.OrderSide = OrderSide.Buy;
-                //binanceOrderLimit.OrderSize = (decimal) 0.1;
-                //binanceOrderLimit.LimitPrice = (decimal) 0.0010000;
-                //binanceOrderLimit.Symbol = "BNBBTC";
-
-                //Product productToCancel = new Product {ID = "BNBBTC"};
-
-                //BinanceOrder binanceOrderMarketPostedResults = await PostOrdersAsync(binanceOrderMarket);
-                //BinanceOrder binanceOrderLimitPostedResults = await PostOrdersAsync(binanceOrderLimit);
-                //BinanceOrder binanceOrderToCancel = await CancelOrderAsync(binanceOrderLimitPostedResults);
-
-                //List<BinanceOrder> currentOrders = await UpdateOrdersAsync(new Product {ID = "BNBBTC"});
-                //if (currentOrders.Any())
-                //{
-                //    List<BinanceOrder> binanceOrderCancelProduct = await CancelOrdersAsync(productToCancel);
-                //}
-                // }
-
                 return true;
             }
             catch (Exception e)
@@ -713,51 +665,60 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: InitAsync\r\nException Stack Trace: {e.StackTrace}");
             }
-
             return false;
         }
         public override bool InitIndicatorsAsync(List<Product> products)
         {
-            string binanceRSIFile = null;
-            string env = TestMode ? "test" : "live";
-            if (string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
-                return false;
-            string connectionContainsEnvironment = ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
-                                                   ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
-                ? "t_endpoint"
-                : "l_endpoint";
-            if (string.IsNullOrEmpty(IndicatorSaveDataPath))
+            try
             {
-                string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                if (!string.IsNullOrEmpty(directoryName))
-                    binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}_{connectionContainsEnvironment}");
-            }
-            else
-            {
-                binanceRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
-            }
-            if (string.IsNullOrEmpty(binanceRSIFile))
-                return false;
-            if (products == null)
-                return false;
-            foreach (Product product in products)
-            {
-                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
-                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
-                    delegate (Dictionary<string, string> input)
-                    {
-                        TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
-                    };
-                relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                string binanceRSIFile = null;
+                string env = TestMode ? "test" : "live";
+                if (string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
+                    return false;
+                string connectionContainsEnvironment = ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
+                                                       ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
+                    ? "t_endpoint"
+                    : "l_endpoint";
+                if (string.IsNullOrEmpty(IndicatorSaveDataPath))
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
-                };
-                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-                RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
-                RelativeStrengthIndices.Add(relativeStrengthIndex);
+                    string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                    if (!string.IsNullOrEmpty(directoryName))
+                        binanceRSIFile = Path.Combine(directoryName, $"data\\binance_{env}_{connectionContainsEnvironment}");
+                }
+                else
+                {
+                    binanceRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
+                }
+                if (string.IsNullOrEmpty(binanceRSIFile))
+                    return false;
+                if (products == null)
+                    return false;
+                foreach (Product product in products)
+                {
+                    RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(binanceRSIFile, product);
+                    relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
+                        delegate (Dictionary<string, string> input)
+                        {
+                            TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                        };
+                    relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                    {
+                        ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
+                    };
+                    relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+                    relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                    RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
+                    RelativeStrengthIndices.Add(relativeStrengthIndex);
+                }
+                return true;
             }
-            return true;
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: InitIndicatorsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return false;
         }
         public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
             HistoricCandlesSearch historicCandlesSearch)
@@ -793,11 +754,11 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: UpdateProductHistoricCandlesAsync\r\nException Stack Trace: {e.StackTrace}");
             }
-
             return HistoricRates;
         }
         public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
         {
+            Statistics statistics = new Statistics();
             string json = null;
             try
             {
@@ -811,7 +772,6 @@ namespace exchange.binance
                 json = await ConnectionAdapter.RequestUnsignedAsync(request);
                 if (!string.IsNullOrEmpty(json))
                 {
-                    Statistics statistics = new Statistics();
                     BinanceStatistics binanceStatistics = JsonSerializer.Deserialize<BinanceStatistics>(json);
                     statistics.Volume = binanceStatistics.Volume;
                     statistics.Open = binanceStatistics.OpenPrice;
@@ -832,24 +792,50 @@ namespace exchange.binance
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                     $"Method: TwentyFourHoursRollingStatsAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
             }
-
-            return null;
+            return statistics;
+        }
+        public override async Task<List<Order>> CancelOrdersAsync(Product product)
+        {
+            List<Order> orders = new List<Order>();
+            try
+            {
+                List<BinanceOrder> binanceOrders = await CancelBinanceOrdersAsync(product);
+                orders.AddRange(binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList());
+                return orders;
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return orders;
         }
         public override async Task<Order> PostOrdersAsync(Order order)
         {
-            BinanceOrder currentBinanceOrder = new BinanceOrder
+            Order resultOrder = new Order();
+            try
             {
-                OrderType = Enum.Parse<OrderType>(order.Type),
-                OrderSide = Enum.Parse<OrderSide>(order.Side),
-                OrigQty = order.Size,
-                Price = order.Price,
-                Symbol = order.ProductID
-            };
-            BinanceOrder postedOrder = await PostOrdersAsync(currentBinanceOrder);
-            Product product = new Product {ID = currentBinanceOrder.Symbol};
-            List<BinanceOrder> binanceOrders =  await UpdateOrdersAsync(product);
-            Orders = binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
-            return postedOrder.ToOrder();
+                BinanceOrder currentBinanceOrder = new BinanceOrder
+                {
+                    OrderType = Enum.Parse<OrderType>(order.Type),
+                    OrderSide = Enum.Parse<OrderSide>(order.Side),
+                    OrigQty = order.Size,
+                    Price = order.Price,
+                    Symbol = order.ProductID
+                };
+                BinanceOrder postedOrder = await PostOrdersAsync(currentBinanceOrder);
+                Product product = new Product {ID = currentBinanceOrder.Symbol};
+                List<BinanceOrder> binanceOrders =  await UpdateOrdersAsync(product);
+                Orders = binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
+                await UpdateAccountsAsync();
+                return postedOrder.ToOrder();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: PostOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+            return resultOrder;
         }
         public override async Task<List<Fill>> UpdateFillsAsync(Product product)
         {

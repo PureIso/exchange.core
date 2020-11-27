@@ -18,12 +18,20 @@ namespace exchange.core.implementations
             _exchangePluginService = exchangePluginService; 
             _logger = logger;
         }
-
+        public async Task RequestedCancelAllOrder(string applicationName, string symbol)
+        {
+            AbstractExchangePlugin abstractExchangePlugin =
+                _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
+            if (abstractExchangePlugin == null)
+                return;
+            Product product = new Product { ID = symbol };
+            List<Order> orders = await abstractExchangePlugin.CancelOrdersAsync(product);
+            await Clients.Caller.NotifyOrders(abstractExchangePlugin.ApplicationName, orders);
+        }
         public async Task RequestedApplications()
         {
             List<string> applications = _exchangePluginService.PluginExchanges.Select(x => x.ApplicationName).ToList();
             await Clients.All.NotifyApplications(applications);
-            _logger.LogInformation($"ExchangeHubService RequestedApplications request to all clients notification.");
         }
         public async Task RequestedMainCurrency()
         {
@@ -34,11 +42,9 @@ namespace exchange.core.implementations
                 await Clients.All.NotifyMainCurrency(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.MainCurrency);
             }
-            _logger.LogInformation($"ExchangeHubService RequestedMainCurrency request to all clients notification.");
         }
         public async Task RequestedAccountInfo()
         {
-            _logger.LogInformation($"ExchangeHubService RequestedAccountInfo request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
                 if (abstractExchangePlugin.AccountInfo == null)
@@ -49,7 +55,6 @@ namespace exchange.core.implementations
         }
         public async Task RequestedCurrentPrices()
         {
-            _logger.LogInformation($"ExchangeHubService NotifyCurrentPrices request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
             {
                 if (abstractExchangePlugin.CurrentFeed == null)
@@ -60,7 +65,6 @@ namespace exchange.core.implementations
         }
         public async Task RequestedProducts()
         {
-            _logger.LogInformation($"ExchangeHubService RequestedProducts request to all clients notification.");
             foreach (AbstractExchangePlugin abstractExchangePlugin in _exchangePluginService.PluginExchanges)
                 await Clients.All.NotifyProductChange(abstractExchangePlugin.ApplicationName,
                     abstractExchangePlugin.Products);
@@ -71,14 +75,12 @@ namespace exchange.core.implementations
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
             if (abstractExchangePlugin == null)
                 return;
-            _logger.LogInformation($"ExchangeHubService RequestedSubscription request to all clients notification.");
             List<Product> products = symbols.Select(symbol => new Product {ID = symbol}).ToList();
             if(products.Any())
                 await abstractExchangePlugin.ChangeFeed(products);
         }
         public async Task RequestedOrder(string applicationName, Order order)
         {
-            _logger.LogInformation($"ExchangeHubService RequestedOrder request to all clients notification.");
             AbstractExchangePlugin abstractExchangePlugin =
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
             if (abstractExchangePlugin == null)
@@ -92,7 +94,6 @@ namespace exchange.core.implementations
         }
         public async Task RequestedFills(string applicationName, string symbol)
         {
-            _logger.LogInformation($"ExchangeHubService RequestedFills request to all clients notification.");
             AbstractExchangePlugin abstractExchangePlugin =
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
             if (abstractExchangePlugin == null)

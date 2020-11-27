@@ -24,25 +24,15 @@ namespace exchange.coinbase
         #endregion
 
         #region Public Properties
-        public string FileName { get; set; }
-        public List<Ticker> Tickers { get; set; }
-        public List<Account> Accounts { get; set; }
+        
         public List<AccountHistory> AccountHistories { get; set; }
         public List<AccountHold> AccountHolds { get; set; }
-        public List<HistoricRate> HistoricRates { get; set; }
-        public OrderBook OrderBook { get; set; }
-        public Product SelectedProduct { get; set; }
         #endregion
-
+         
         public Coinbase()
         {
-            Tickers = new List<Ticker>();
-            Accounts = new List<Account>();
             AccountHistories = new List<AccountHistory>();
             AccountHolds = new List<AccountHold>();
-            HistoricRates = new List<HistoricRate>();
-            OrderBook = new OrderBook();
-            SelectedProduct = new Product();
             _ioLock = new object();
         }
 
@@ -257,56 +247,6 @@ namespace exchange.coinbase
                     return ordersOutput;
                 Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
                     $"/orders/{order.ID ?? string.Empty}");
-                json = await ConnectionAdapter.RequestAsync(request);
-                if (!json.StartsWith('[') && !json.EndsWith(']'))
-                {
-                    string orderId = JsonSerializer.Deserialize<string>(json);
-                    if (string.IsNullOrEmpty(orderId))
-                        return ordersOutput;
-                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
-                    int removed = Orders.RemoveAll(x => x.ID == orderId);
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        removed > 0
-                            ? $"Removing Order IDs: {orderId} from Orders."
-                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
-                    if (!ordersOutput.Any())
-                        ordersOutput.Add(new Order {ID = orderId});
-                    return ordersOutput;
-                }
-                else
-                {
-                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
-                    if (orderIds == null)
-                        return ordersOutput;
-                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
-                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        removed > 0
-                            ? $"Removing Order IDs: {orderIds} from Orders."
-                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
-                    if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order {ID = id}).ToList();
-                    return ordersOutput;
-                }
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return ordersOutput;
-        }
-        public async Task<List<Order>> CancelOrdersAsync(Product product)
-        {
-            string json = null;
-            List<Order> ordersOutput = new List<Order>();
-            try
-            {
-                if (product == null)
-                    return ordersOutput;
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
-                    $"/orders?product_id={product.ID ?? string.Empty}");
                 json = await ConnectionAdapter.RequestAsync(request);
                 if (!json.StartsWith('[') && !json.EndsWith(']'))
                 {
@@ -576,6 +516,11 @@ namespace exchange.coinbase
                 CurrentPrices = new Dictionary<string, decimal>();
                 SubscribedPrices = new Dictionary<string, decimal>();
                 Orders = new List<Order>();
+                Accounts = new List<Account>();
+                Tickers = new List<Ticker>();
+                HistoricRates = new List<HistoricRate>();
+                OrderBook = new OrderBook();
+                SelectedProduct = new Product();
                 ConnectionAdapter = new ConnectionAdapter
                 {
                     ProcessLogBroadcast = (messageType, message) => { ProcessLogBroadcast.Invoke(ApplicationName, messageType,message);}
@@ -635,34 +580,6 @@ namespace exchange.coinbase
                 {
                     await UpdateAccountHistoryAsync(Accounts[0].ID);
                     await UpdateAccountHoldsAsync(Accounts[0].ID);
-                    List<Product> products = new List<Product>
-                    {
-                        Products.FirstOrDefault(x => x.BaseCurrency == "BTC" && x.QuoteCurrency == "EUR")
-                    };
-                    products.RemoveAll(x => x == null);
-                    if (products.Any())
-                        //UpdateProductOrderBookAsync(products[0]).Wait();
-                        //UpdateOrdersAsync().Wait();
-                        //UpdateFillsAsync(products[0]).Wait();
-                        //UpdateTickersAsync(products).Wait();
-                        await ChangeFeed(products);
-
-                    ////market order
-                    ////buy
-                    //Order marketOrderBuy = new Order {Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Market, ProductID = "BTC-EUR"};
-                    //Order marketBuyOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderBuy);
-                    ////sell
-                    //Order marketOrderSell = new Order { Size = "0.1", Side = OrderSide.Sell, Type = OrderType.Market, ProductID = "BTC-EUR" };
-                    //Order marketSellOrderResponse = await _exchangeService.PostOrdersAsync(marketOrderSell);
-                    ////limit order
-                    //Order limitOrder = new Order { Size = "0.1", Side = OrderSide.Buy, Type = OrderType.Limit, ProductID = "BTC-EUR", Price = "1000" };
-                    //Order limitOrderResponse = await _exchangeService.PostOrdersAsync(limitOrder);
-                    ////cancel order
-                    //await _exchangeService.CancelOrdersAsync(limitOrderResponse);
-                    //List<HistoricRate> historicRates =  await _exchangeService.UpdateProductHistoricCandlesAsync(products[0], 
-                    //    DateTime.Now.AddHours(-2).ToUniversalTime(),
-                    //    DateTime.Now.ToUniversalTime(), 900);//15 minutes
-                    // }
                     return true;
                 }
             }
@@ -676,46 +593,56 @@ namespace exchange.coinbase
         }
         public override bool InitIndicatorsAsync(List<Product> products)
         {
-            string coinbaseRSIFile = null;
-            string env = TestMode ? "test" : "live";
-            if (string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
-                return false;
-            string connectionContainsEnvironment = ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
-                                            ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
-                ? "t_endpoint"
-                : "l_endpoint";
-            if (string.IsNullOrEmpty(IndicatorSaveDataPath))
+            try
             {
-                string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                if (!string.IsNullOrEmpty(directoryName))
-                    coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}_{connectionContainsEnvironment}");
-            }
-            else
-            {
-                coinbaseRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
-            }
-            if (string.IsNullOrEmpty(coinbaseRSIFile)) 
-                return false;
-            if (products == null)
-                return false;
-            foreach (Product product in products)
-            {
-                RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
-                relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
-                    delegate (Dictionary<string, string> input)
-                    {
-                        TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
-                    };
-                relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                string coinbaseRSIFile = null;
+                string env = TestMode ? "test" : "live";
+                if (string.IsNullOrEmpty(ConnectionAdapter.Authentication.EndpointUrl))
+                    return false;
+                string connectionContainsEnvironment = ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("test") ||
+                                                       ConnectionAdapter.Authentication.EndpointUrl.ToLower().Contains("sandbox")
+                    ? "t_endpoint"
+                    : "l_endpoint";
+                if (string.IsNullOrEmpty(IndicatorSaveDataPath))
                 {
-                    ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
-                };
-                relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
-                relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
-                RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
-                RelativeStrengthIndices.Add(relativeStrengthIndex);
+                    string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+                    if (!string.IsNullOrEmpty(directoryName))
+                        coinbaseRSIFile = Path.Combine(directoryName, $"data\\coinbase_{env}_{connectionContainsEnvironment}");
+                }
+                else
+                {
+                    coinbaseRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
+                }
+                if (string.IsNullOrEmpty(coinbaseRSIFile)) 
+                    return false;
+                if (products == null)
+                    return false;
+                foreach (Product product in products)
+                {
+                    RelativeStrengthIndex relativeStrengthIndex = new RelativeStrengthIndex(coinbaseRSIFile, product);
+                    relativeStrengthIndex.TechnicalIndicatorInformationBroadcast +=
+                        delegate (Dictionary<string, string> input)
+                        {
+                            TechnicalIndicatorInformationBroadcast?.Invoke(ApplicationName, input);
+                        };
+                    relativeStrengthIndex.ProcessLogBroadcast += delegate (MessageType messageType, string message)
+                    {
+                        ProcessLogBroadcast?.Invoke(ApplicationName, messageType, message);
+                    };
+                    relativeStrengthIndex.UpdateProductHistoricCandles += UpdateProductHistoricCandlesAsync;
+                    relativeStrengthIndex.EnableRelativeStrengthIndexUpdater();
+                    RelativeStrengthIndices ??= new List<RelativeStrengthIndex>();
+                    RelativeStrengthIndices.Add(relativeStrengthIndex);
+                }
+                return true;
             }
-            return true;
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: InitIndicatorsAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return false;
         }
         public override async Task<Statistics> TwentyFourHoursRollingStatsAsync(Product product)
         {
@@ -743,8 +670,7 @@ namespace exchange.coinbase
 
             return null;
         }
-        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(
-            HistoricCandlesSearch historicCandlesSearch)
+        public override async Task<List<HistoricRate>> UpdateProductHistoricCandlesAsync(HistoricCandlesSearch historicCandlesSearch)
         {
             string json = null;
             try
@@ -821,6 +747,7 @@ namespace exchange.coinbase
                 };
                 json = await ConnectionAdapter.RequestAsync(request);
                 outputOrder = JsonSerializer.Deserialize<Order>(json);
+                await UpdateAccountsAsync();
             }
             catch (Exception e)
             {
@@ -829,6 +756,58 @@ namespace exchange.coinbase
             }
 
             return outputOrder;
+        }
+        public override async Task<List<Order>> CancelOrdersAsync(Product product)
+        {
+            string json = null;
+            List<Order> ordersOutput = new List<Order>();
+            try
+            {
+                if (product == null)
+                    return ordersOutput;
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
+                    $"/orders?product_id={product.ID ?? string.Empty}");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (!json.StartsWith('[') && !json.EndsWith(']'))
+                {
+                    string orderId = JsonSerializer.Deserialize<string>(json);
+                    if (string.IsNullOrEmpty(orderId))
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
+                    int removed = Orders.RemoveAll(x => x.ID == orderId);
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderId} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput.Add(new Order { ID = orderId });
+                    await UpdateAccountsAsync();
+                    return ordersOutput;
+                }
+                else
+                {
+                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
+                    if (orderIds == null)
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
+                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderIds} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput = (from id in orderIds select new Order { ID = id }).ToList();
+                    await UpdateAccountsAsync();
+                    return ordersOutput;
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return ordersOutput;
         }
         #endregion
 

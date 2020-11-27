@@ -585,7 +585,7 @@ namespace exchange.test
             Binance subjectUnderTest = new Binance {ConnectionAdapter = _connectionAdapter};
             Product product = new Product {ID = "BNBBTC"};
             //Act
-            List<BinanceOrder> binanceOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            List<BinanceOrder> binanceOrders = subjectUnderTest.CancelBinanceOrdersAsync(product).Result;
             //Assert
             Assert.IsNotNull(binanceOrders);
         }
