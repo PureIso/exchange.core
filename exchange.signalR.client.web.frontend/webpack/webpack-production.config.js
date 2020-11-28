@@ -35,6 +35,7 @@ module.exports = {
     },
     devServer: {
         contentBase: buildPath,
+        compress: true,
         historyApiFallback: true,
         port: 9000,
         stats: "minimal",
@@ -43,12 +44,6 @@ module.exports = {
     devtool: "source-map",
     module: {
         rules: [
-            {
-                // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
-                // Removing this will cause deprecation warnings to appear.
-                test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
-                parser: { system: true }
-            },
             {
                 test: /\.ts$/,
                 loaders: [
@@ -79,14 +74,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "sass-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -99,14 +92,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "less-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -158,17 +149,13 @@ module.exports = {
             chunkFilename: "css/[id].css"
         }),
         new CopyWebpackPlugin({
-            patterns:[
+            patterns: [
                 { from: "**/*.jpg", to: "img/[name].[ext]" },
                 { from: "**/*.ico", to: "img/[name].[ext]" },
                 { from: '**/src/electron/*', to: '[name].[ext]' }
             ],
         }),
-        new webpack.HashedModuleIdsPlugin(), // so that file hashes don't change unexpectedly
-        new webpack.ContextReplacementPlugin(
-            /\@angular(\\|\/)core(\\|\/)fesm5/,
-            path.resolve(__dirname, "../src")
-        ),
+        new webpack.HashedModuleIdsPlugin(),
         new CleanWebpackPlugin(cleanOptions)
     ]
 };

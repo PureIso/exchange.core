@@ -5,10 +5,10 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
-const buildPath = path.resolve(__dirname, "../../exchange.signalR.client.web.backend/wwwroot/");
+const buildPath = path.resolve(__dirname, "../build/");
 const tsconfigFile = path.join(__dirname, "../tsconfig.json");
 const envPath = path.resolve(__dirname, "../.env");
-const dotenv = require('dotenv').config({path: envPath});
+const dotenv = require('dotenv').config({ path: envPath });
 
 module.exports = {
     mode: "development",
@@ -39,14 +39,8 @@ module.exports = {
     module: {
         rules: [
             {
-                // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
-                // Removing this will cause deprecation warnings to appear.
-                test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
-                parser: { system: true }
-            },
-            {
                 test: /\.ts$/,
-                loaders: [
+                use: [
                     "awesome-typescript-loader",
                     "angular2-template-loader",
                     "angular-router-loader"
@@ -58,7 +52,7 @@ module.exports = {
                 use: ["html-loader"]
             },
             {
-                test: /\.css$/, loaders: ['to-string-loader', MiniCssExtractPlugin.loader,
+                test: /\.css$/, use: ['to-string-loader', MiniCssExtractPlugin.loader,
                     {
                         loader: "css-loader",
                         options: {
@@ -156,16 +150,12 @@ module.exports = {
             chunkFilename: "css/[id].css"
         }),
         new CopyWebpackPlugin({
-            patterns:[
+            patterns: [
                 { from: "**/*.jpg", to: "img/[name].[ext]" },
                 { from: "**/*.ico", to: "img/[name].[ext]" },
                 { from: '**/src/electron/*', to: '[name].[ext]' }
             ],
         }),
-        new webpack.ContextReplacementPlugin(
-            /\@angular(\\|\/)core(\\|\/)fesm2015/,
-            path.resolve(__dirname, "../src")
-        ),
         new CleanWebpackPlugin()
     ]
 };

@@ -5,10 +5,10 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
-const buildPath = path.resolve(__dirname, "../../exchange.signalR.client.web.frontend/wwwroot/");
+const buildPath = path.resolve(__dirname, "../build/");
 const tsconfigFile = path.join(__dirname, "../tsconfig.json");
 const envPath = path.resolve(__dirname, "../.env");
-const dotenv = require('dotenv').config({path: envPath});
+const dotenv = require('dotenv').config({ path: envPath });
 
 module.exports = {
     mode: "development",
@@ -39,12 +39,6 @@ module.exports = {
     module: {
         rules: [
             {
-                // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
-                // Removing this will cause deprecation warnings to appear.
-                test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
-                parser: { system: true }
-            },
-            {
                 test: /\.ts$/,
                 loaders: [
                     "awesome-typescript-loader",
@@ -62,7 +56,6 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },]
@@ -75,14 +68,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "sass-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -95,14 +86,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "less-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -156,16 +145,12 @@ module.exports = {
             "process.env": JSON.stringify(dotenv.parsed)
         }),
         new CopyWebpackPlugin({
-            patterns:[
+            patterns: [
                 { from: "**/*.jpg", to: "img/[name].[ext]" },
                 { from: "**/*.ico", to: "img/[name].[ext]" },
                 { from: '**/src/electron/*', to: '[name].[ext]' }
             ],
         }),
-        new webpack.ContextReplacementPlugin(
-            /\@angular(\\|\/)core(\\|\/)fesm2015/,
-            path.resolve(__dirname, "../src")
-        ),
         new CleanWebpackPlugin()
     ]
 };
