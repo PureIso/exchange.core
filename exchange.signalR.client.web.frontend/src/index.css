@@ -1,5 +1,6 @@
 /**Global styles*/
 html, body { height: 100%; }
+
 body { margin: 0; font-family: Roboto, "Helvetica Heue",sans-serif;color: #212529; }
 /* fallback */
 @font-face {
@@ -21,7 +22,6 @@ body { margin: 0; font-family: Roboto, "Helvetica Heue",sans-serif;color: #21252
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
-  -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
 
@@ -35,10 +35,18 @@ body { margin: 0; font-family: Roboto, "Helvetica Heue",sans-serif;color: #21252
   height: 100%;
 }
 
+.green{
+  color:rgb(3, 92, 3) !important;
+}
+
+.red{
+  color:rgb(131, 3, 3) !important;
+}
 
 .content {
   padding: 16px;
 }
+
 @media (min-width: 576px) {
   mat-sidenav{
     width: 60% !important;
