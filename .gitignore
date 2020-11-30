@@ -355,4 +355,5 @@ MigrationBackup/
 env/
 out/
 build/
+coverage/
 .vscode/
