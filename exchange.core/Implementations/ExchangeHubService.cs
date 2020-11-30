@@ -79,7 +79,17 @@ namespace exchange.core.implementations
             if(products.Any())
                 await abstractExchangePlugin.ChangeFeed(products);
         }
-        public async Task RequestedOrder(string applicationName, Order order)
+        public async Task RequestedOrder(string applicationName, string symbol)
+        {
+            AbstractExchangePlugin abstractExchangePlugin =
+                _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
+            if (abstractExchangePlugin == null)
+                return;
+            Product product = new Product { ID = symbol};
+            List<Order> postedOrders = await abstractExchangePlugin.UpdateOrdersAsync(product);
+            await Clients.Caller.NotifyOrders(applicationName, postedOrders);
+        }
+        public async Task RequestedPlaceOrder(string applicationName, Order order)
         {
             AbstractExchangePlugin abstractExchangePlugin =
                 _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);

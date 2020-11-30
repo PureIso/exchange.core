@@ -89,6 +89,10 @@ namespace exchange.core.implementations
         {
             throw new NotImplementedException();
         }
+        public virtual Task<List<Order>> UpdateOrdersAsync(Product product = null)
+        {
+            throw new NotImplementedException();
+        }
         public virtual Task<List<Fill>> UpdateFillsAsync(Product product)
         {
             throw new NotImplementedException();

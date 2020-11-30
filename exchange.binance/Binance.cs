@@ -275,7 +275,7 @@ namespace exchange.binance
 
             return BinanceAccount;
         }
-        public async Task<List<BinanceOrder>> UpdateOrdersAsync(Product product = null)
+        public async Task<List<BinanceOrder>> UpdateBinanceOrdersAsync(Product product = null)
         {
             string json = null;
             try
@@ -825,7 +825,7 @@ namespace exchange.binance
                 };
                 BinanceOrder postedOrder = await PostOrdersAsync(currentBinanceOrder);
                 Product product = new Product {ID = currentBinanceOrder.Symbol};
-                List<BinanceOrder> binanceOrders =  await UpdateOrdersAsync(product);
+                List<BinanceOrder> binanceOrders =  await UpdateBinanceOrdersAsync(product);
                 Orders = binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
                 await UpdateAccountsAsync();
                 return postedOrder.ToOrder();
@@ -877,6 +877,22 @@ namespace exchange.binance
                     $"Method: UpdateFillsAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             return Fills;
+        }
+        public override async Task<List<Order>> UpdateOrdersAsync(Product product = null)
+        {
+            List<Order> orders = new List<Order>();
+            try
+            {
+                List<BinanceOrder> binanceOrders = await UpdateBinanceOrdersAsync(product);
+                return binanceOrders.Select(binanceOrder => binanceOrder.ToOrder()).ToList();
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}");
+            }
+
+            return orders;
         }
         #endregion
 

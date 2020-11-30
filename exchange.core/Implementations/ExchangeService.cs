@@ -34,7 +34,6 @@ namespace exchange.core.implementations
                 return;
             await _exchangeHubService.Clients.All.NotifyAssetInformation(applicationName, assetInformation);
         }
-
         public async Task DelegateNotifyMainCurrency(string applicationName, string mainCurrency)
         {
             if (_exchangeHubService.Clients == null)

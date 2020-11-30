@@ -219,24 +219,6 @@ namespace exchange.coinbase
 
             return AccountHolds;
         }
-        public async Task<List<Order>> UpdateOrdersAsync(Product product = null)
-        {
-            string json = null;
-            try
-            {
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
-                    $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
-                json = await ConnectionAdapter.RequestAsync(request);
-                Orders = JsonSerializer.Deserialize<List<Order>>(json);
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return Orders;
-        }
         public async Task<List<Order>> CancelOrderAsync(Order order)
         {
             string json = null;
@@ -808,6 +790,24 @@ namespace exchange.coinbase
             }
 
             return ordersOutput;
+        }
+        public override async Task<List<Order>> UpdateOrdersAsync(Product product = null)
+        {
+            string json = null;
+            try
+            {
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET",
+                    $"/orders?status=open&status=pending&status=active&product_id={product?.ID ?? string.Empty}");
+                json = await ConnectionAdapter.RequestAsync(request);
+                Orders = JsonSerializer.Deserialize<List<Order>>(json);
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: UpdateOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return Orders;
         }
         #endregion
 
