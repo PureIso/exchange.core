@@ -7,6 +7,7 @@ import { accountInformationContainerReducer } from "./account-information-contai
 import { assetInformationContainerReducer } from "./asset-information-container.reducer";
 import { fillsContainerReducer } from "./fills-container.reducer";
 import { displayContainerReducer } from "./display-container.reducer";
+import { ordersContainerReducer } from "./orders-container.reducer";
 
 export const combinedReducers = combineReducers<AppState>({
 	notificationContainer: notificationContainerReducer,
@@ -15,6 +16,7 @@ export const combinedReducers = combineReducers<AppState>({
 	accountInformationContainer: accountInformationContainerReducer,
 	assetInformationContainer: assetInformationContainerReducer,
 	fillsContainer: fillsContainerReducer,
-	displayContainer: displayContainerReducer
+	displayContainer: displayContainerReducer,
+	ordersContainer: ordersContainerReducer
 });
 export const store = createStore(combinedReducers, INITIALSTATE);
