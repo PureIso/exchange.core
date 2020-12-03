@@ -3,7 +3,7 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { NgReduxModule } from "@angular-redux/store";
-import { FormsModule,ReactiveFormsModule } from "@angular/forms";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { HttpClientModule } from "@angular/common/http";
 
 import { NotificationComponent } from "./components/notification/notification.component";
@@ -30,7 +30,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { AccountInformationTableComponent } from "./components/account-information-table/account-information-table.component";
 import { MatTableModule } from "@angular/material/table";
-import { MatPaginatorModule } from '@angular/material/paginator'; 
+import { MatPaginatorModule } from '@angular/material/paginator';
 import { FillsComponent } from "./components/fills/fills.component";
 import { ProductTradeComponent } from "./components/product-trade/product-trade.component";
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -45,11 +45,11 @@ import { MatTabsModule } from '@angular/material/tabs';
         NgReduxModule,
         MatExpansionModule,
         BrowserAnimationsModule,
-        MatNativeDateModule ,
-        ReactiveFormsModule,MatPaginatorModule,MatTabsModule,
-        MatToolbarModule, MatButtonModule, MatIconModule,MatFormFieldModule,MatTableModule,MatCheckboxModule,
-        MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,MatButtonToggleModule,
-        MatMenuModule,MatCardModule,FlexLayoutModule, MatSidenavModule,MatSelectModule,MatSliderModule
+        MatNativeDateModule,
+        ReactiveFormsModule, MatPaginatorModule, MatTabsModule,
+        MatToolbarModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatTableModule, MatCheckboxModule,
+        MatInputModule, MatDatepickerModule, MatDividerModule, MatListModule, MatGridListModule, MatButtonToggleModule,
+        MatMenuModule, MatCardModule, FlexLayoutModule, MatSidenavModule, MatSelectModule, MatSliderModule
     ],
     exports: [
         FormsModule,
@@ -62,14 +62,14 @@ import { MatTabsModule } from '@angular/material/tabs';
         AccountInformationComponent,
         ProductInformationComponent,
         AccountInformationTableComponent,
-        MatNativeDateModule , MatPaginatorModule,MatTabsModule,
-        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule,MatTableModule ,MatButtonToggleModule,
-        MatFormFieldModule,MatInputModule,MatDatepickerModule,MatDividerModule,MatListModule,MatGridListModule,MatCheckboxModule,
-        MatMenuModule,MatCardModule,FlexLayoutModule,MatSidenavModule,MatSelectModule,ReactiveFormsModule,MatSliderModule
+        MatNativeDateModule, MatPaginatorModule, MatTabsModule,
+        MatToolbarModule, MatButtonModule, MatIconModule, MatExpansionModule, MatTableModule, MatButtonToggleModule,
+        MatFormFieldModule, MatInputModule, MatDatepickerModule, MatDividerModule, MatListModule, MatGridListModule, MatCheckboxModule,
+        MatMenuModule, MatCardModule, FlexLayoutModule, MatSidenavModule, MatSelectModule, ReactiveFormsModule, MatSliderModule
     ],
     providers: [MatDatepickerModule],
     declarations: [
-        NotificationComponent, FillsComponent, ProductTradeComponent, 
+        NotificationComponent, FillsComponent, ProductTradeComponent,
         PriceCardComponent, AccountInformationComponent, ProductInformationComponent, AccountInformationTableComponent],
 })
-export class SharedModule {}
+export class SharedModule { }

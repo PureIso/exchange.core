@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewEncapsulation } from "@angular/core";
 import { Router } from "@angular/router";
 import { MainService } from "@services/main.service";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
@@ -8,8 +8,7 @@ import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface
 import { DisplayContainer } from "@interfaces/display-container.interface";
 
 @Component({
-    templateUrl: "./trade.component.html",
-    styleUrls: ["./trade.component.css"],
+    templateUrl: "./trade.component.html"
 })
 
 /**
@@ -42,7 +41,5 @@ export class TradeComponent implements OnInit {
         this.displayContainer$.subscribe((x: DisplayContainer) => {
             this.displayContainer = x;
         });
-    }
-    ngAfterViewInit() {
     }
 }

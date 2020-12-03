@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewEncapsulation } from "@angular/core";
 import { Router } from "@angular/router";
 import { MainService } from "@services/main.service";
 import { NotificationContainer } from "@interfaces/notification-container.interface";
@@ -8,8 +8,7 @@ import { ExchangeUIContainer } from "@interfaces/exchange-ui-container.interface
 
 
 @Component({
-    templateUrl: "./dashboard.component.html",
-    styleUrls: ["./dashboard.component.css"],
+    templateUrl: "./dashboard.component.html"
 })
 
 /**
@@ -25,7 +24,7 @@ export class DashboardComponent implements OnInit {
      * DashboardComponent - Constructor call on initialisation
      * @param router - Router to help us navigate to different pages
      */
-    constructor(private router: Router, private mainService: MainService) {       
+    constructor(private router: Router, private mainService: MainService) {
     }
     /**
      * Function called after the constructor and initial ngOnChanges()
@@ -38,12 +37,10 @@ export class DashboardComponent implements OnInit {
             this.exchangeUIContainer = x;
         });
     }
-    ngAfterViewInit() {
-    }
-    onAccountInformationRefresh(){
+    onAccountInformationRefresh() {
         this.mainService.hub_requestedAccountInfo();
     }
-    onCurrentPricesRefresh(){
+    onCurrentPricesRefresh() {
         this.mainService.hub_requestedCurrentPrices();
     }
 }

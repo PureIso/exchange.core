@@ -1,4 +1,4 @@
-import { Component,Input,ViewChild,AfterViewInit } from "@angular/core";
+import { Component,Input,ViewChild, OnInit } from "@angular/core";
 import { NgRedux, select } from "@angular-redux/store";
 import { AppState } from "@store/app.state";
 import { Observable } from "rxjs";
@@ -12,7 +12,7 @@ import { AccountInformation } from "@interfaces/account-information.interface";
     selector: "account-information-component",
     templateUrl: "./account-information.component.html",
 })
-export class AccountInformationComponent implements AfterViewInit {
+export class AccountInformationComponent implements OnInit {
     @Input() applicationName: string;
     @ViewChild(MatAccordion) accordion: MatAccordion;
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
@@ -23,6 +23,9 @@ export class AccountInformationComponent implements AfterViewInit {
 
     constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
         this.accountInformationList = new Array();
+    }
+
+    ngOnInit() {
         this.notificationContainer$.subscribe((x: NotificationContainer) => {
             this.notificationContainer = x;
         });
@@ -32,8 +35,6 @@ export class AccountInformationComponent implements AfterViewInit {
                 return accountInformation.applicationName == this.applicationName;
             });
         });
-    }
-    ngAfterViewInit() {
         this.mainService.hub_requestedAccountInfo();
     }
 }

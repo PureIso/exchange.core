@@ -14,16 +14,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 
 @NgModule({
-  imports: [MainModule, MainRoutingModule, AppRoutingModule, SharedModule, MatToolbarModule, MatButtonModule, MatIconModule,
-    MatExpansionModule],
-  declarations: [AppComponent],
-  providers: [],
-  bootstrap: [AppComponent]
+    imports: [MainModule, MainRoutingModule, AppRoutingModule, SharedModule, MatToolbarModule, MatButtonModule, MatIconModule,
+        MatExpansionModule],
+    declarations: [AppComponent],
+    providers: [],
+    bootstrap: [AppComponent]
 })
 export class AppModule {
-  constructor(ngRedux: NgRedux<AppState>, mainService: MainService) {
-    //Initial state of our store
-    ngRedux.provideStore(store);
-    mainService.startAsync();
-  }
+    constructor(ngRedux: NgRedux<AppState>, mainService: MainService) {
+        //Initial state of our store
+        ngRedux.provideStore(store);
+        mainService.startAsync();
+    }
 }

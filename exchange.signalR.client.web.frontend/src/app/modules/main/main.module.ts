@@ -8,14 +8,14 @@ import { PageNotFoundComponent } from "./components/page-not-found/page-not-foun
 import { TradeComponent } from "./components/trade/trade.component";
 
 @NgModule({
-  imports: [MainRoutingModule, SharedModule],
-  exports: [],
-  declarations: [
-    DashboardComponent,
-    TradeComponent,
-    PageNotFoundComponent
-  ],
-  providers: [MainService, AppConfig]
+    imports: [MainRoutingModule, SharedModule],
+    exports: [],
+    declarations: [
+        DashboardComponent,
+        TradeComponent,
+        PageNotFoundComponent
+    ],
+    providers: [MainService, AppConfig]
 })
 
 export class MainModule { }

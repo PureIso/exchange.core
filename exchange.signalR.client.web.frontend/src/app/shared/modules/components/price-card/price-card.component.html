@@ -2,13 +2,13 @@
     <div fxFlex="25%" *ngFor="let price of currentPriceList">
         <mat-card>
             <mat-card-header>
-              <div mat-card-avatar class="example-header-image"></div>
-              <mat-card-title>{{ price.asset }}</mat-card-title>
-              <mat-card-subtitle>{{ applicationName }}</mat-card-subtitle>
+                <div mat-card-avatar></div>
+                <mat-card-title>{{ price.asset }}</mat-card-title>
+                <mat-card-subtitle>{{ applicationName }}</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
                 {{ price.price }}
             </mat-card-content>
-          </mat-card>
+        </mat-card>
     </div>
 </div>
