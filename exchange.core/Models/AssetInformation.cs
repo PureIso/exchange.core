@@ -6,6 +6,8 @@ namespace exchange.core.models
 {
     public class AssetInformation
     {
+        [JsonPropertyName("product_id")]
+        public string ProductID { get; set; }
         [JsonPropertyName("twenty_four_hour_price_change")]
         public decimal TwentyFourHourPriceChange { get; set; }
         [JsonPropertyName("twenty_four_hour_price_percentage_change")]
@@ -36,5 +38,33 @@ namespace exchange.core.models
         public decimal RelativeIndexDaily { get; set; }
         [JsonPropertyName("relative_index_hourly")]
         public decimal RelativeIndexHourly { get; set; }
+        [JsonPropertyName("base_currency_balance")]
+        public decimal BaseCurrencyBalance { get; set; }
+        [JsonPropertyName("base_currency_available")]
+        public decimal BaseCurrencyAvailable { get; set; }
+        [JsonPropertyName("base_currency_hold")]
+        public decimal BaseCurrencyHold { get; set; }
+        [JsonPropertyName("base_currency_symbol")]
+        public string BaseCurrencySymbol { get; set; }
+        [JsonPropertyName("quote_currency_balance")]
+        public decimal QuoteCurrencyBalance { get; set; }
+        [JsonPropertyName("quote_currency_available")]
+        public decimal QuoteCurrencyAvailable { get; set; }
+        [JsonPropertyName("quote_currency_hold")]
+        public decimal QuoteCurrencyHold { get; set; }
+        [JsonPropertyName("quote_currency_symbol")]
+        public string QuoteCurrencySymbol { get; set; }
+        [JsonPropertyName("base_and_quote_price")]
+        public decimal BaseAndQuotePrice { get; set; }
+        [JsonPropertyName("base_and_selected_main_price")]
+        public decimal BaseAndSelectedMainPrice { get; set; }
+        [JsonPropertyName("selected_main_currency_balance")]
+        public decimal SelectedMainCurrencyBalance { get; set; }
+        [JsonPropertyName("selected_main_currency_available")]
+        public decimal SelectedMainCurrencyAvailable { get; set; }
+        [JsonPropertyName("selected_main_currency_hold")]
+        public decimal SelectedMainCurrencyHold { get; set; }
+        [JsonPropertyName("selected_main_currency_symbol")]
+        public string SelectedMainCurrencySymbol { get; set; }
     }
 }

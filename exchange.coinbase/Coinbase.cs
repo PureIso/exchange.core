@@ -219,56 +219,7 @@ namespace exchange.coinbase
 
             return AccountHolds;
         }
-        public async Task<List<Order>> CancelOrderAsync(Order order)
-        {
-            string json = null;
-            List<Order> ordersOutput = new List<Order>();
-            try
-            {
-                if (order == null)
-                    return ordersOutput;
-                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
-                    $"/orders/{order.ID ?? string.Empty}");
-                json = await ConnectionAdapter.RequestAsync(request);
-                if (!json.StartsWith('[') && !json.EndsWith(']'))
-                {
-                    string orderId = JsonSerializer.Deserialize<string>(json);
-                    if (string.IsNullOrEmpty(orderId))
-                        return ordersOutput;
-                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
-                    int removed = Orders.RemoveAll(x => x.ID == orderId);
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        removed > 0
-                            ? $"Removing Order IDs: {orderId} from Orders."
-                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
-                    if (!ordersOutput.Any())
-                        ordersOutput.Add(new Order {ID = orderId});
-                    return ordersOutput;
-                }
-                else
-                {
-                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
-                    if (orderIds == null)
-                        return ordersOutput;
-                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
-                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
-                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                        removed > 0
-                            ? $"Removing Order IDs: {orderIds} from Orders."
-                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
-                    if (!ordersOutput.Any())
-                        ordersOutput = (from id in orderIds select new Order {ID = id}).ToList();
-                    return ordersOutput;
-                }
-            }
-            catch (Exception e)
-            {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
-                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
-            }
-
-            return ordersOutput;
-        }
+        
         public async Task<List<Product>> UpdateProductsAsync()
         {
             string json = null;
@@ -398,81 +349,121 @@ namespace exchange.coinbase
                                     continue;
                                 Feed feed = JsonSerializer.Deserialize<Feed>(json);
                                 if (feed == null || feed.Type == "error" || string.IsNullOrEmpty(feed.ProductID) || string.IsNullOrEmpty(feed.Price))
-                                    return;
+                                    continue;
                                 //update current price
                                 AssetInformation ??= new Dictionary<string, AssetInformation>();
                                 if (!AssetInformation.ContainsKey(feed.ProductID))
-                                    AssetInformation.Add(feed.ProductID, new AssetInformation());
-                                AssetInformation[feed.ProductID].CurrentPrice = feed.Price.ToDecimal();
-                                CurrentPrices ??= new Dictionary<string, decimal>();
-                                if (!CurrentPrices.ContainsKey(feed.ProductID))
-                                    CurrentPrices.Add(feed.ProductID, feed.Price.ToDecimal());
-                                CurrentPrices[feed.ProductID] = feed.Price.ToDecimal();
-                                SubscribedPrices[feed.ProductID] = feed.Price.ToDecimal();
-                                //update product data
+                                    AssetInformation.Add(feed.ProductID, new AssetInformation{ProductID = feed.ProductID });
+                                AssetInformation currentAssetInformation = AssetInformation[feed.ProductID];
+                                //Get current product
                                 Products ??= new List<Product>();
-                                Product product = Products.FirstOrDefault(currentProduct => currentProduct.ID == feed.ProductID);
-                                if (product != null)
-                                {
-                                    Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(product);
-                                    if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
-                                    {
-                                        decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
-                                                                         twentyFourHourPrice.High.ToDecimal());
-                                        decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
-                                        decimal percentage = change * 100;
-                                        //update stat changes
-                                        AssetInformation[feed.ProductID].TwentyFourHourPriceChange = priceChangeDifference;
-                                        AssetInformation[feed.ProductID].TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
-                                    }
-                                    //Order Book
-                                    OrderBook orderBook = await UpdateProductOrderBookAsync(product);
-                                    if (orderBook?.Bids != null && orderBook?.Asks != null)
-                                    {
-                                        List<Order> bidOrderList = orderBook.Bids.ToOrderList();
-                                        List<Order> askOrderList = orderBook.Asks.ToOrderList();
-                                        decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
-                                        int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
-                                        bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                        AssetInformation[feed.ProductID].BidMaxOrderSize = bidMaxOrderSize;
-                                        AssetInformation[feed.ProductID].IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
-                                        decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
-                                        int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                        AssetInformation[feed.ProductID].AskMaxOrderSize = askMaxOrderSize;
-                                        AssetInformation[feed.ProductID].IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                        askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
-                                        //price and size
-                                        AssetInformation[feed.ProductID].BidPriceAndSize = (from orderList in bidOrderList
-                                                                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                        AssetInformation[feed.ProductID].AskPriceAndSize = (from orderList in askOrderList
-                                                                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    }
-                                }
-                                //NotifyTradeInfo
+                                Product selectedProduct = Products.FirstOrDefault(p => p.ID == currentAssetInformation.ProductID);
+                                if(selectedProduct == null)
+                                    continue;
+                                currentAssetInformation.ProductID = feed.ProductID;
+                                currentAssetInformation.CurrentPrice = feed.Price.ToDecimal();
+                                //Current price update
+                                decimal currentPrice = feed.Price.ToDecimal();
+                                CurrentPrices ??= new Dictionary<string, decimal>();
+                                if (!CurrentPrices.ContainsKey(currentAssetInformation.ProductID))
+                                    CurrentPrices.Add(currentAssetInformation.ProductID, currentPrice);
+                                CurrentPrices[currentAssetInformation.ProductID] = currentPrice;
+                                SubscribedPrices[currentAssetInformation.ProductID] = currentPrice;
+                                //update feed and notifications
+                                feed.CurrentPrices = CurrentPrices;
+                                CurrentFeed = feed;
                                 //update order side
                                 if (Enum.TryParse(feed.Side, out OrderSide orderSide))
-                                    AssetInformation[feed.ProductID].OrderSide = orderSide;
+                                    currentAssetInformation.OrderSide = orderSide;
                                 //update best bid and ask
-                                AssetInformation[feed.ProductID].BestAsk = feed.BestAsk;
-                                AssetInformation[feed.ProductID].BestBid = feed.BestBid;
+                                currentAssetInformation.BestAsk = feed.BestAsk;
+                                currentAssetInformation.BestBid = feed.BestBid;
                                 //Indicator
                                 RelativeStrengthIndex relativeStrengthIndex = RelativeStrengthIndices.FirstOrDefault(currentProduct =>
                                     currentProduct.RelativeStrengthIndexSettings.Product.ID == feed.ProductID);
                                 if (relativeStrengthIndex != null)
                                 {
-                                    AssetInformation[feed.ProductID].RelativeIndexQuarterly = relativeStrengthIndex
+                                    currentAssetInformation.RelativeIndexQuarterly = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexQuarterly;
-                                    AssetInformation[feed.ProductID].RelativeIndexHourly = relativeStrengthIndex
+                                    currentAssetInformation.RelativeIndexHourly = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexHourly;
-                                    AssetInformation[feed.ProductID].RelativeIndexDaily = relativeStrengthIndex
+                                    currentAssetInformation.RelativeIndexDaily = relativeStrengthIndex
                                         .RelativeStrengthIndexSettings.RelativeIndexDaily;
                                 }
+                                //Account Balances
+                                //Quote Currency Balance: example EUR / BTC
+                                Account selectedQuoteCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.QuoteCurrency);
+                                currentAssetInformation.QuoteCurrencySymbol = selectedQuoteCurrencyAccount.Currency;
+                                decimal.TryParse(selectedQuoteCurrencyAccount.Balance, out decimal outQuoteCurrencyBalance);
+                                currentAssetInformation.QuoteCurrencyBalance = outQuoteCurrencyBalance;
+                                decimal.TryParse(selectedQuoteCurrencyAccount.Hold, out decimal outQuoteCurrencyHold);
+                                currentAssetInformation.QuoteCurrencyHold = outQuoteCurrencyHold;
+                                decimal.TryParse(selectedQuoteCurrencyAccount.Available, out decimal outQuoteCurrencyAvailable);
+                                currentAssetInformation.QuoteCurrencyAvailable = outQuoteCurrencyAvailable;
+                                //Base Currency Balance: example BTC / ETH
+                                Account selectedBaseCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.BaseCurrency);
+                                currentAssetInformation.BaseCurrencySymbol = selectedBaseCurrencyAccount.Currency;
+                                decimal.TryParse(selectedBaseCurrencyAccount.Balance, out decimal outSelectedAssetBalance);
+                                currentAssetInformation.BaseCurrencyBalance = outSelectedAssetBalance;
+                                decimal.TryParse(selectedBaseCurrencyAccount.Hold, out decimal outSelectedAssetHold);
+                                currentAssetInformation.BaseCurrencyHold = outSelectedAssetHold;
+                                decimal.TryParse(selectedBaseCurrencyAccount.Available, out decimal outSelectedAssetAvailable);
+                                currentAssetInformation.BaseCurrencyAvailable = outSelectedAssetAvailable;
+                                //Base and Quote Price: example BTC-EUR / ETH-BTC
+                                Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID == 
+                                    $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
+                                if (CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
+                                    currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
+                                //Selected Main Currency: example EUR
+                                Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
+                                currentAssetInformation.SelectedMainCurrencySymbol = selectedMainCurrencyAccount.Currency;
+                                decimal.TryParse(selectedMainCurrencyAccount.Balance, out decimal outSelectedMainCurrencyBalance);
+                                currentAssetInformation.SelectedMainCurrencyBalance = outSelectedMainCurrencyBalance;
+                                decimal.TryParse(selectedMainCurrencyAccount.Hold, out decimal outSelectedMainCurrencyHold);
+                                currentAssetInformation.SelectedMainCurrencyHold = outSelectedMainCurrencyHold;
+                                decimal.TryParse(selectedMainCurrencyAccount.Available, out decimal outSelectedMainCurrencyAvailable);
+                                currentAssetInformation.SelectedMainCurrencyAvailable = outSelectedMainCurrencyAvailable;
+                                //Base and Selected Main Price: example BTC-EUR / ETH-BTC
+                                Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
+                                    $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
+                                if (CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                    currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
+                                //update product data
+                                Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
+                                if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
+                                {
+                                    decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
+                                                                     twentyFourHourPrice.High.ToDecimal());
+                                    decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
+                                    decimal percentage = change * 100;
+                                    //update stat changes
+                                    currentAssetInformation.TwentyFourHourPriceChange = priceChangeDifference;
+                                    currentAssetInformation.TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
+                                }
+                                //Order Book
+                                OrderBook orderBook = await UpdateProductOrderBookAsync(selectedProduct);
+                                if (orderBook?.Bids != null && orderBook?.Asks != null)
+                                {
+                                    List<Order> bidOrderList = orderBook.Bids.ToOrderList();
+                                    List<Order> askOrderList = orderBook.Asks.ToOrderList();
+                                    decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                    int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList(); 
+                                    currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize; 
+                                    currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize); 
+                                    currentAssetInformation.AskMaxOrderSize = askMaxOrderSize; 
+                                    currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                    //price and size
+                                    currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
+                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList(); 
+                                    currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
+                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                }
                                 NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
-                                //update feed and notifications
-                                feed.CurrentPrices = CurrentPrices;
-                                CurrentFeed = feed;
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
-                                //FeedBroadcast?.Invoke(ApplicationName, feed);
                             }
                         }
                     }
@@ -515,6 +506,7 @@ namespace exchange.coinbase
                 TestMode = exchangeSettings.TestMode;
                 IndicatorSaveDataPath = exchangeSettings.IndicatorDirectoryPath;
                 INIFilePath = exchangeSettings.INIDirectoryPath;
+                MainCurrency = exchangeSettings.MainCurrency;
                 string env = TestMode ? "test" : "live";
                 if (string.IsNullOrEmpty(INIFilePath))
                 {
@@ -739,7 +731,7 @@ namespace exchange.coinbase
 
             return outputOrder;
         }
-        public override async Task<List<Order>> CancelOrdersAsync(Product product)
+        public override async Task<List<Order>> CancelAllOrdersAsync(Product product)
         {
             string json = null;
             List<Order> ordersOutput = new List<Order>();
@@ -780,6 +772,56 @@ namespace exchange.coinbase
                     if (!ordersOutput.Any())
                         ordersOutput = (from id in orderIds select new Order { ID = id }).ToList();
                     await UpdateAccountsAsync();
+                    return ordersOutput;
+                }
+            }
+            catch (Exception e)
+            {
+                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                    $"Method: CancelOrdersAsync\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
+            }
+
+            return ordersOutput;
+        }
+        public override async Task<List<Order>> CancelOrderAsync(Order order)
+        {
+            string json = null;
+            List<Order> ordersOutput = new List<Order>();
+            try
+            {
+                if (order == null)
+                    return ordersOutput;
+                Request request = new Request(ConnectionAdapter.Authentication.EndpointUrl, "DELETE",
+                    $"/orders/{order.ID ?? string.Empty}");
+                json = await ConnectionAdapter.RequestAsync(request);
+                if (!json.StartsWith('[') && !json.EndsWith(']'))
+                {
+                    string orderId = JsonSerializer.Deserialize<string>(json);
+                    if (string.IsNullOrEmpty(orderId))
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => x.ID == orderId).ToList();
+                    int removed = Orders.RemoveAll(x => x.ID == orderId);
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderId} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput.Add(new Order { ID = orderId });
+                    return ordersOutput;
+                }
+                else
+                {
+                    List<string> orderIds = JsonSerializer.Deserialize<string[]>(json)?.ToList();
+                    if (orderIds == null)
+                        return ordersOutput;
+                    ordersOutput = Orders.Where(x => orderIds.Contains(x.ID)).ToList();
+                    int removed = Orders.RemoveAll(x => orderIds.Contains(x.ID));
+                    ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
+                        removed > 0
+                            ? $"Removing Order IDs: {orderIds} from Orders."
+                            : $"No update from order cancel\r\nRequested URL: {request.RequestUrl}");
+                    if (!ordersOutput.Any())
+                        ordersOutput = (from id in orderIds select new Order { ID = id }).ToList();
                     return ordersOutput;
                 }
             }

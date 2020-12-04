@@ -25,7 +25,7 @@ namespace exchange.core.implementations
             if (abstractExchangePlugin == null)
                 return;
             Product product = new Product { ID = symbol };
-            List<Order> orders = await abstractExchangePlugin.CancelOrdersAsync(product);
+            List<Order> orders = await abstractExchangePlugin.CancelAllOrdersAsync(product);
             await Clients.Caller.NotifyOrders(abstractExchangePlugin.ApplicationName, orders);
         }
         public async Task RequestedApplications()

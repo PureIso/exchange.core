@@ -85,7 +85,11 @@ namespace exchange.core.implementations
             // Suppress finalization.
             GC.SuppressFinalize(this);
         }
-        public virtual Task<List<Order>> CancelOrdersAsync(Product product)
+        public virtual Task<List<Order>> CancelAllOrdersAsync(Product product)
+        {
+            throw new NotImplementedException();
+        }
+        public virtual Task<List<Order>> CancelOrderAsync(Order order)
         {
             throw new NotImplementedException();
         }

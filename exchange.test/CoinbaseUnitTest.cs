@@ -341,7 +341,7 @@ namespace exchange.test
             _connectionAdapter.HttpClient = httpClient;
             Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = _connectionAdapter, Orders = orders};
             //Act
-            List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            List<Order> removedOrders = subjectUnderTest.CancelAllOrdersAsync(product).Result;
             //Assert
             Assert.IsNotNull(removedOrders);
             Assert.AreEqual(1, removedOrders.Count);
@@ -373,7 +373,7 @@ namespace exchange.test
             _connectionAdapter.HttpClient = httpClient;
             Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = _connectionAdapter, Orders = orders};
             //Act
-            List<Order> removedOrders = subjectUnderTest.CancelOrdersAsync(product).Result;
+            List<Order> removedOrders = subjectUnderTest.CancelAllOrdersAsync(product).Result;
             //Assert
             Assert.IsNotNull(removedOrders);
             Assert.AreEqual(1, removedOrders.Count);
