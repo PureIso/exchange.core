@@ -357,6 +357,7 @@ namespace exchange.coinbase
                                 AssetInformation currentAssetInformation = AssetInformation[feed.ProductID];
                                 //Get current product
                                 Products ??= new List<Product>();
+                                Accounts ??= new List<Account>();
                                 Product selectedProduct = Products.FirstOrDefault(p => p.ID == currentAssetInformation.ProductID);
                                 if(selectedProduct == null)
                                     continue;
@@ -393,40 +394,49 @@ namespace exchange.coinbase
                                 //Account Balances
                                 //Quote Currency Balance: example EUR / BTC
                                 Account selectedQuoteCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.QuoteCurrency);
-                                currentAssetInformation.QuoteCurrencySymbol = selectedQuoteCurrencyAccount.Currency;
-                                decimal.TryParse(selectedQuoteCurrencyAccount.Balance, out decimal outQuoteCurrencyBalance);
-                                currentAssetInformation.QuoteCurrencyBalance = outQuoteCurrencyBalance;
-                                decimal.TryParse(selectedQuoteCurrencyAccount.Hold, out decimal outQuoteCurrencyHold);
-                                currentAssetInformation.QuoteCurrencyHold = outQuoteCurrencyHold;
-                                decimal.TryParse(selectedQuoteCurrencyAccount.Available, out decimal outQuoteCurrencyAvailable);
-                                currentAssetInformation.QuoteCurrencyAvailable = outQuoteCurrencyAvailable;
+                                if (selectedQuoteCurrencyAccount != null)
+                                {
+                                    currentAssetInformation.QuoteCurrencySymbol = selectedQuoteCurrencyAccount.Currency;
+                                    decimal.TryParse(selectedQuoteCurrencyAccount.Balance, out decimal outQuoteCurrencyBalance);
+                                    currentAssetInformation.QuoteCurrencyBalance = outQuoteCurrencyBalance;
+                                    decimal.TryParse(selectedQuoteCurrencyAccount.Hold, out decimal outQuoteCurrencyHold);
+                                    currentAssetInformation.QuoteCurrencyHold = outQuoteCurrencyHold;
+                                    decimal.TryParse(selectedQuoteCurrencyAccount.Available, out decimal outQuoteCurrencyAvailable);
+                                    currentAssetInformation.QuoteCurrencyAvailable = outQuoteCurrencyAvailable;
+                                }
                                 //Base Currency Balance: example BTC / ETH
                                 Account selectedBaseCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.BaseCurrency);
-                                currentAssetInformation.BaseCurrencySymbol = selectedBaseCurrencyAccount.Currency;
-                                decimal.TryParse(selectedBaseCurrencyAccount.Balance, out decimal outSelectedAssetBalance);
-                                currentAssetInformation.BaseCurrencyBalance = outSelectedAssetBalance;
-                                decimal.TryParse(selectedBaseCurrencyAccount.Hold, out decimal outSelectedAssetHold);
-                                currentAssetInformation.BaseCurrencyHold = outSelectedAssetHold;
-                                decimal.TryParse(selectedBaseCurrencyAccount.Available, out decimal outSelectedAssetAvailable);
-                                currentAssetInformation.BaseCurrencyAvailable = outSelectedAssetAvailable;
+                                if (selectedBaseCurrencyAccount != null)
+                                {
+                                    currentAssetInformation.BaseCurrencySymbol = selectedBaseCurrencyAccount.Currency;
+                                    decimal.TryParse(selectedBaseCurrencyAccount.Balance, out decimal outSelectedAssetBalance);
+                                    currentAssetInformation.BaseCurrencyBalance = outSelectedAssetBalance;
+                                    decimal.TryParse(selectedBaseCurrencyAccount.Hold, out decimal outSelectedAssetHold);
+                                    currentAssetInformation.BaseCurrencyHold = outSelectedAssetHold;
+                                    decimal.TryParse(selectedBaseCurrencyAccount.Available, out decimal outSelectedAssetAvailable);
+                                    currentAssetInformation.BaseCurrencyAvailable = outSelectedAssetAvailable;
+                                }
                                 //Base and Quote Price: example BTC-EUR / ETH-BTC
                                 Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID == 
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
-                                if (CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
+                                if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
                                     currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
                                 //Selected Main Currency: example EUR
                                 Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
-                                currentAssetInformation.SelectedMainCurrencySymbol = selectedMainCurrencyAccount.Currency;
-                                decimal.TryParse(selectedMainCurrencyAccount.Balance, out decimal outSelectedMainCurrencyBalance);
-                                currentAssetInformation.SelectedMainCurrencyBalance = outSelectedMainCurrencyBalance;
-                                decimal.TryParse(selectedMainCurrencyAccount.Hold, out decimal outSelectedMainCurrencyHold);
-                                currentAssetInformation.SelectedMainCurrencyHold = outSelectedMainCurrencyHold;
-                                decimal.TryParse(selectedMainCurrencyAccount.Available, out decimal outSelectedMainCurrencyAvailable);
-                                currentAssetInformation.SelectedMainCurrencyAvailable = outSelectedMainCurrencyAvailable;
+                                if (selectedMainCurrencyAccount != null)
+                                {
+                                    currentAssetInformation.SelectedMainCurrencySymbol = selectedMainCurrencyAccount.Currency;
+                                    decimal.TryParse(selectedMainCurrencyAccount.Balance, out decimal outSelectedMainCurrencyBalance);
+                                    currentAssetInformation.SelectedMainCurrencyBalance = outSelectedMainCurrencyBalance;
+                                    decimal.TryParse(selectedMainCurrencyAccount.Hold, out decimal outSelectedMainCurrencyHold);
+                                    currentAssetInformation.SelectedMainCurrencyHold = outSelectedMainCurrencyHold;
+                                    decimal.TryParse(selectedMainCurrencyAccount.Available, out decimal outSelectedMainCurrencyAvailable);
+                                    currentAssetInformation.SelectedMainCurrencyAvailable = outSelectedMainCurrencyAvailable;
+                                }
                                 //Base and Selected Main Price: example BTC-EUR / ETH-BTC
                                 Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
-                                if (CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                if (quoteAndSelectedMainProduct != null && CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
                                     currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
                                 //update product data
                                 Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);

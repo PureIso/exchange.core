@@ -728,7 +728,7 @@ namespace exchange.test
             //Arrange
             HttpClient httpClient = new HttpClient();
             ClientWebSocket clientWebSocket = new ClientWebSocket();
-            List<Product> products = new List<Product> {new Product {ID = "BTC-EUR"}};
+            List<Product> products = new List<Product> {new Product { ID = "BTC-EUR", BaseCurrency = "BTC", QuoteCurrency = "EUR" } };
             Mock<ConnectionAdapter> connectionFactoryMock =
                 new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
             connectionFactoryMock.Object.Authentication = new Authentication("api_key", "passphrase",
@@ -801,6 +801,7 @@ namespace exchange.test
             int eventRaisedCount = 0;
             AutoResetEvent autoEvent = new AutoResetEvent(false);
             subjectUnderTest.ClientWebSocket = clientWebSocket;
+            subjectUnderTest.Products = products;
             subjectUnderTest.NotifyCurrentPrices +=
                 delegate(string applicationName, Dictionary<string, decimal> subscribedPrices)
                 {
@@ -844,7 +845,7 @@ namespace exchange.test
             HttpClient httpClient = new HttpClient(_httpMessageHandlerMock.Object);
             _connectionAdapter.HttpClient = httpClient;
             Coinbase subjectUnderTest = new Coinbase {ConnectionAdapter = _connectionAdapter};
-            Product product = new Product {ID = "BTC-EUR"};
+            Product product = new Product {ID = "BTC-EUR", BaseCurrency = "BTC", QuoteCurrency = "EUR"};
             //Act
             Statistics statistics = subjectUnderTest.TwentyFourHoursRollingStatsAsync(product).Result;
             //Assert
