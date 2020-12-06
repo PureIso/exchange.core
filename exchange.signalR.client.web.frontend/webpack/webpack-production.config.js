@@ -46,7 +46,7 @@ module.exports = {
         rules: [
             {
                 test: /\.ts$/,
-                loaders: [
+                use: [
                     "awesome-typescript-loader",
                     "angular2-template-loader",
                     "angular-router-loader"
@@ -58,7 +58,8 @@ module.exports = {
                 use: ["html-loader"]
             },
             {
-                test: /\.css$/, loaders: ['to-string-loader', MiniCssExtractPlugin.loader,
+                test: /\.css$/,
+                use: ['to-string-loader', MiniCssExtractPlugin.loader,
                     {
                         loader: "css-loader",
                         options: {
@@ -134,7 +135,32 @@ module.exports = {
     },
     optimization: {
         noEmitOnErrors: true,
-        splitChunks: { chunks: "all" }
+        splitChunks: {
+            cacheGroups: {
+                default: false,
+                vendors: false,
+                // vendor chunk
+                vendor: {
+                    // name of the chunk
+                    name: 'vendor',
+                    // async + async chunks
+                    chunks: 'all',
+                    // import file path containing node_modules
+                    test: /node_modules/,
+                    // priority
+                    priority: 20
+                },
+                // common chunk
+                common: {
+                    name: 'common',
+                    minChunks: 2,
+                    chunks: 'all',
+                    priority: 10,
+                    reuseExistingChunk: true,
+                    enforce: true
+                }
+            }
+        }
     },
     plugins: [
         new HtmlWebpackPlugin({
@@ -155,7 +181,7 @@ module.exports = {
                 { from: '**/src/electron/*', to: '[name].[ext]' }
             ],
         }),
-        new webpack.HashedModuleIdsPlugin(),
+        // new webpack.HashedModuleIdsPlugin(),
         new CleanWebpackPlugin(cleanOptions)
     ]
 };

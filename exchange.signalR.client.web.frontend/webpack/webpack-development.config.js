@@ -52,11 +52,11 @@ module.exports = {
                 use: ["html-loader"]
             },
             {
-                test: /\.css$/, use: ['to-string-loader', MiniCssExtractPlugin.loader,
+                test: /\.css$/,
+                use: ['to-string-loader', MiniCssExtractPlugin.loader,
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },]
@@ -69,14 +69,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "sass-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -89,14 +87,12 @@ module.exports = {
                     {
                         loader: "css-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     },
                     {
                         loader: "less-loader",
                         options: {
-                            //minimize: false,
                             sourceMap: true
                         }
                     }
@@ -132,7 +128,8 @@ module.exports = {
         ]
     },
     optimization: {
-        noEmitOnErrors: true
+        noEmitOnErrors: true,
+        splitChunks: { chunks: "all" }
     },
     plugins: [
         new HtmlWebpackPlugin({

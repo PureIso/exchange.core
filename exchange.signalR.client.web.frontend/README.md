@@ -2,6 +2,13 @@
 
 [Angular API](https://angular.io/api)
 
+## Important Notice
+
+After upgrading to webpack 5, the following issues are present:
+
+- [[5.0.0] TypeError: webpack.HashedModuleIdsPlugin is not a constructor #11631](https://github.com/webpack/webpack/issues/11631)
+- [support webpack v5+ #452](https://github.com/ryanclark/karma-webpack/issues/452)
+- [Class NgRedux incorrectly implements interface RootState - Redux 4.0.5 issue](https://github.com/angular-redux/platform/issues/93)
 
 ## Solutions
 

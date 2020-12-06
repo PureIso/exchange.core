@@ -1,30 +1,42 @@
 const path = require('path');
 const webpack = require('webpack');
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const buildPath = path.resolve(__dirname, "../../exchange.signalR.client.web.frontend/wwwroot/");
+const tsconfigFile = path.join(__dirname, "../tsconfig.json");
 
 module.exports = {
-    mode: 'development',
+    mode: "development",
+    /**Modules webpack need to use to begin building its internal*/
+    entry: {
+        main: "./src/main.ts",
+        polyfills: "./src/polyfills.ts"
+    },
+    /**Where to emit the bundles it creates and how to name the files */
+    output: {
+        path: buildPath,
+        filename: "js/[name].js",
+        chunkFilename: "js/[name].js"
+    },
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
-        plugins: [new TsconfigPathsPlugin({ configFile: path.join(__dirname, "../tsconfig.json") })]
+        plugins: [new TsconfigPathsPlugin({ configFile: tsconfigFile })]
     },
     devtool: 'inline-source-map',
     module: {
         rules: [
             {
-                // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
-                // Removing this will cause deprecation warnings to appear.
-                test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
-                parser: { system: true }
-            },
-            {
-                test: /\.tsx?$/,
-                loaders: [
-                    'awesome-typescript-loader',
-                    'angular2-template-loader',
-                    'angular-router-loader'
-                ],
-                exclude: [/node_modules/]
+                test: /\.tsx?/,
+                exclude: /node_modules/,
+                use: [
+                    {
+                        loader: 'ts-loader',
+                        options: {
+                            // disable type checker - we will use it in fork plugin
+                            transpileOnly: true
+                        },
+                    }
+                ]
             },
             {
                 test: /\.(html)$/,
@@ -46,14 +58,12 @@ module.exports = {
         ]
     },
     plugins: [
-        /** 
-         * Dealing with the Warning:
-         * WARNING in ./node_modules/@angular/core/fesm5/core.js
-         * Critical dependency: the request of a dependency is an expression
-         */
-        new webpack.ContextReplacementPlugin(
-            /\@angular(\\|\/)core(\\|\/)fesm5/,
-            path.resolve(__dirname, '../src')
-        )
+        new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, "../src/index.html"),
+            filename: "index.html",
+            showErrors: true,
+            path: buildPath,
+            hash: true
+        })
     ]
 }
