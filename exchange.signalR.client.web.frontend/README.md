@@ -7,7 +7,6 @@
 After upgrading to webpack 5, the following issues are present:
 
 - [[5.0.0] TypeError: webpack.HashedModuleIdsPlugin is not a constructor #11631](https://github.com/webpack/webpack/issues/11631)
-- [support webpack v5+ #452](https://github.com/ryanclark/karma-webpack/issues/452)
 - [Class NgRedux incorrectly implements interface RootState - Redux 4.0.5 issue](https://github.com/angular-redux/platform/issues/93)
 
 ## Solutions
@@ -20,6 +19,11 @@ After upgrading to webpack 5, the following issues are present:
 Node.js and npm are essential to Angular development.
 
 [Installing Node.js and updating npm](https://docs.npmjs.com/getting-started/installing-node)
+
+You will need to have the Java Development Kit (JDK) installed to run the standalone Selenium Server.
+
+- [JDK8 Main](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html)
+- [JDK8 Mirror](https://oraclemirror.np.gy/jdk8/)
 
 ## Install npm packages
 

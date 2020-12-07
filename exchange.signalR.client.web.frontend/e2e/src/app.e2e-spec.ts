@@ -10,19 +10,19 @@ describe('App', () => {
 
     it('should display landing page title', () => {
         page.navigateToHome();
-        let result = 'Commerce';
+        let result = 'Exchange.Core';
         page.getTitle().then(function (r) {
             expect(result).toEqual(r);
         });
     });
 
-    it('should display landing page enter button', () => {
-        page.navigateToHome();
-        let result = 'Enter';
-        page.getLandingPageButton().getText().then(function (r) {
-            expect(result).toEqual(r);
-        });
-    });
+    // it('should display landing page enter button', () => {
+    //     page.navigateToHome();
+    //     let result = 'Enter';
+    //     page.getLandingPageButton().getText().then(function (r) {
+    //         expect(result).toEqual(r);
+    //     });
+    // });
 
     // it('should route page when landing page enter button is clicked', () => {
     //     page.navigateToHome();
