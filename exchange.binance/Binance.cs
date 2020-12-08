@@ -213,8 +213,6 @@ namespace exchange.binance
                     RequestQuery = $"timestamp={serverTime.ServerTimeLong}"
                 };
                 string json = await ConnectionAdapter.RequestAsync(request);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"UpdateAccountsAsync JSON:\r\n{json}");
                 //check if we do not have any error messages
                 BinanceAccount = JsonSerializer.Deserialize<BinanceAccount>(json);
                 if (BinanceAccount?.Balances == null || !BinanceAccount.Balances.Any()) 
@@ -319,8 +317,6 @@ namespace exchange.binance
                                            $"&quantity={order.OrigQty}&price={order.Price}&timeInForce=GTC";
                 string json = await ConnectionAdapter.RequestAsync(request);
                 binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"UpdateAccountsAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
@@ -345,8 +341,6 @@ namespace exchange.binance
                 string json = await ConnectionAdapter.RequestAsync(request);
                 if (!string.IsNullOrEmpty(json))
                     binanceOrder = JsonSerializer.Deserialize<BinanceOrder>(json);
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"BinanceCancelOrdersAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {
@@ -573,7 +567,10 @@ namespace exchange.binance
                                 Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID ==
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
                                 if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
+                                {
                                     currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
+                                    currentAssetInformation.BaseAndQuoteBalance = CurrentPrices[quoteAndBaseProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                }
                                 //Selected Main Currency: example EUR
                                 Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
                                 if (selectedMainCurrencyAccount != null)
@@ -589,8 +586,21 @@ namespace exchange.binance
                                 //Base and Selected Main Price: example BTC-EUR / ETH-BTC
                                 Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
-                                if (quoteAndSelectedMainProduct != null && CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                if (quoteAndSelectedMainProduct != null &&
+                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                {
                                     currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
+                                    currentAssetInformation.BaseAndSelectedMainBalance = CurrentPrices[quoteAndSelectedMainProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                }
+                                //Total Balance with Selected Main Currency
+                                if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID) &&
+                                    quoteAndSelectedMainProduct != null &&
+                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                {
+                                    currentAssetInformation.AggregatedSelectedMainBalance =
+                                        currentAssetInformation.SelectedMainCurrencyBalance +
+                                        currentAssetInformation.BaseAndQuoteBalance;
+                                }
                                 //update product data
                                 Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
                                 if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
@@ -780,8 +790,6 @@ namespace exchange.binance
         {
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                    "[Binance] Updating Product Historic Candles.");
                 string interval = historicCandlesSearch.Granularity switch
                 {
                     Granularity.FiveMinutes => "5m",
@@ -817,8 +825,6 @@ namespace exchange.binance
             string json = null;
             try
             {
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
-                    "Updating 24 hour stats Information.");
                 Request request =
                     new Request(ConnectionAdapter.Authentication.EndpointUrl, "GET", "/api/v3/ticker/24hr?")
                     {
@@ -839,8 +845,6 @@ namespace exchange.binance
                     Statistics[product.ID] = statistics;
                     return statistics;
                 }
-                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.JsonOutput,
-                    $"TwentyFourHoursRollingStatsAsync JSON:\r\n{json}");
             }
             catch (Exception e)
             {

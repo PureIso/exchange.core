@@ -44,7 +44,7 @@ namespace exchange.service
                 {
                     StatusCode = HttpStatusCode.BadRequest
                 };
-                int delayInMS = 1000;
+                int delayInMilliseconds = 1000;
                 // Get the response.
                 int maxGrayLogConnectionAttempt = config.GetSection("MaxGrayLogConnectionAttempt").Get<int>();
                 while (response.StatusCode != HttpStatusCode.OK && maxGrayLogConnectionAttempt > 0)
@@ -54,11 +54,18 @@ namespace exchange.service
                         string grayLogRequestUrl = config.GetSection("GrayLogUrl").Value;
                         if (!string.IsNullOrEmpty(grayLogRequestUrl))
                         {
-                            Log.Information(
-                                $"Connecting to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
+                            Log.Information($"Connecting to Graylog: {grayLogRequestUrl}");
                             response = client.GetAsync(grayLogRequestUrl).GetAwaiter().GetResult();
+                            if (response.IsSuccessStatusCode)
+                            {
+                                Log.Information(
+                                    $"Connected to Graylog: {grayLogRequestUrl} status code: {response.StatusCode}");
+                                break;
+                            }
+                            Log.Information(
+                                $"Connection to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
                             maxGrayLogConnectionAttempt--;
-                            delayInMS += 1000;
+                            delayInMilliseconds += 1000;
                         }
                         else
                         {
@@ -73,7 +80,7 @@ namespace exchange.service
                         // ignored
                     }
 
-                    Task.Delay(delayInMS).GetAwaiter();
+                    Task.Delay(delayInMilliseconds).GetAwaiter();
                 }
 
                 Log.Information($"Exchange Server Starting: {Dns.GetHostName()}");

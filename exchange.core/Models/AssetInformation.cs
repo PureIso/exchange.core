@@ -66,5 +66,11 @@ namespace exchange.core.models
         public decimal SelectedMainCurrencyHold { get; set; }
         [JsonPropertyName("selected_main_currency_symbol")]
         public string SelectedMainCurrencySymbol { get; set; }
+        [JsonPropertyName("base_and_selected_main_balance")]
+        public decimal BaseAndSelectedMainBalance { get; set; }
+        [JsonPropertyName("base_and_quote_balance")]
+        public decimal BaseAndQuoteBalance { get; set; }
+        [JsonPropertyName("aggregated_selected_main_balance")]
+        public decimal AggregatedSelectedMainBalance { get; set; }
     }
 }

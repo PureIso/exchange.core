@@ -420,7 +420,10 @@ namespace exchange.coinbase
                                 Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID == 
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
                                 if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
+                                {
                                     currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
+                                    currentAssetInformation.BaseAndQuoteBalance = CurrentPrices[quoteAndBaseProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                }
                                 //Selected Main Currency: example EUR
                                 Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
                                 if (selectedMainCurrencyAccount != null)
@@ -436,8 +439,21 @@ namespace exchange.coinbase
                                 //Base and Selected Main Price: example BTC-EUR / ETH-BTC
                                 Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
                                     $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
-                                if (quoteAndSelectedMainProduct != null && CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                if (quoteAndSelectedMainProduct != null &&
+                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                {
                                     currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
+                                    currentAssetInformation.BaseAndSelectedMainBalance = CurrentPrices[quoteAndSelectedMainProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                }
+                                //Total Balance with Selected Main Currency
+                                if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID) &&
+                                    quoteAndSelectedMainProduct != null &&
+                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                {
+                                    currentAssetInformation.AggregatedSelectedMainBalance =
+                                        currentAssetInformation.SelectedMainCurrencyBalance +
+                                        currentAssetInformation.BaseAndQuoteBalance;
+                                }
                                 //update product data
                                 Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
                                 if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
