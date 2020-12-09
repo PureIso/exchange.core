@@ -1,14 +1,31 @@
-dist: xenial
-addons:
-  snaps:
-  - name: dotnet-sdk
-    classic: true
-    channel: 5.0/beta
-sudo: required
-language: csharp
-mono: none
-script:
-  - sudo snap alias dotnet-sdk.dotnet dotnet
-  - dotnet --version
-  - dotnet restore exchange.test/exchange.test.csproj
-  - dotnet test exchange.test/exchange.test.csproj
+matrix:
+  include:
+    - language: csharp
+      dist: xenial
+      addons:
+        snaps:
+        - name: dotnet-sdk
+          classic: true
+          channel: 5.0/beta
+      sudo: required
+      mono: none
+      script:
+        - sudo snap alias dotnet-sdk.dotnet dotnet
+        - dotnet --version
+        - dotnet restore exchange.test/exchange.test.csproj
+        - dotnet test exchange.test/exchange.test.csproj
+
+    - language: node_js
+      addons:
+        chrome: stable
+      node_js:
+        - 10
+        - 9
+        - 8
+        - node
+      before_script:
+        - cd exchange.signalR.client.web.frontend
+      script:
+        - npm install
+        - npm test
+        - npm run e2e

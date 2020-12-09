@@ -11,4 +11,5 @@ COPY exchange.signalR.client.web.frontend/. /usr/src/app/exchange.signalR.client
 WORKDIR /usr/src/app/exchange.signalR.client.web.frontend/
 RUN npm install
 RUN npm audit fix
-#RUN npm run test
+RUN npm test
+RUN npm run e2e

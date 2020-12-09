@@ -1,4 +1,4 @@
-import { TestBed, async, ComponentFixture } from "@angular/core/testing";
+import { TestBed, ComponentFixture, waitForAsync } from "@angular/core/testing";
 import { AppComponent } from "./app.component";
 import { RouterTestingModule } from "@angular/router/testing";
 /**Fields declarations */
@@ -30,6 +30,6 @@ function componentToBeDefined() {
  */
 describe("AppComponent", () => {
     //async will not allow the next test to start until the async finishes all its tasks.
-    beforeEach(async(setup));
+    beforeEach(waitForAsync(setup));
     it("should create", componentToBeDefined);
 });
