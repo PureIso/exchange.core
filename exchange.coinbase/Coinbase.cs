@@ -473,12 +473,33 @@ namespace exchange.coinbase
                                     List<Order> bidOrderList = orderBook.Bids.ToOrderList();
                                     List<Order> askOrderList = orderBook.Asks.ToOrderList();
                                     decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                    decimal bidSumOrderSize = bidOrderList.Sum(order => order.Size.ToDecimal());
                                     int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                    decimal askSumOrderSize = askOrderList.Sum(order => order.Size.ToDecimal());
+                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                    //Get volume difference for each side
+                                    if (currentAssetInformation.BidPriceAndSize.Count > 0 &&
+                                        currentAssetInformation.AskPriceAndSize.Count > 0)
+                                    {
+                                        //BID: The bid price represents the maximum price that a buyer is willing to pay
+                                        //ASK: The ask price represents the minimum price that a seller is willing to take
+                                        currentAssetInformation.IsVolumeBuySide = bidSumOrderSize > askSumOrderSize;
+                                        //Get the order book difference
+                                        if (currentAssetInformation.IsVolumeBuySide)
+                                        {
+                                            currentAssetInformation.SizePercentageDifference =
+                                                Math.Round((bidSumOrderSize - askSumOrderSize) / bidSumOrderSize, 2) * 100;
+                                        }
+                                        else
+                                        {
+                                            currentAssetInformation.SizePercentageDifference =
+                                                Math.Round((askSumOrderSize - bidSumOrderSize) / askSumOrderSize, 2) * 100;
+                                        }
+                                    }
                                     bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList(); 
                                     currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize; 
                                     currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
-                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
-                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize); 
                                     currentAssetInformation.AskMaxOrderSize = askMaxOrderSize; 
                                     currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
                                     askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
@@ -487,6 +508,8 @@ namespace exchange.coinbase
                                                                                         select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList(); 
                                     currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
                                                                                         select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    
+                                    
                                 }
                                 NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);

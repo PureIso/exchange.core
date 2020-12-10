@@ -72,5 +72,10 @@ namespace exchange.core.models
         public decimal BaseAndQuoteBalance { get; set; }
         [JsonPropertyName("aggregated_selected_main_balance")]
         public decimal AggregatedSelectedMainBalance { get; set; }
+        [JsonPropertyName("is_volume_buy_side")]
+        public bool IsVolumeBuySide { get; set; }
+        [JsonPropertyName("size_percentage_difference")]
+        public decimal SizePercentageDifference { get; set; }
+
     }
 }

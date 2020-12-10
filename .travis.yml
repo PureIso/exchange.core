@@ -16,12 +16,12 @@ jobs:
         - dotnet test exchange.test/exchange.test.csproj
 
     - language: node_js
-      addons:
-        apt:
-          sources:
-            - google-chrome
-          packages:
-            - google-chrome-stable
+      # addons:
+      #   apt:
+      #     sources:
+      #       - google-chrome
+      #     packages:
+      #       - google-chrome-stable
       node_js:
         - 10
         - 9
@@ -31,17 +31,6 @@ jobs:
         - sudo apt-get update
         - sudo apt-get install dbus-x11
         - export DISPLAY=:99.0
-        # - sh -e /etc/init.d/xvfb start
-        - export CHROME_BIN=/usr/bin/google-chrome
-        - sudo apt-get install -y libappindicator1 fonts-liberation
-        - wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        - sudo dpkg -i google-chrome*.deb
-        - wget https://chromedriver.storage.googleapis.com/2.38/chromedriver_linux64.zip
-        - unzip chromedriver_linux64.zip
-        - sudo cp chromedriver /usr/bin
-        - wget https://github.com/mozilla/geckodriver/releases/download/v0.20.1/geckodriver-v0.20.1-linux64.tar.gz
-        - tar -xzf geckodriver-v0.20.1-linux64.tar.gz
-        - sudo cp geckodriver /usr/bin
         - cd exchange.signalR.client.web.frontend
       script:
         - npm install

@@ -31,7 +31,7 @@ namespace exchange.core.helpers
 
         public static decimal ToDecimal(this string value)
         {
-            return decimal.TryParse(value, out decimal decimalValue) ? Math.Round(decimalValue, 8) : 0;
+            return decimal.TryParse(value, out decimal decimalValue) ? Math.Round(decimalValue, 6) : 0;
         }
 
         public static long ToLong(this string value)
@@ -43,10 +43,8 @@ namespace exchange.core.helpers
         {
             if (DateTime.TryParse(value, out DateTime dateTimeValue))
                 return dateTimeValue;
-            if (DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None,
-                out DateTime dateTimeValueExact))
-                return dateTimeValueExact;
-            return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return DateTime.TryParseExact(value, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None,
+                out DateTime dateTimeValueExact) ? dateTimeValueExact : new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         }
 
         public static List<Order> ToOrderList(this ArrayList[] arrayLists)
@@ -56,29 +54,42 @@ namespace exchange.core.helpers
                 return orders;
             foreach (ArrayList array in arrayLists)
             {
-                Order order = new Order();
+                string price = string.Empty;
+                string quantity;
+                decimal quantityDecimal = 0;
+                string size = string.Empty;
                 switch (array.Count)
                 {
                     case 2:
-                        order = new Order
-                        {
-                            Price = ((JsonElement) array[0]).GetString(),
-                            Quantity = decimal.Parse(((JsonElement) array[1]).GetString())
-                        };
+                    {
+                        if (array[0] != null && array[1] != null)
+                        { 
+                            price = ((JsonElement) array[0]).GetString(); 
+                            quantity = ((JsonElement) array[1]).GetString();
+                            decimal.TryParse(quantity, out quantityDecimal);
+                        }
                         break;
+                    }
                     case 3:
-                        order = new Order
+                    {
+                        if (array[0] != null && array[1] != null && array[2] != null)
                         {
-                            Price = ((JsonElement) array[0]).GetString(),
-                            Size = ((JsonElement) array[1]).GetString(),
-                            Quantity = ((JsonElement) array[2]).GetInt32()
-                        };
+                            price = ((JsonElement)array[0]).GetString();
+                            size = ((JsonElement) array[1]).GetString();
+                            quantity = ((JsonElement)array[2]).GetString();
+                            decimal.TryParse(quantity, out quantityDecimal);
+                        }
                         break;
+                    }
                 }
-
+                Order order = new Order
+                {
+                    Price = price,
+                    Side = size,
+                    Quantity = Math.Round(quantityDecimal, 6)
+                };
                 orders.Add(order);
             }
-
             return orders;
         }
 
