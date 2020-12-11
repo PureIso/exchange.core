@@ -29,7 +29,6 @@ jobs:
         - node
       before_script:
         - "export DISPLAY=:99.0"
-        - sh -e /etc/init.d/xvfb start
         - nohup bash -c "./nodemodules/protractor/bin/webdriver-manager start 2>&1 &"
         - sleep 5
         - cd exchange.signalR.client.web.frontend
