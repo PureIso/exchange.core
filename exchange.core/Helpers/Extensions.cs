@@ -76,8 +76,7 @@ namespace exchange.core.helpers
                         {
                             price = ((JsonElement)array[0]).GetString();
                             size = ((JsonElement) array[1]).GetString();
-                            quantity = ((JsonElement)array[2]).GetString();
-                            decimal.TryParse(quantity, out quantityDecimal);
+                            quantityDecimal = ((JsonElement)array[2]).GetInt32();
                         }
                         break;
                     }
@@ -85,7 +84,7 @@ namespace exchange.core.helpers
                 Order order = new Order
                 {
                     Price = price,
-                    Side = size,
+                    Size = size,
                     Quantity = Math.Round(quantityDecimal, 6)
                 };
                 orders.Add(order);

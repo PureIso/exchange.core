@@ -87,9 +87,9 @@ namespace exchange.test
 
             Assert.AreEqual("e316cb9a-0808-4fd7-8914-97829c1925de", subjectUnderTest.Accounts[1].ID);
             Assert.AreEqual("USD", subjectUnderTest.Accounts[1].Currency);
-            Assert.AreEqual((decimal) 80.23013731, subjectUnderTest.Accounts[1].Balance.ToDecimal());
-            Assert.AreEqual((decimal) 79.22663481, subjectUnderTest.Accounts[1].Available.ToDecimal());
-            Assert.AreEqual((decimal) 1.00350250, subjectUnderTest.Accounts[1].Hold.ToDecimal());
+            Assert.AreEqual((decimal)Math.Round(80.23013731, 6), subjectUnderTest.Accounts[1].Balance.ToDecimal());
+            Assert.AreEqual((decimal)Math.Round(79.22663481, 6), subjectUnderTest.Accounts[1].Available.ToDecimal());
+            Assert.AreEqual((decimal)Math.Round(1.00350250, 6), subjectUnderTest.Accounts[1].Hold.ToDecimal());
         }
 
         [TestMethod]
@@ -526,7 +526,7 @@ namespace exchange.test
             Assert.AreEqual((decimal) 0.193, subjectUnderTest.Tickers[0].Size.ToDecimal());
             Assert.AreEqual((decimal) 333.98, subjectUnderTest.Tickers[0].Bid.ToDecimal());
             Assert.AreEqual((decimal) 333.99, subjectUnderTest.Tickers[0].Ask.ToDecimal());
-            Assert.AreEqual((decimal) 5957.11914015, subjectUnderTest.Tickers[0].Volume.ToDecimal());
+            Assert.AreEqual((decimal)Math.Round(5957.11914015, 6), subjectUnderTest.Tickers[0].Volume.ToDecimal());
             Assert.AreEqual("2015-11-14T20:46:03.511254Z".ToDateTime(), subjectUnderTest.Tickers[0].Time.ToDateTime());
             Assert.IsNotNull(subjectUnderTest.CurrentPrices);
             Assert.AreEqual(subjectUnderTest.CurrentPrices[subjectUnderTest.Tickers[0].ProductID],

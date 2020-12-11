@@ -16,23 +16,24 @@ jobs:
         - dotnet test exchange.test/exchange.test.csproj
 
     - language: node_js
-      # addons:
-      #   apt:
-      #     sources:
-      #       - google-chrome
-      #     packages:
-      #       - google-chrome-stable
+      addons:
+        apt:
+          sources:
+            - google-chrome
+          packages:
+            - google-chrome-stable
       node_js:
         - 10
         - 9
         - 8
         - node
       before_script:
-        - sudo apt-get update
-        - sudo apt-get install dbus-x11
-        - export DISPLAY=:99.0
+        - "export DISPLAY=:99.0"
+        - sh -e /etc/init.d/xvfb start
+        - nohup bash -c "./nodemodules/protractor/bin/webdriver-manager start 2>&1 &"
+        - sleep 5
         - cd exchange.signalR.client.web.frontend
       script:
         - npm install
         - npm test
-        - xvfb-run npm run e2e
+        - npm run e2e
