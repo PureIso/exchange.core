@@ -1,104 +1,225 @@
-<div fxLayout="column mat-elevation-z8" fxFlex="50%">
-    <mat-tab-group dynamicHeight>
+<div fxLayout="column" class="content mat-elevation-z8">
+    <div class="row">
+        <div fxFlex="25%"></div>
+        <mat-checkbox fxFlex="25%">AutoTrade</mat-checkbox>
+        <mat-checkbox fxFlex="25%">Profit Trades Only</mat-checkbox>
+        <div fxFlex="25%"></div>
+    </div>
 
-        <mat-tab label="Buy" class="green-background">
-            <mat-card class="example-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="example-header-image"></div>
-                  <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
-                  <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
-                </mat-card-header>
+    <div class="row">
+        <div fxFlex="50%">
+            <mat-tab-group dynamicHeight>
 
-                <mat-card-content>
-                    <div class="row">
-                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">AutoTrade</mat-checkbox>
-                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">Profit Trades Only</mat-checkbox>
-                    </div>
-                    <div class="row">
-                        <div fxFlex="50%">
-                            <mat-form-field appearance="outline" style="width:50%">
-                                <mat-label>Buy Amount: {{ displayContainer.selected_product_id }}</mat-label>
-                                <input matInput placeholder="Placeholder">
-                            </mat-form-field>
-                            <br>
-                            <button mat-raised-button class="green-background" style="width:50%">Max Amount</button>
+                <mat-tab label="Buy" class="green-background">
+                    <mat-card>
+
+                        <mat-card-header>
+                            <div mat-card-avatar></div>
+                            <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
+                            <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
+                        </mat-card-header>
+
+                        <mat-card-content>
+                            <div class="row">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Buy Type</mat-label>
+                                    <mat-select [(value)]="buyTypeMatSelect">
+                                        <mat-option value="limit">Limit</mat-option>
+                                        <mat-option value="market">Market</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <div fxFlex="50%">
+                                    <mat-form-field appearance="outline" style="width:50%">
+                                        <mat-label>Buy Amount: {{ displayContainer.selected_product_id }}</mat-label>
+                                        <input matInput [(ngModel)]="buyAmountMatInput">
+                                    </mat-form-field>
+                                    <br>
+                                    <button mat-raised-button class="green-background" style="width:50%">Max</button>
+                                </div>
+
+                                <div fxFlex="50%">
+                                    <mat-form-field appearance="outline" style="width:50%">
+                                        <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
+                                        <input matInput [(ngModel)]="buyLimitPriceMatInput"
+                                            [disabled]="buyTypeMatSelect == 'market'">
+                                    </mat-form-field>
+                                    <br>
+                                    <button mat-raised-button class="green-background" style="width:50%"
+                                        (click)="getAskingBuyPrice()">Lowest Asking Price</button>
+                                </div>
+                            </div>
+                        </mat-card-content>
+
+                        <mat-card-actions>
+                            <div class="row">
+                                <div fxFlex="100%">
+                                    <button mat-raised-button [disabled]="!buyAmountMatInput" class="green-background"
+                                        (click)="buyTrade()" style="width:100%">Buy</button>
+                                </div>
+                            </div>
+                        </mat-card-actions>
+
+                    </mat-card>
+                </mat-tab>
+
+                <mat-tab label="Sell" class="red-background">
+                    <mat-card>
+
+                        <mat-card-header>
+                            <div mat-card-avatar></div>
+                            <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
+                            <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
+                        </mat-card-header>
+
+                        <mat-card-content>
+                            <div class="row">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Sell Type</mat-label>
+                                    <mat-select [(value)]="sellTypeMatSelect">
+                                        <mat-option value="limit">Limit</mat-option>
+                                        <mat-option value="market">Market</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+
+                            <div class="row">
+                                <div fxFlex="50%">
+                                    <mat-form-field appearance="outline" style="width:50%">
+                                        <mat-label>Sell Amount: {{ displayContainer.selected_product_id }}</mat-label>
+                                        <input matInput [(ngModel)]="sellAmountMatInput">
+                                    </mat-form-field>
+                                    <br>
+                                    <button mat-raised-button class="red-background" style="width:50%">Max</button>
+                                </div>
+
+                                <div fxFlex="50%" ng-disabled="sellTypeMatSelect == market">
+                                    <mat-form-field appearance="outline" style="width:50%">
+                                        <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
+                                        <input matInput [(ngModel)]="sellLimitPriceMatInput">
+                                    </mat-form-field>
+                                    <br>
+                                    <button mat-raised-button class="red-background" style="width:50%"
+                                        (click)="getAskingSellPrice()">Highest Bidding Price</button>
+                                </div>
+                            </div>
+                        </mat-card-content>
+
+                        <mat-card-actions>
+                            <div class="row">
+                                <div fxFlex="100%" ng-disabled="sellAmountMatInput">
+                                    <button mat-raised-button class="red-background" [disabled]="!sellTypeMatSelect"
+                                        (click)="sellTrade()" style="width:100%">Sell</button>
+                                </div>
+                            </div>
+                        </mat-card-actions>
+
+                    </mat-card>
+                </mat-tab>
+
+            </mat-tab-group>
+        </div>
+
+        <div fxFlex="50%">
+            <mat-tab-group dynamicHeight>
+                <mat-tab label="Orders">
+                    <div fxFlex="100%">
+                        <div fxFlex="25%"></div>
+                        <div fxFlex="25%"></div>
+                        <div fxFlex="25%"></div>
+                        <div fxFlex="25%">
+                            <button mat-raised-button color="primary" style="width:100%"
+                                (click)="toggleCancelAllOrders()">Cancel All</button>
                         </div>
-                        <div fxFlex="50%">
-                            <mat-form-field appearance="outline" style="width:50%">
-                                <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
-                                <input matInput placeholder="Placeholder">
-                            </mat-form-field>
-                            <br>
-                            <button mat-raised-button class="green-background" style="width:50%">Max Amount Limit</button>
-                        </div>
                     </div>
-                </mat-card-content>
+                    <div fxFlex="100%">
+                        <table mat-table [dataSource]="orders" class="mat-elevation-z8" fxFlex="100%"
+                            multiTemplateDataRows>
 
-                <mat-card-actions>
-                    <div class="row">
-                        <div fxFlex="100%">
-                            <button mat-raised-button class="green-background" style="width:100%">Buy</button>
-                        </div>
+                            <ng-container matColumnDef="side">
+                                <th mat-header-cell *matHeaderCellDef> Side </th>
+                                <td mat-cell *matCellDef="let element"> {{element.side}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="size">
+                                <th mat-header-cell *matHeaderCellDef> Size </th>
+                                <td mat-cell *matCellDef="let element"> {{element.size}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="price">
+                                <th mat-header-cell *matHeaderCellDef> Price </th>
+                                <td mat-cell *matCellDef="let element"> {{element.price}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="created_at">
+                                <th mat-header-cell *matHeaderCellDef> Created </th>
+                                <td mat-cell *matCellDef="let element"> {{element.created_at}} </td>
+                            </ng-container>
+
+                            <ng-container matColumnDef="cancelOrder">
+                                <th mat-header-cell *matHeaderCellDef> Cancel </th>
+                                <td mat-cell *matCellDef="let element">
+                                    <button mat-raised-button color="primary" fxFlexAlign="center" style="width:90%"
+                                        (click)="toggleCancelOrder(element.id)">Cancel</button>
+                                </td>
+                            </ng-container>
+
+                            <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+                            <tr mat-row *matRowDef="let element; columns: columnsToDisplay;"
+                                class="example-element-row">
+                            </tr>
+                        </table>
                     </div>
-                </mat-card-actions>
+                </mat-tab>
 
-            </mat-card>     
-        </mat-tab>
+                <mat-tab label="Sell Information">
+                    <table mat-table [dataSource]="assetInformation" class="mat-elevation-z8" fxFlex="100%"
+                        multiTemplateDataRows>
 
-        <mat-tab label="Buy Information" class="red-background">
+                        <ng-container matColumnDef="base_currency_balance">
+                            <th mat-header-cell *matHeaderCellDef> {{currentAssetInfo.base_currency_symbol}} Balance
+                            </th>
+                            <td mat-cell *matCellDef="let element"> {{currentAssetInfo.base_currency_balance}} </td>
+                        </ng-container>
 
-        </mat-tab>
-    </mat-tab-group>
-</div>
+                        <ng-container matColumnDef="quote_currency_balance">
+                            <th mat-header-cell *matHeaderCellDef> {{currentAssetInfo.quote_currency_symbol}} Balance
+                            </th>
+                            <td mat-cell *matCellDef="let element"> {{currentAssetInfo.quote_currency_balance}} </td>
+                        </ng-container>
 
-<div fxLayout="column mat-elevation-z8" fxFlex="50%">
-    <mat-tab-group dynamicHeight>
+                        <ng-container matColumnDef="base_and_quote_balance">
+                            <th mat-header-cell *matHeaderCellDef>
+                                {{currentAssetInfo.base_currency_symbol}}-{{currentAssetInfo.quote_currency_symbol}}
+                                Balance </th>
+                            <td mat-cell *matCellDef="let element"> {{currentAssetInfo.base_and_quote_balance}} </td>
+                        </ng-container>
 
-        <mat-tab label="Sell" class="red-background">
-            <mat-card class="example-card">
-                <mat-card-header>
-                  <div mat-card-avatar class="example-header-image"></div>
-                  <mat-card-title>{{ displayContainer.application_name }}</mat-card-title>
-                  <mat-card-subtitle>{{ displayContainer.selected_product_id }}</mat-card-subtitle>
-                </mat-card-header>
+                        <ng-container matColumnDef="selected_main_currency_balance">
+                            <th mat-header-cell *matHeaderCellDef> {{currentAssetInfo.selected_main_currency_symbol}}
+                                Balance (Main Currency) </th>
+                            <td mat-cell *matCellDef="let element"> {{currentAssetInfo.selected_main_currency_balance}}
+                            </td>
+                        </ng-container>
 
-                <mat-card-content>
-                    <div class="row">
-                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">AutoTrade</mat-checkbox>
-                        <mat-checkbox class="example-margin" fxFlex="50%" color="primary">Profit Trades Only</mat-checkbox>
-                    </div>
-                    <div class="row">
-                        <div fxFlex="50%">
-                            <mat-form-field appearance="outline" style="width:50%">
-                                <mat-label>Buy Amount: {{ displayContainer.selected_product_id }}</mat-label>
-                                <input matInput placeholder="Placeholder">
-                            </mat-form-field>
-                            <br>
-                            <button mat-raised-button class="red-background" style="width:50%">Max Amount</button>
-                        </div>
-                        <div fxFlex="50%">
-                            <mat-form-field appearance="outline" style="width:50%">
-                                <mat-label>Limit Price: {{ displayContainer.selected_product_id }}</mat-label>
-                                <input matInput placeholder="Placeholder">
-                            </mat-form-field>
-                            <br>
-                            <button mat-raised-button class="red-background" style="width:50%">Max Amount Limit</button>
-                        </div>
-                    </div>
-                </mat-card-content>
+                        <ng-container matColumnDef="base_and_selected_main_balance">
+                            <th mat-header-cell *matHeaderCellDef>
+                                {{currentAssetInfo.base_currency_symbol}}-{{currentAssetInfo.selected_main_currency_symbol}}
+                                (Main Currency Balance) </th>
+                            <td mat-cell *matCellDef="let element"> {{currentAssetInfo.aggregated_selected_main_balance}}
+                            </td>
+                        </ng-container>
 
-                <mat-card-actions>
-                    <div class="row">
-                        <div fxFlex="100%">
-                            <button mat-raised-button class="red-background" style="width:100%">Buy</button>
-                        </div>
-                    </div>
-                </mat-card-actions>
+                        <tr mat-header-row *matHeaderRowDef="currentAssetColumnsToDisplay"></tr>
+                        <tr mat-row *matRowDef="let element; columns: currentAssetColumnsToDisplay;"
+                            class="example-element-row">
+                        </tr>
+                    </table>
 
-            </mat-card>     
-        </mat-tab>
-
-        <mat-tab label="Sell Information" class="red-background">
-        </mat-tab>
-    </mat-tab-group>
+                </mat-tab>
+            </mat-tab-group>
+        </div>
+    </div>
 </div>

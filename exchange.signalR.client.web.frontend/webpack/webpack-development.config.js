@@ -33,7 +33,8 @@ module.exports = {
         historyApiFallback: true,
         port: 9000,
         stats: "minimal",
-        host: process.env.HOST
+        host: process.env.HOST,
+        publicPath: '/'
     },
     devtool: "inline-source-map",
     module: {

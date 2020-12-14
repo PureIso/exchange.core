@@ -12,7 +12,7 @@ export class CRUDAssetInformationContainer implements Action {
     }
     private getAssetInformationIndex(assetInformation: AssetInformation): number {
         return this.payload.assetInformation.findIndex((asset: AssetInformation) => {
-            return asset.id === assetInformation.id && 
+            return asset.product_id === assetInformation.product_id && 
             asset.application_name === assetInformation.application_name;
         });
     }
@@ -34,7 +34,7 @@ export class CRUDAssetInformationContainer implements Action {
         });
         //sort
         this.payload.assetInformation.sort((accountInformation1:AssetInformation, accountInformation2:AssetInformation) => {
-            return this.sort(accountInformation1.id,accountInformation2.id);
+            return this.sort(accountInformation1.product_id,accountInformation2.product_id);
         });
     }
 }

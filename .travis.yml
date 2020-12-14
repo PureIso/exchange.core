@@ -27,12 +27,6 @@ jobs:
         - 9
         - 8
         - node
-      before_script:
-        - "export DISPLAY=:99.0"
-        - nohup bash -c "./nodemodules/protractor/bin/webdriver-manager start 2>&1 &"
-        - sleep 5
-        - cd exchange.signalR.client.web.frontend
       script:
         - npm install
         - npm test
-        - npm run e2e
