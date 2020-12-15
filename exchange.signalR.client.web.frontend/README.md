@@ -25,6 +25,10 @@ You will need to have the Java Development Kit (JDK) installed to run the standa
 - [JDK8 Main](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html)
 - [JDK8 Mirror](https://oraclemirror.np.gy/jdk8/)
 
+Latest version of chrome driver.
+
+- [Chromedriver](https://chromedriver.storage.googleapis.com/)
+
 ## Install npm packages
 
 Install the npm packages described in the `package.json` and verify that it works:
