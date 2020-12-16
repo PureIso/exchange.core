@@ -10,6 +10,9 @@ describe('App', () => {
 
     it('should display landing page title', () => {
         page.navigateToHome();
+        browser.waitForAngularEnabled(false);
+        browser.sleep(3000);
+
         let result = 'Exchange.Core';
         page.getTitle().then(function (r) {
             expect(result).toEqual(r);

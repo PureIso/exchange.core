@@ -36,3 +36,4 @@ jobs:
       script:
         - npm install
         - npm test
+        - npm run e2e

@@ -6,15 +6,16 @@ const { SpecReporter } = require('jasmine-spec-reporter');
 const server = new WebpackDevServer(webpack(config));
 
 exports.config = {
-    specs: [
-        './src/**.e2e-spec.ts'
-    ],
+    specs: ['./src/**.e2e-spec.ts'],
     exclude: [],
-
     baseUrl: 'http://localhost:9000',
     framework: 'jasmine',
+    directConnect:true,
     seleniumAddress: 'http://localhost:4444/wd/hub',
-    allScriptsTimeout: 110000,
+    allScriptsTimeout: 400000,
+    rootElement: 'my-app',
+    noGlobals: true,
+
     jasmineNodeOpts: {
         showTiming: true,
         showColors: true,
@@ -22,14 +23,15 @@ exports.config = {
         includeStackTrace: false,
         defaultTimeoutInterval: 400000
     },
+
     capabilities: {
         'directConnect': true,
         'browserName': 'chrome',
         chromeOptions: {
-            args: ['--headless', '--disable-gpu', '--window-size=800,600', '--no-sandbox']
+            args: ['--headless', '--disable-gpu', '--window-size=800,600']
         }
     },
-    noGlobals: true,
+    
     beforeLaunch: () => {
         console.log("Before starting");
         return new Promise((resolve, reject) => {
@@ -44,12 +46,16 @@ exports.config = {
             });
         })
     },
+
+    //global test set-up goes here
     onPrepare: () => {
+
         let globals = require('protractor');
         let browser = globals.browser;
         browser.baseUrl = 'http://localhost:9000';
         browser.manage().timeouts().implicitlyWait(5000);
 
+        // Relative path of tsconfig.json file 
         require('ts-node').register({
             project: require('path').join(__dirname, './tsconfig.e2e.json')
         });
@@ -62,5 +68,10 @@ exports.config = {
                 displaySpecDuration: true
             }
         }));
-    }
+    },
+    
+    //global test tear-down goes here 
+    onComplete() { 
+        
+    } 
 };
