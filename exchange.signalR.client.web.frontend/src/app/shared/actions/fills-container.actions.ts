@@ -1,6 +1,7 @@
 import { Action } from "redux";
 import { FillsContainer } from "@interfaces/fills-container.interface";
 import { Fill } from "@interfaces/fill.interface";
+import { FillStatistics } from "@interfaces/fill-statistics.interface";
 
 export const CRUDFILLSCONTAINER = "CRUDFILLSCONTAINER";
 
@@ -35,6 +36,9 @@ export class CRUDFillsContainer implements Action {
         this.payload.fills.sort((fill1:Fill, fill2:Fill) => {
             return this.reverse_sort(fill1.created_at,fill2.created_at);
         });
+    }
+    updateFillStatistics(newFillStatistics: FillStatistics) {
+        this.payload.fill_statistics = newFillStatistics;
     }
 }
 

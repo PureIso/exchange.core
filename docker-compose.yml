@@ -213,6 +213,8 @@ services:
         ports:
             - 5005:5005
         command: python3.8 main.py
+        volumes:
+            - exchange_service_indicators:/usr/src/app/static:rw
         env_file:
             - .env
         environment:

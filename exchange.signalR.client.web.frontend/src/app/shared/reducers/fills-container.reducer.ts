@@ -3,6 +3,7 @@ import { FillsContainer } from "@interfaces/fills-container.interface";
 
 export const initialState: FillsContainer = {
     fills: [],
+    fill_statistics: undefined
 };
 /**
  * Fill Container Reducer

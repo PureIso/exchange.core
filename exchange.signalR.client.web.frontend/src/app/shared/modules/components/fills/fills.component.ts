@@ -12,8 +12,7 @@ import { MatTableDataSource } from '@angular/material/table';
 
 @Component({
     selector: "fills-component",
-    templateUrl: "./fills.component.html",
-    styleUrls: ["./fills.component.css"]
+    templateUrl: "./fills.component.html"
 })
 export class FillsComponent implements OnInit {
     @Input() applicationName: string;
