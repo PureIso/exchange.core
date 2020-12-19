@@ -13,6 +13,7 @@ namespace exchange.core.interfaces
         Task RequestedFills(string applicationName, string symbol);
         Task RequestedCancelAllOrder(string applicationName, string symbol);
         Task RequestedPlaceOrder(string applicationName, Order order);
+        Task RequestedFillStatistics(string applicationName, string symbol);
         Task RequestedOrder(string applicationName, string symbol);
         Task RequestedSubscription(string applicationName, List<string> symbols);
         Task NotifyFills(string applicationName, List<Fill> fills);
@@ -23,5 +24,6 @@ namespace exchange.core.interfaces
         Task NotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);
         Task NotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);
         Task NotifyProductChange(string applicationName, List<Product> products);
+        Task NotifyFillStatistics(string applicationName, FillStatistics fillStatistics);
     }
 }

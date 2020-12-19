@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using exchange.core.enums;
 
@@ -77,5 +78,15 @@ namespace exchange.core.models
         [JsonPropertyName("size_percentage_difference")]
         public decimal SizePercentageDifference { get; set; }
 
+        public void RoundDecimals()
+        {
+            BaseAndSelectedMainBalance = Math.Round(BaseAndSelectedMainBalance, 2);
+            BaseAndQuoteBalance = Math.Round(BaseAndQuoteBalance, 2);
+            SelectedMainCurrencyBalance = Math.Round(SelectedMainCurrencyBalance, 2);
+            AggregatedSelectedMainBalance = Math.Round(AggregatedSelectedMainBalance, 2);
+            BaseCurrencyBalance = Math.Round(BaseCurrencyBalance, 2);
+            QuoteCurrencyBalance = Math.Round(QuoteCurrencyBalance, 2);
+
+        }
     }
 }

@@ -469,6 +469,10 @@ namespace exchange.binance
                         if (SubscribeProducts != null && SubscribeProducts.Any())
                             await ConnectionAdapter.WebSocketCloseAsync();
                         //Prepare subscription
+                        foreach (Product product in products)
+                        {
+                            UpdateFillStatistics(product);
+                        }
                         SubscribeProducts ??= new List<Product>();
                         string message = SubscribeProducts.Aggregate("stream?streams=", (currentMessage, product) => 
                             currentMessage + (product.ID.ToLower() + "@trade/"));
@@ -598,8 +602,8 @@ namespace exchange.binance
                                     CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
                                 {
                                     currentAssetInformation.AggregatedSelectedMainBalance =
-                                        currentAssetInformation.SelectedMainCurrencyBalance +
-                                        currentAssetInformation.BaseAndQuoteBalance;
+                                        Math.Round(currentAssetInformation.SelectedMainCurrencyBalance +
+                                                   currentAssetInformation.BaseAndQuoteBalance,2);
                                 }
                                 //update product data
                                 Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
@@ -620,20 +624,42 @@ namespace exchange.binance
                                     List<Order> bidOrderList = orderBook.Bids.ToOrderList();
                                     List<Order> askOrderList = orderBook.Asks.ToOrderList();
                                     decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                    decimal bidSumOrderSize = bidOrderList.Sum(order => order.Size.ToDecimal());
                                     int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
-                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                    currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize;
-                                    currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
                                     decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                    decimal askSumOrderSize = askOrderList.Sum(order => order.Size.ToDecimal());
                                     int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                    currentAssetInformation.AskMaxOrderSize = askMaxOrderSize;
-                                    currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
                                     //price and size
+                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
                                     currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
                                                                                select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                                     currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
                                                                                select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    //Get volume difference for each side
+                                    if (currentAssetInformation.BidPriceAndSize.Count > 0 &&
+                                        currentAssetInformation.AskPriceAndSize.Count > 0)
+                                    {
+                                        //BID: The bid price represents the maximum price that a buyer is willing to pay
+                                        //ASK: The ask price represents the minimum price that a seller is willing to take
+                                        currentAssetInformation.IsVolumeBuySide = bidSumOrderSize > askSumOrderSize;
+                                        //Get the order book difference
+                                        if (currentAssetInformation.IsVolumeBuySide)
+                                        {
+                                            currentAssetInformation.SizePercentageDifference =
+                                                Math.Round((bidSumOrderSize - askSumOrderSize) / bidSumOrderSize, 2) * 100;
+                                        }
+                                        else
+                                        {
+                                            currentAssetInformation.SizePercentageDifference =
+                                                Math.Round((askSumOrderSize - bidSumOrderSize) / askSumOrderSize, 2) * 100;
+                                        }
+                                    }
+                                    currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize;
+                                    currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                    currentAssetInformation.AskMaxOrderSize = askMaxOrderSize;
+                                    currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                    currentAssetInformation.RoundDecimals();
                                 }
                                 NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
@@ -946,6 +972,7 @@ namespace exchange.binance
                     Time = start.AddMilliseconds(binanceFill.Time).ToLocalTime(),
                     TradeID = binanceFill.TradeID
                 }).ToList();
+                await UpdateFillStatistics(product, Fills);
                 NotifyFills?.Invoke(ApplicationName, Fills);
             }
             catch (Exception e)

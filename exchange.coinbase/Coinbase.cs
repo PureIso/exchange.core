@@ -219,7 +219,6 @@ namespace exchange.coinbase
 
             return AccountHolds;
         }
-        
         public async Task<List<Product>> UpdateProductsAsync()
         {
             string json = null;
@@ -326,6 +325,10 @@ namespace exchange.coinbase
                             RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                             //unsubscribe
                             ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
+                        }
+                        foreach (Product product in products)
+                        {
+                            UpdateFillStatistics(product);
                         }
                         SubscribeProducts = products;
                         InitIndicatorsAsync(products);
@@ -451,8 +454,8 @@ namespace exchange.coinbase
                                     CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
                                 {
                                     currentAssetInformation.AggregatedSelectedMainBalance =
-                                        currentAssetInformation.SelectedMainCurrencyBalance +
-                                        currentAssetInformation.BaseAndQuoteBalance;
+                                        Math.Round(currentAssetInformation.SelectedMainCurrencyBalance +
+                                                   currentAssetInformation.BaseAndQuoteBalance,2);
                                 }
                                 //update product data
                                 Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
@@ -478,6 +481,13 @@ namespace exchange.coinbase
                                     decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
                                     decimal askSumOrderSize = askOrderList.Sum(order => order.Size.ToDecimal());
                                     int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                    //price and size
+                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                    currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
+                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                    currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
+                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
                                     //Get volume difference for each side
                                     if (currentAssetInformation.BidPriceAndSize.Count > 0 &&
                                         currentAssetInformation.AskPriceAndSize.Count > 0)
@@ -497,19 +507,11 @@ namespace exchange.coinbase
                                                 Math.Round((askSumOrderSize - bidSumOrderSize) / askSumOrderSize, 2) * 100;
                                         }
                                     }
-                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList(); 
                                     currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize; 
                                     currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
                                     currentAssetInformation.AskMaxOrderSize = askMaxOrderSize; 
                                     currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
-                                    //price and size
-                                    currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList(); 
-                                    currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
-                                                                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    
-                                    
+                                    currentAssetInformation.RoundDecimals();
                                 }
                                 NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
                                 NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
@@ -729,6 +731,7 @@ namespace exchange.coinbase
                 if (!string.IsNullOrEmpty(json))
                     Fills = JsonSerializer.Deserialize<List<Fill>>(json);
                 NotifyFills?.Invoke(ApplicationName, Fills);
+                await UpdateFillStatistics(product, Fills);
             }
             catch (Exception e)
             {

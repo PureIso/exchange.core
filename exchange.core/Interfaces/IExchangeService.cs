@@ -12,5 +12,6 @@ namespace exchange.core.interfaces
         Task DelegateNotifyAccountInfo(string applicationName, Dictionary<string, decimal> accountInformation);
         Task DelegateNotifyAssetInformation(string applicationName, Dictionary<string, AssetInformation> assetInformation);
         Task DelegateNotifyMainCurrency(string applicationName, string mainCurrency);
+        Task DelegateNotifyFillStatistics(string applicationName, FillStatistics fillStatistic);
     }
 }

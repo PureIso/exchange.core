@@ -112,5 +112,16 @@ namespace exchange.core.implementations
             List<Fill> fills = await abstractExchangePlugin.UpdateFillsAsync(product);
             await Clients.Caller.NotifyFills(abstractExchangePlugin.ApplicationName, fills);
         }
+        public async Task RequestedFillStatistics(string applicationName, string symbol)
+        {
+            AbstractExchangePlugin abstractExchangePlugin =
+                _exchangePluginService.PluginExchanges.FirstOrDefault(x => x.ApplicationName == applicationName);
+            if (abstractExchangePlugin == null)
+                return;
+            Product product = new Product { ID = symbol };
+            FillStatistics fillStatistic = await abstractExchangePlugin.UpdateFillStatistics(product);
+            await Clients.Caller.NotifyFillStatistics(abstractExchangePlugin.ApplicationName, fillStatistic);
+        }
+
     }
 }

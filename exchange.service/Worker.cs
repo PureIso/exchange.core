@@ -43,7 +43,7 @@ namespace exchange.service
                     abstractExchangePlugin.NotifyAssetInformation += _exchangeService.DelegateNotifyAssetInformation;
                     abstractExchangePlugin.NotifyFills += _exchangeService.DelegateNotifyFills;
                     abstractExchangePlugin.NotifyOrders += _exchangeService.DelegateNotifyOrders;
-
+                    abstractExchangePlugin.NotifyFillStatistics += _exchangeService.DelegateNotifyFillStatistics;
                     abstractExchangePlugin.ProcessLogBroadcast += ProcessLogBroadcast;
                     bool result = await abstractExchangePlugin.InitAsync(_exchangeSettings);
                     if (!result) continue;
