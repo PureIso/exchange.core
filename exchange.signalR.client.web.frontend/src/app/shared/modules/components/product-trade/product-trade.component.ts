@@ -11,6 +11,8 @@ import { Order } from "@interfaces/order.interface";
 import { OrdersContainer } from "@interfaces/orders-container.interface";
 import { AssetInformationContainer } from "@interfaces/asset-information-container.interface";
 import { AssetInformation } from "@interfaces/asset-information.interface";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatTableDataSource } from "@angular/material/table";
 
 @Component({
     selector: "product-trade-component",
@@ -19,6 +21,7 @@ import { AssetInformation } from "@interfaces/asset-information.interface";
 })
 export class ProductTradeComponent implements OnInit {
     @Input() applicationName: string;
+    @ViewChild(MatPaginator) paginator: MatPaginator;  
     columnsToDisplay = ['side', 'size', 'price', 'created_at', 'cancelOrder'];
     currentAssetColumnsToDisplay = ['base_currency_balance', 'quote_currency_balance', 'base_and_quote_balance', 
     'selected_main_currency_balance', 'base_and_selected_main_balance'];
@@ -38,6 +41,7 @@ export class ProductTradeComponent implements OnInit {
     fills: Fill[];
     orders: Order[];
     assetInformation: AssetInformation[];
+    dataSource = new MatTableDataSource();
 
     buyAmountMatInput: string;
     buyLimitPriceMatInput: string;
@@ -49,6 +53,7 @@ export class ProductTradeComponent implements OnInit {
     constructor(private ngRedux: NgRedux<AppState>, private mainService: MainService) {
         this.fills = new Array();
         this.assetInformation = new Array();
+        this.dataSource.paginator = this.paginator;
         this.buyTypeMatSelect = 'limit';
         this.sellTypeMatSelect = 'limit';
     }
@@ -87,6 +92,8 @@ export class ProductTradeComponent implements OnInit {
                 if (orderList != undefined) {
                     this.orders = orderList;
                 }
+                this.dataSource = new MatTableDataSource(this.orders);
+                this.dataSource.paginator = this.paginator;
             }
         });
         this.assetInformationContainer$.subscribe((x: AssetInformationContainer) => {
