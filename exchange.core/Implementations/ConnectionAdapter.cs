@@ -18,6 +18,7 @@ namespace exchange.core.implementations
             HttpClient = new HttpClient();
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
+            _ioConnectionSemaphoreSlim = new SemaphoreSlim(1, 1);
         }
 
         public ConnectionAdapter(HttpClient httpClient)
@@ -25,6 +26,7 @@ namespace exchange.core.implementations
             HttpClient = httpClient;
             _ioSemaphoreSlim = new SemaphoreSlim(1, 1);
             _ioRequestSemaphoreSlim = new SemaphoreSlim(1, 1);
+            _ioConnectionSemaphoreSlim = new SemaphoreSlim(1, 1);
         }
 
         public Action<MessageType, string> ProcessLogBroadcast { get; set; }
@@ -47,6 +49,7 @@ namespace exchange.core.implementations
 
         private readonly SemaphoreSlim _ioRequestSemaphoreSlim;
         private readonly SemaphoreSlim _ioSemaphoreSlim;
+        private readonly SemaphoreSlim _ioConnectionSemaphoreSlim;
 
         #endregion
 
@@ -56,7 +59,7 @@ namespace exchange.core.implementations
         {
             try
             {
-                await _ioSemaphoreSlim.WaitAsync();
+                await _ioConnectionSemaphoreSlim.WaitAsync();
                 if (ClientWebSocket == null)
                     return;
                 if (ClientWebSocket.State != WebSocketState.Open)
@@ -69,7 +72,7 @@ namespace exchange.core.implementations
             }
             finally
             {
-                _ioSemaphoreSlim.Release();
+                _ioConnectionSemaphoreSlim.Release();
             }
         }
 
@@ -106,6 +109,7 @@ namespace exchange.core.implementations
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
                     $"Method: WebSocketSendAsync\r\nException Stack Trace: {ex.StackTrace}");
+                await ClientWebSocket.ConnectAsync(Authentication.WebSocketUri, CancellationToken.None);
             }
             finally
             {
@@ -140,6 +144,7 @@ namespace exchange.core.implementations
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
                     $"Method: WebSocketReceiveAsync\r\nException Stack Trace: {ex.StackTrace}");
+                await ClientWebSocket.ConnectAsync(Authentication.WebSocketUri, CancellationToken.None);
             }
             finally
             {
@@ -247,6 +252,7 @@ namespace exchange.core.implementations
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
                     $"Method: RequestAsync\r\nException Stack Trace: {ex.StackTrace}");
+                await ClientWebSocket.ConnectAsync(Authentication.WebSocketUri, CancellationToken.None);
             }
             finally
             {
