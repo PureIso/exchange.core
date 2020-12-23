@@ -29,12 +29,23 @@ module.exports = {
         plugins: [new TsConfigPathsPlugin({ configFile: tsconfigFile })]
     },
     devServer: {
+        host: '0.0.0.0',
+        port: 9000,
+        public: `frontend`,
+        publicPath: '/',
+        compress: false,
         contentBase: buildPath,
         historyApiFallback: true,
-        port: 9000,
-        stats: "minimal",
         host: process.env.HOST,
-        publicPath: '/'
+        hot: true,
+        inline: true,
+        stats: "minimal",
+        watchOptions: {
+            aggregateTimeout: 300,
+            poll: 1000,
+            ignored: /node_modules/,
+        },
+        disableHostCheck: true
     },
     devtool: "inline-source-map",
     module: {

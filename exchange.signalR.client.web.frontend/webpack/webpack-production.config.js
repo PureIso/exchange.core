@@ -34,12 +34,23 @@ module.exports = {
         plugins: [new TsConfigPathsPlugin({ configFile: tsconfigFile })]
     },
     devServer: {
-        contentBase: buildPath,
-        compress: true,
-        historyApiFallback: true,
+        host: '0.0.0.0',
         port: 9000,
+        public: `frontend`,
+        publicPath: '/',
+        compress: true,
+        contentBase: buildPath,
+        historyApiFallback: true,
+        host: process.env.HOST,
+        hot: true,
+        inline: true,
         stats: "minimal",
-        host: process.env.HOST
+        watchOptions: {
+            aggregateTimeout: 300,
+            poll: 1000,
+            ignored: /node_modules/,
+        },
+        disableHostCheck: true
     },
     devtool: "source-map",
     module: {

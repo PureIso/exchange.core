@@ -5,7 +5,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TsConfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
-const buildPath = path.resolve(__dirname, "../build/");
+const buildPath = path.resolve(__dirname, "../../exchange.signalR.client.web.frontend/wwwroot/");
 const tsconfigFile = path.join(__dirname, "../tsconfig.json");
 const envPath = path.resolve(__dirname, "../.env");
 const dotenv = require('dotenv').config({ path: envPath });
@@ -29,11 +29,23 @@ module.exports = {
         plugins: [new TsConfigPathsPlugin({ configFile: tsconfigFile })]
     },
     devServer: {
+        host: '0.0.0.0',
+        port: 9000,
+        //public: `frontend`,
+        publicPath: '/',
+        compress: true,
         contentBase: buildPath,
         historyApiFallback: true,
-        port: 9000,
+        host: process.env.HOST,
+        hot: true,
+        inline: true,
         stats: "minimal",
-        host: process.env.HOST
+        watchOptions: {
+            aggregateTimeout: 300,
+            poll: 1000,
+            ignored: /node_modules/,
+        },
+        disableHostCheck: true
     },
     devtool: "inline-source-map",
     module: {
