@@ -345,176 +345,184 @@ namespace exchange.coinbase
                                 return;
                             ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                                 $"Started Processing Feed Information.\r\nJSON: {json}");
-                            while (ConnectionAdapter.IsWebSocketConnected())
+                            try
                             {
-                                json = await ConnectionAdapter.WebSocketReceiveAsync();
-                                if (string.IsNullOrEmpty(json))
-                                    continue;
-                                Feed feed = JsonSerializer.Deserialize<Feed>(json);
-                                if (feed == null || feed.Type == "error" || string.IsNullOrEmpty(feed.ProductID) || string.IsNullOrEmpty(feed.Price))
-                                    continue;
-                                //update current price
-                                AssetInformation ??= new Dictionary<string, AssetInformation>();
-                                if (!AssetInformation.ContainsKey(feed.ProductID))
-                                    AssetInformation.Add(feed.ProductID, new AssetInformation{ProductID = feed.ProductID });
-                                AssetInformation currentAssetInformation = AssetInformation[feed.ProductID];
-                                //Get current product
-                                Products ??= new List<Product>();
-                                Accounts ??= new List<Account>();
-                                Product selectedProduct = Products.FirstOrDefault(p => p.ID == currentAssetInformation.ProductID);
-                                if(selectedProduct == null)
-                                    continue;
-                                currentAssetInformation.ProductID = feed.ProductID;
-                                currentAssetInformation.CurrentPrice = feed.Price.ToDecimal();
-                                //Current price update
-                                decimal currentPrice = feed.Price.ToDecimal();
-                                CurrentPrices ??= new Dictionary<string, decimal>();
-                                if (!CurrentPrices.ContainsKey(currentAssetInformation.ProductID))
-                                    CurrentPrices.Add(currentAssetInformation.ProductID, currentPrice);
-                                CurrentPrices[currentAssetInformation.ProductID] = currentPrice;
-                                SubscribedPrices[currentAssetInformation.ProductID] = currentPrice;
-                                //update feed and notifications
-                                feed.CurrentPrices = CurrentPrices;
-                                CurrentFeed = feed;
-                                //update order side
-                                if (Enum.TryParse(feed.Side, out OrderSide orderSide))
-                                    currentAssetInformation.OrderSide = orderSide;
-                                //update best bid and ask
-                                currentAssetInformation.BestAsk = feed.BestAsk;
-                                currentAssetInformation.BestBid = feed.BestBid;
-                                //Indicator
-                                RelativeStrengthIndex relativeStrengthIndex = RelativeStrengthIndices.FirstOrDefault(currentProduct =>
-                                    currentProduct.RelativeStrengthIndexSettings.Product.ID == feed.ProductID);
-                                if (relativeStrengthIndex != null)
+                                while (ConnectionAdapter.IsWebSocketConnected())
                                 {
-                                    currentAssetInformation.RelativeIndexQuarterly = relativeStrengthIndex
-                                        .RelativeStrengthIndexSettings.RelativeIndexQuarterly;
-                                    currentAssetInformation.RelativeIndexHourly = relativeStrengthIndex
-                                        .RelativeStrengthIndexSettings.RelativeIndexHourly;
-                                    currentAssetInformation.RelativeIndexDaily = relativeStrengthIndex
-                                        .RelativeStrengthIndexSettings.RelativeIndexDaily;
-                                }
-                                //Account Balances
-                                //Quote Currency Balance: example EUR / BTC
-                                Account selectedQuoteCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.QuoteCurrency);
-                                if (selectedQuoteCurrencyAccount != null)
-                                {
-                                    currentAssetInformation.QuoteCurrencySymbol = selectedQuoteCurrencyAccount.Currency;
-                                    decimal.TryParse(selectedQuoteCurrencyAccount.Balance, out decimal outQuoteCurrencyBalance);
-                                    currentAssetInformation.QuoteCurrencyBalance = outQuoteCurrencyBalance;
-                                    decimal.TryParse(selectedQuoteCurrencyAccount.Hold, out decimal outQuoteCurrencyHold);
-                                    currentAssetInformation.QuoteCurrencyHold = outQuoteCurrencyHold;
-                                    decimal.TryParse(selectedQuoteCurrencyAccount.Available, out decimal outQuoteCurrencyAvailable);
-                                    currentAssetInformation.QuoteCurrencyAvailable = outQuoteCurrencyAvailable;
-                                }
-                                //Base Currency Balance: example BTC / ETH
-                                Account selectedBaseCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.BaseCurrency);
-                                if (selectedBaseCurrencyAccount != null)
-                                {
-                                    currentAssetInformation.BaseCurrencySymbol = selectedBaseCurrencyAccount.Currency;
-                                    decimal.TryParse(selectedBaseCurrencyAccount.Balance, out decimal outSelectedAssetBalance);
-                                    currentAssetInformation.BaseCurrencyBalance = outSelectedAssetBalance;
-                                    decimal.TryParse(selectedBaseCurrencyAccount.Hold, out decimal outSelectedAssetHold);
-                                    currentAssetInformation.BaseCurrencyHold = outSelectedAssetHold;
-                                    decimal.TryParse(selectedBaseCurrencyAccount.Available, out decimal outSelectedAssetAvailable);
-                                    currentAssetInformation.BaseCurrencyAvailable = outSelectedAssetAvailable;
-                                }
-                                //Base and Quote Price: example BTC-EUR / ETH-BTC
-                                Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID == 
-                                    $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
-                                if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
-                                {
-                                    currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
-                                    currentAssetInformation.BaseAndQuoteBalance = CurrentPrices[quoteAndBaseProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
-                                }
-                                //Selected Main Currency: example EUR
-                                Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
-                                if (selectedMainCurrencyAccount != null)
-                                {
-                                    currentAssetInformation.SelectedMainCurrencySymbol = selectedMainCurrencyAccount.Currency;
-                                    decimal.TryParse(selectedMainCurrencyAccount.Balance, out decimal outSelectedMainCurrencyBalance);
-                                    currentAssetInformation.SelectedMainCurrencyBalance = outSelectedMainCurrencyBalance;
-                                    decimal.TryParse(selectedMainCurrencyAccount.Hold, out decimal outSelectedMainCurrencyHold);
-                                    currentAssetInformation.SelectedMainCurrencyHold = outSelectedMainCurrencyHold;
-                                    decimal.TryParse(selectedMainCurrencyAccount.Available, out decimal outSelectedMainCurrencyAvailable);
-                                    currentAssetInformation.SelectedMainCurrencyAvailable = outSelectedMainCurrencyAvailable;
-                                }
-                                //Base and Selected Main Price: example BTC-EUR / ETH-BTC
-                                Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
-                                    $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
-                                if (quoteAndSelectedMainProduct != null &&
-                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
-                                {
-                                    currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
-                                    currentAssetInformation.BaseAndSelectedMainBalance = CurrentPrices[quoteAndSelectedMainProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
-                                }
-                                //Total Balance with Selected Main Currency
-                                if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID) &&
-                                    quoteAndSelectedMainProduct != null &&
-                                    CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
-                                {
-                                    currentAssetInformation.AggregatedSelectedMainBalance =
-                                        Math.Round(currentAssetInformation.SelectedMainCurrencyBalance +
-                                                   currentAssetInformation.BaseAndQuoteBalance,2);
-                                }
-                                //update product data
-                                Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
-                                if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
-                                {
-                                    decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
-                                                                     twentyFourHourPrice.High.ToDecimal());
-                                    decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
-                                    decimal percentage = change * 100;
-                                    //update stat changes
-                                    currentAssetInformation.TwentyFourHourPriceChange = priceChangeDifference;
-                                    currentAssetInformation.TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
-                                }
-                                //Order Book
-                                OrderBook orderBook = await UpdateProductOrderBookAsync(selectedProduct);
-                                if (orderBook?.Bids != null && orderBook?.Asks != null)
-                                {
-                                    List<Order> bidOrderList = orderBook.Bids.ToOrderList();
-                                    List<Order> askOrderList = orderBook.Asks.ToOrderList();
-                                    decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
-                                    decimal bidSumOrderSize = bidOrderList.Sum(order => order.Size.ToDecimal());
-                                    int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
-                                    decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
-                                    decimal askSumOrderSize = askOrderList.Sum(order => order.Size.ToDecimal());
-                                    int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
-                                    //price and size
-                                    bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
-                                    askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
-                                    currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
-                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
-                                        select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
-                                    //Get volume difference for each side
-                                    if (currentAssetInformation.BidPriceAndSize.Count > 0 &&
-                                        currentAssetInformation.AskPriceAndSize.Count > 0)
+                                    json = await ConnectionAdapter.WebSocketReceiveAsync();
+                                    if (string.IsNullOrEmpty(json))
+                                        continue;
+                                    Feed feed = JsonSerializer.Deserialize<Feed>(json);
+                                    if (feed == null || feed.Type == "error" || string.IsNullOrEmpty(feed.ProductID) || string.IsNullOrEmpty(feed.Price))
+                                        continue;
+                                    //update current price
+                                    AssetInformation ??= new Dictionary<string, AssetInformation>();
+                                    if (!AssetInformation.ContainsKey(feed.ProductID))
+                                        AssetInformation.Add(feed.ProductID, new AssetInformation{ProductID = feed.ProductID });
+                                    AssetInformation currentAssetInformation = AssetInformation[feed.ProductID];
+                                    //Get current product
+                                    Products ??= new List<Product>();
+                                    Accounts ??= new List<Account>();
+                                    Product selectedProduct = Products.FirstOrDefault(p => p.ID == currentAssetInformation.ProductID);
+                                    if(selectedProduct == null)
+                                        continue;
+                                    currentAssetInformation.ProductID = feed.ProductID;
+                                    currentAssetInformation.CurrentPrice = feed.Price.ToDecimal();
+                                    //Current price update
+                                    decimal currentPrice = feed.Price.ToDecimal();
+                                    CurrentPrices ??= new Dictionary<string, decimal>();
+                                    if (!CurrentPrices.ContainsKey(currentAssetInformation.ProductID))
+                                        CurrentPrices.Add(currentAssetInformation.ProductID, currentPrice);
+                                    CurrentPrices[currentAssetInformation.ProductID] = currentPrice;
+                                    SubscribedPrices[currentAssetInformation.ProductID] = currentPrice;
+                                    //update feed and notifications
+                                    feed.CurrentPrices = CurrentPrices;
+                                    CurrentFeed = feed;
+                                    //update order side
+                                    if (Enum.TryParse(feed.Side, out OrderSide orderSide))
+                                        currentAssetInformation.OrderSide = orderSide;
+                                    //update best bid and ask
+                                    currentAssetInformation.BestAsk = feed.BestAsk;
+                                    currentAssetInformation.BestBid = feed.BestBid;
+                                    //Indicator
+                                    RelativeStrengthIndex relativeStrengthIndex = RelativeStrengthIndices.FirstOrDefault(currentProduct =>
+                                        currentProduct.RelativeStrengthIndexSettings.Product.ID == feed.ProductID);
+                                    if (relativeStrengthIndex != null)
                                     {
-                                        //BID: The bid price represents the maximum price that a buyer is willing to pay
-                                        //ASK: The ask price represents the minimum price that a seller is willing to take
-                                        currentAssetInformation.IsVolumeBuySide = bidSumOrderSize > askSumOrderSize;
-                                        //Get the order book difference
-                                        if (currentAssetInformation.IsVolumeBuySide)
-                                        {
-                                            currentAssetInformation.SizePercentageDifference =
-                                                Math.Round((bidSumOrderSize - askSumOrderSize) / bidSumOrderSize, 2) * 100;
-                                        }
-                                        else
-                                        {
-                                            currentAssetInformation.SizePercentageDifference =
-                                                Math.Round((askSumOrderSize - bidSumOrderSize) / askSumOrderSize, 2) * 100;
-                                        }
+                                        currentAssetInformation.RelativeIndexQuarterly = relativeStrengthIndex
+                                            .RelativeStrengthIndexSettings.RelativeIndexQuarterly;
+                                        currentAssetInformation.RelativeIndexHourly = relativeStrengthIndex
+                                            .RelativeStrengthIndexSettings.RelativeIndexHourly;
+                                        currentAssetInformation.RelativeIndexDaily = relativeStrengthIndex
+                                            .RelativeStrengthIndexSettings.RelativeIndexDaily;
                                     }
-                                    currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize; 
-                                    currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
-                                    currentAssetInformation.AskMaxOrderSize = askMaxOrderSize; 
-                                    currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
-                                    currentAssetInformation.RoundDecimals();
+                                    //Account Balances
+                                    //Quote Currency Balance: example EUR / BTC
+                                    Account selectedQuoteCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.QuoteCurrency);
+                                    if (selectedQuoteCurrencyAccount != null)
+                                    {
+                                        currentAssetInformation.QuoteCurrencySymbol = selectedQuoteCurrencyAccount.Currency;
+                                        decimal.TryParse(selectedQuoteCurrencyAccount.Balance, out decimal outQuoteCurrencyBalance);
+                                        currentAssetInformation.QuoteCurrencyBalance = outQuoteCurrencyBalance;
+                                        decimal.TryParse(selectedQuoteCurrencyAccount.Hold, out decimal outQuoteCurrencyHold);
+                                        currentAssetInformation.QuoteCurrencyHold = outQuoteCurrencyHold;
+                                        decimal.TryParse(selectedQuoteCurrencyAccount.Available, out decimal outQuoteCurrencyAvailable);
+                                        currentAssetInformation.QuoteCurrencyAvailable = outQuoteCurrencyAvailable;
+                                    }
+                                    //Base Currency Balance: example BTC / ETH
+                                    Account selectedBaseCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == selectedProduct.BaseCurrency);
+                                    if (selectedBaseCurrencyAccount != null)
+                                    {
+                                        currentAssetInformation.BaseCurrencySymbol = selectedBaseCurrencyAccount.Currency;
+                                        decimal.TryParse(selectedBaseCurrencyAccount.Balance, out decimal outSelectedAssetBalance);
+                                        currentAssetInformation.BaseCurrencyBalance = outSelectedAssetBalance;
+                                        decimal.TryParse(selectedBaseCurrencyAccount.Hold, out decimal outSelectedAssetHold);
+                                        currentAssetInformation.BaseCurrencyHold = outSelectedAssetHold;
+                                        decimal.TryParse(selectedBaseCurrencyAccount.Available, out decimal outSelectedAssetAvailable);
+                                        currentAssetInformation.BaseCurrencyAvailable = outSelectedAssetAvailable;
+                                    }
+                                    //Base and Quote Price: example BTC-EUR / ETH-BTC
+                                    Product quoteAndBaseProduct = Products.FirstOrDefault(p => p.ID == 
+                                        $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.QuoteCurrencySymbol}");
+                                    if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID))
+                                    {
+                                        currentAssetInformation.BaseAndQuotePrice = CurrentPrices[quoteAndBaseProduct.ID];
+                                        currentAssetInformation.BaseAndQuoteBalance = CurrentPrices[quoteAndBaseProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                    }
+                                    //Selected Main Currency: example EUR
+                                    Account selectedMainCurrencyAccount = Accounts.FirstOrDefault(account => account.Currency == MainCurrency);
+                                    if (selectedMainCurrencyAccount != null)
+                                    {
+                                        currentAssetInformation.SelectedMainCurrencySymbol = selectedMainCurrencyAccount.Currency;
+                                        decimal.TryParse(selectedMainCurrencyAccount.Balance, out decimal outSelectedMainCurrencyBalance);
+                                        currentAssetInformation.SelectedMainCurrencyBalance = outSelectedMainCurrencyBalance;
+                                        decimal.TryParse(selectedMainCurrencyAccount.Hold, out decimal outSelectedMainCurrencyHold);
+                                        currentAssetInformation.SelectedMainCurrencyHold = outSelectedMainCurrencyHold;
+                                        decimal.TryParse(selectedMainCurrencyAccount.Available, out decimal outSelectedMainCurrencyAvailable);
+                                        currentAssetInformation.SelectedMainCurrencyAvailable = outSelectedMainCurrencyAvailable;
+                                    }
+                                    //Base and Selected Main Price: example BTC-EUR / ETH-BTC
+                                    Product quoteAndSelectedMainProduct = Products.FirstOrDefault(p => p.ID ==
+                                        $"{currentAssetInformation.BaseCurrencySymbol}-{currentAssetInformation.SelectedMainCurrencySymbol}");
+                                    if (quoteAndSelectedMainProduct != null &&
+                                        CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                    {
+                                        currentAssetInformation.BaseAndSelectedMainPrice = CurrentPrices[quoteAndSelectedMainProduct.ID];
+                                        currentAssetInformation.BaseAndSelectedMainBalance = CurrentPrices[quoteAndSelectedMainProduct.ID] * currentAssetInformation.BaseCurrencyBalance;
+                                    }
+                                    //Total Balance with Selected Main Currency
+                                    if (quoteAndBaseProduct != null && CurrentPrices.ContainsKey(quoteAndBaseProduct.ID) &&
+                                        quoteAndSelectedMainProduct != null &&
+                                        CurrentPrices.ContainsKey(quoteAndSelectedMainProduct.ID))
+                                    {
+                                        currentAssetInformation.AggregatedSelectedMainBalance =
+                                            Math.Round(currentAssetInformation.SelectedMainCurrencyBalance +
+                                                    currentAssetInformation.BaseAndQuoteBalance,2);
+                                    }
+                                    //update product data
+                                    Statistics twentyFourHourPrice = await TwentyFourHoursRollingStatsAsync(selectedProduct);
+                                    if (twentyFourHourPrice?.Last != null && twentyFourHourPrice?.High != null)
+                                    {
+                                        decimal priceChangeDifference = (twentyFourHourPrice.Last.ToDecimal() -
+                                                                        twentyFourHourPrice.High.ToDecimal());
+                                        decimal change = priceChangeDifference / Math.Abs(twentyFourHourPrice.High.ToDecimal());
+                                        decimal percentage = change * 100;
+                                        //update stat changes
+                                        currentAssetInformation.TwentyFourHourPriceChange = priceChangeDifference;
+                                        currentAssetInformation.TwentyFourHourPricePercentageChange = Math.Round(percentage, 2);
+                                    }
+                                    //Order Book
+                                    OrderBook orderBook = await UpdateProductOrderBookAsync(selectedProduct);
+                                    if (orderBook?.Bids != null && orderBook?.Asks != null)
+                                    {
+                                        List<Order> bidOrderList = orderBook.Bids.ToOrderList();
+                                        List<Order> askOrderList = orderBook.Asks.ToOrderList();
+                                        decimal bidMaxOrderSize = bidOrderList.Max(order => order.Size.ToDecimal());
+                                        decimal bidSumOrderSize = bidOrderList.Sum(order => order.Size.ToDecimal());
+                                        int indexOfMaxBidOrderSize = bidOrderList.FindIndex(a => a.Size.ToDecimal() == bidMaxOrderSize);
+                                        decimal askMaxOrderSize = askOrderList.Max(order => order.Size.ToDecimal());
+                                        decimal askSumOrderSize = askOrderList.Sum(order => order.Size.ToDecimal());
+                                        int indexOfMaxAskOrderSize = askOrderList.FindIndex(a => a.Size.ToDecimal() == askMaxOrderSize);
+                                        //price and size
+                                        bidOrderList = bidOrderList.Take(indexOfMaxBidOrderSize + 1).ToList();
+                                        askOrderList = askOrderList.Take(indexOfMaxAskOrderSize + 1).ToList();
+                                        currentAssetInformation.BidPriceAndSize = (from orderList in bidOrderList
+                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                        currentAssetInformation.AskPriceAndSize = (from orderList in askOrderList
+                                            select new PriceAndSize { Size = orderList.Size.ToDecimal(), Price = orderList.Price.ToDecimal() }).ToList();
+                                        //Get volume difference for each side
+                                        if (currentAssetInformation.BidPriceAndSize.Count > 0 &&
+                                            currentAssetInformation.AskPriceAndSize.Count > 0)
+                                        {
+                                            //BID: The bid price represents the maximum price that a buyer is willing to pay
+                                            //ASK: The ask price represents the minimum price that a seller is willing to take
+                                            currentAssetInformation.IsVolumeBuySide = bidSumOrderSize > askSumOrderSize;
+                                            //Get the order book difference
+                                            if (currentAssetInformation.IsVolumeBuySide)
+                                            {
+                                                currentAssetInformation.SizePercentageDifference =
+                                                    Math.Round((bidSumOrderSize - askSumOrderSize) / bidSumOrderSize, 2) * 100;
+                                            }
+                                            else
+                                            {
+                                                currentAssetInformation.SizePercentageDifference =
+                                                    Math.Round((askSumOrderSize - bidSumOrderSize) / askSumOrderSize, 2) * 100;
+                                            }
+                                        }
+                                        currentAssetInformation.BidMaxOrderSize = bidMaxOrderSize; 
+                                        currentAssetInformation.IndexOfMaxBidOrderSize = indexOfMaxBidOrderSize;
+                                        currentAssetInformation.AskMaxOrderSize = askMaxOrderSize; 
+                                        currentAssetInformation.IndexOfMaxAskOrderSize = indexOfMaxAskOrderSize;
+                                        currentAssetInformation.RoundDecimals();
+                                    }
+                                    NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
+                                    NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
                                 }
-                                NotifyAssetInformation?.Invoke(ApplicationName, AssetInformation);
-                                NotifyCurrentPrices?.Invoke(ApplicationName, SubscribedPrices);
+                            }
+                            catch (Exception ext)
+                            {
+                                ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
+                                    $"Method: StartProcessingFeed Inner Exception\r\nException Stack Trace: {ext.StackTrace}\r\nJSON: {json}");
                             }
                         }
                     }
@@ -636,7 +644,7 @@ namespace exchange.coinbase
                 }
                 else
                 {
-                    coinbaseRSIFile = Path.Combine(IndicatorSaveDataPath, $"binance_{env}_{connectionContainsEnvironment}");
+                    coinbaseRSIFile = Path.Combine(IndicatorSaveDataPath, $"coinbase_{env}_{connectionContainsEnvironment}");
                 }
                 if (string.IsNullOrEmpty(coinbaseRSIFile)) 
                     return false;
