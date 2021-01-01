@@ -114,9 +114,11 @@ The following development process seems to work well for this project.
 - [RabbitMQ](https://www.rabbitmq.com/) - (Message Broker)
 
 **Database**
+
 - [MongoDB](https://www.mongodb.com/) - (Database Engine)
 
 **Centralized Logging**
+
 - [GrayLog](https://www.graylog.org/) - (Centralized Log Management)
 
 ## Setup - Visual Studios and Visual Studio Code
