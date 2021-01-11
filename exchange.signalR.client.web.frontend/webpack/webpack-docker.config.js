@@ -52,7 +52,7 @@ module.exports = {
         rules: [
             {
                 test: /\.ts$/,
-                loaders: [
+                use: [
                     "awesome-typescript-loader",
                     "angular2-template-loader",
                     "angular-router-loader"
@@ -64,7 +64,8 @@ module.exports = {
                 use: ["html-loader"]
             },
             {
-                test: /\.css$/, loaders: ['to-string-loader', MiniCssExtractPlugin.loader,
+                test: /\.css$/,
+                use: ['to-string-loader', MiniCssExtractPlugin.loader,
                     {
                         loader: "css-loader",
                         options: {
@@ -139,7 +140,8 @@ module.exports = {
         ]
     },
     optimization: {
-        noEmitOnErrors: true
+        noEmitOnErrors: true,
+        splitChunks: { chunks: "all" }
     },
     plugins: [
         new HtmlWebpackPlugin({
