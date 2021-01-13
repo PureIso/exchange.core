@@ -152,8 +152,9 @@ services:
             bridge:
 
     #main exchange service
-    exchange.service:   
-        container_name: exchange.service
+    backend:   
+        container_name: backend
+        hostname: backend
         build:
             context: .
             dockerfile: ./docker/exchange.service/Dockerfile
@@ -170,20 +171,20 @@ services:
         networks:
             bridge:
 
-    # # frontend
-    # frontend:
-    #     container_name: frontend
-    #     hostname: frontend
-    #     env_file:
-    #         - .env
-    #     build:
-    #         context: .
-    #         dockerfile: ./docker/signalr.webpack.server.frontend/Dockerfile
-    #     ports:
-    #         - 9000:9000
-    #     command: npm run start:docker
-    #     networks:
-    #         bridge:
+    # frontend
+    frontend:
+        container_name: frontend
+        hostname: frontend
+        env_file:
+            - .env
+        build:
+            context: .
+            dockerfile: ./docker/signalr.webpack.server.frontend/Dockerfile
+        ports:
+            - 9000:9000
+        command: npm run start:docker
+        networks:
+            bridge:
     
     #celery
     celery:
