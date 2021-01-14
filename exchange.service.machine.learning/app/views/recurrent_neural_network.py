@@ -1,3 +1,4 @@
+import os
 import sys
 from app.tasks.task_work import training
 from flask_restful import Resource, reqparse
@@ -13,7 +14,15 @@ class RecurrentNeuralNetwork(Resource):
 
     def get(self):
         try:
-            message = json.dumps({"API VERSION": "1.0.0"})
+            data_files = os.listdir(os.path.join(os.path.dirname(__file__),"static"))
+            indicator_files = []
+            for file_name in data_files:
+                if file_name.endswith(".csv"):
+                    indicator_files.append(file_name)
+
+            message = json.dumps({
+                "api_version": "1.0.0", 
+                "indicator_files": indicator_files})
             response = Response(message,
                                 status=200,  # Status OK
                                 mimetype='application/json')
