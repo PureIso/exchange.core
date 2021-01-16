@@ -25,8 +25,6 @@ class Exchange():
         self.root_dir = join(path.parent,'.env')
         self.current_training_status = {}
         if self.root_dir is not None:
-            # Create .env file path.
-            print(self.root_dir)
             # Load file from the path.
             load_dotenv(self.root_dir)
             self.celery = Celery('machinelearning')

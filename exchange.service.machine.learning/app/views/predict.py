@@ -28,7 +28,7 @@ class Predict(Resource):
                                 status=200,  # Status OK
                                 mimetype='application/json')
         except:
-            message = json.dumps({"error": str(sys.exc_info()[0])})
+            message = json.dumps({"error": str(sys.exc_info())})
             response = Response(message,
                                 status=500,  # Status Internal Server Error
                                 mimetype='application/json')

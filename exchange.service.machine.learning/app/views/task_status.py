@@ -3,8 +3,6 @@ from app.tasks.task_work import training
 from flask_restful import Resource, reqparse
 from flask import Response, jsonify, json
 
-print("IN - TaskStatus")
-
 class TaskStatus(Resource):
     def __init__(self,exchange):
         self.exchange = exchange
