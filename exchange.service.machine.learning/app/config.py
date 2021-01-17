@@ -7,6 +7,59 @@ class Config():
     DAILYCSVFILENAME = "coinbase_btc_eur_historic_data.csv"
     HOURLYCSVFILENAME = "coinbase_btc_eur_historic_data_hourly.csv"
 
+    def getFiles(self):
+        indicator_files = []
+        os.chdir(os.path.dirname(__file__))
+        os.chdir("..")
+        directory = os.getcwd()
+        directory = os.path.join(directory,"static")
+        data_files = os.listdir(directory)
+        for file_name in data_files:
+            if file_name.endswith(".csv"):
+                indicator_files.append(file_name)
+        return indicator_files
+
+    def getFile(self, indicator_file):
+        os.chdir(os.path.dirname(__file__))
+        os.chdir("..")
+        directory = os.getcwd()
+        directory = os.path.join(directory,"static")
+        data_files = os.listdir(directory)
+        for file_name in data_files:
+            if file_name.endswith(indicator_file):
+                return os.path.join(directory,file_name)
+        return None
+
+    def getFileNormalizedFile(self, indicator_file):
+        indicator_file = indicator_file.replace(".csv", "_normalizer.json")
+        os.chdir(os.path.dirname(__file__))
+        os.chdir("..")
+        directory = os.getcwd()
+        directory = os.path.join(directory,"static")
+        data_files = os.listdir(directory)
+        for file_name in data_files:
+            if file_name.endswith(indicator_file):
+                return os.path.join(directory,file_name)
+        return os.path.join(directory,indicator_file)
+    
+    def getFileModelFile(self, indicator_file):
+        indicator_file = indicator_file.replace(".csv", "_model.h5")
+        os.chdir(os.path.dirname(__file__))
+        os.chdir("..")
+        directory = os.getcwd()
+        directory = os.path.join(directory,"static")
+        data_files = os.listdir(directory)
+        for file_name in data_files:
+            if file_name.endswith(indicator_file):
+                return os.path.join(directory,file_name)
+        return os.path.join(directory,indicator_file)
+
+    def getDirectory(self):
+        os.chdir(os.path.dirname(__file__))
+        os.chdir("..")
+        directory = os.getcwd()
+        return os.path.join(directory,"static")
+
     def getDailyDirectory(self):
         return "static/daily_data"
 

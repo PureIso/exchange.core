@@ -18,3 +18,10 @@ if(db.getUser("graylog") == null){
     db.createUser({user:"graylog", pwd:"graylog", roles:[{role:"dbOwner",db:"graylog"},{role:"clusterMonitor",db:"admin"}]});
     db.createUser({user:"test", pwd:"test", roles:[{role:"read",db:"graylog"}]});
 };
+var db = connect('127.0.0.1:27017/machinelearning');
+if(db.getUser("machinelearning") == null){
+    db.createUser({user: "allDatabaseAdmin",pwd: "allDatabaseAdmin",roles: [{role:"dbAdminAnyDatabase",db:"admin"}]});
+    db.createUser({user:"databaseAdmin", pwd:"databaseAdmin", roles:[{role:"dbOwner",db:"admin"},{role:"dbOwner",db:"graylog"}]});
+    db.createUser({user:"machinelearning", pwd:"machinelearning", roles:[{role:"dbOwner",db:"machinelearning"},{role:"clusterMonitor",db:"admin"}]});
+    db.createUser({user:"test", pwd:"test", roles:[{role:"read",db:"machinelearning"}]});
+};
