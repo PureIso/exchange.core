@@ -6,6 +6,7 @@ import { AppConfig } from "@config/config";
 import { DashboardComponent } from "./components/dashboard/dashboard.component";
 import { PageNotFoundComponent } from "./components/page-not-found/page-not-found.component";
 import { TradeComponent } from "./components/trade/trade.component";
+import { MachineLearningComponent } from "./components/machinelearning/machinelearning.component";
 
 @NgModule({
     imports: [MainRoutingModule, SharedModule],
@@ -13,7 +14,8 @@ import { TradeComponent } from "./components/trade/trade.component";
     declarations: [
         DashboardComponent,
         TradeComponent,
-        PageNotFoundComponent
+        PageNotFoundComponent,
+        MachineLearningComponent
     ],
     providers: [MainService, AppConfig]
 })
