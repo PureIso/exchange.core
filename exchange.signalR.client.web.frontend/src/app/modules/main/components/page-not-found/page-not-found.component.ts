@@ -3,8 +3,7 @@ import { Router } from "@angular/router";
 import { MainService } from "@services/main.service";
 
 @Component({
-  templateUrl: "./page-not-found.component.html",
-  styleUrls: ["./page-not-found.component.sass"]
+  templateUrl: "./page-not-found.component.html"
 })
 
 /**

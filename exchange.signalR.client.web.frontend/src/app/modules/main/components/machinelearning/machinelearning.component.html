@@ -13,13 +13,12 @@
                 <mat-icon>filter</mat-icon> <span class="nav-caption">Trade</span>
             </a>
             <a mat-list-item routerLink="/machinelearning" (click)="sidenav.close()">
-                <mat-icon>filter</mat-icon> <span class="nav-caption">Trade</span>
+                <mat-icon>filter</mat-icon> <span class="nav-caption">Machine Learning</span>
             </a>
         </mat-nav-list>
     </mat-sidenav>
 
     <mat-sidenav-content>
-
         <mat-toolbar color="primary" class="mat-elevation-z8">
             <button mat-icon-button (click)="sidenav.open()">
                 <mat-icon>menu</mat-icon>
@@ -27,10 +26,9 @@
             <span>Exchange.Core</span>
         </mat-toolbar>
 
-    </mat-sidenav-content>
+        <div class="content" fxLayout="row wrap">
 
-    <div class="content" fxLayout="row wrap">
-        <h1>Page Not Found</h1>
-    </div>
+        </div>
+    </mat-sidenav-content>
 
 </mat-sidenav-container>
