@@ -67,21 +67,18 @@ services:
         image: nginx:latest
         container_name: nginx.reverse.proxy
         volumes:
-            - ./docker/nginx/default.dev.conf:/etc/nginx/conf.d/default.conf:rw
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:rw
         ports:
             - 80:80
-        links:
-            - frontend
-        volumes_from:
-            - frontend
         networks:
             bridge:
 
     # mongo Database
-    service.mongodb:
+    mongodb:
         image: mongo:${MONGO_DB_VERSION}
-        # restart: always
+        restart: always
         container_name: mongodb
+        hostname: mongodb
         # List directories to mount
         volumes:
             - mongo_db:/data/db:rw
@@ -101,6 +98,7 @@ services:
     # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.6/docker.html
     elasticsearch:
         container_name: elasticsearch
+        hostname: elasticsearch
         image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
         #data folder in share for persistence
         volumes:
@@ -124,6 +122,7 @@ services:
     # Graylog: https://hub.docker.com/r/graylog/graylog/
     graylog:
         container_name: graylog
+        hostname: graylog
         restart: always
         image: graylog/graylog:3.3.8-1
         #journal and config directories in local NFS share for persistence
@@ -155,14 +154,15 @@ services:
             bridge:
 
     #main exchange service
-    exchange.service:   
-        container_name: exchange.service
+    backend:   
+        container_name: backend
+        hostname: backend
         build:
             context: .
             dockerfile: ./docker/exchange.service/Dockerfile
         volumes:
             - exchange_service_logs:/exchange/service/logs:rw
-            - exchange_service_indicators:/exchange/service/indicators:rw
+            - exchange_service_indicators:/exchange/service/indicators:z
             - exchange_service_config:/exchange/service/config:rw
         ports:
             - 5000:5000
@@ -173,9 +173,10 @@ services:
         networks:
             bridge:
 
-    #frontend
-    signalr.webpack.server.frontend:
-        container_name: signalr.webpack.server.frontend
+    # frontend
+    frontend:
+        container_name: frontend
+        hostname: frontend
         env_file:
             - .env
         build:
@@ -187,9 +188,10 @@ services:
         networks:
             bridge:
     
-    #celery
+    #celerycontainer_name: celery
     celery:
         container_name: celery
+        hostname: celery
         env_file:
             - .env
         # All files and folders in the currect directory
@@ -202,8 +204,9 @@ services:
             bridge:
         
     #machine learning web application
-    service.machine.learning:
-        container_name: service.machine.learning
+    machinelearning:
+        container_name: machinelearning
+        hostname: machinelearning
         build: 
             context: .
             dockerfile: ./docker/service.machine.learning/Dockerfile    
@@ -211,7 +214,9 @@ services:
         # Access to directory has to be shared
         ports:
             - 5005:5005
-        command: python3.8 main.py
+        command: "bash -c 'chmod 777 data && ls -l && ls && python3.8 main.py'"
+        volumes:
+            - exchange_service_indicators:/usr/src/app/static
         env_file:
             - .env
         environment:
