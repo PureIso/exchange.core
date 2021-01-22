@@ -54,32 +54,9 @@ class Config():
                 return os.path.join(directory,file_name)
         return os.path.join(directory,indicator_file)
 
-    def getDirectory(self):
+    def getDirectory(self, indicator_file):
+        indicator_file = indicator_file.replace(".csv", "").replace("-", "_")
         os.chdir(os.path.dirname(__file__))
         os.chdir("..")
         directory = os.getcwd()
-        return os.path.join(directory,"static")
-
-    def getDailyDirectory(self):
-        return "static/daily_data"
-
-    def getHourlyDirectory(self):
-        return "static/hourly_data"
-
-    def getHourlyCSVFILE(self):
-        return os.path.join(self.getHourlyDirectory(), self.HOURLYCSVFILENAME)
-
-    def getHourlyNormalisJSONFILE(self):
-        return os.path.join(self.getHourlyDirectory(), self.NORMALISEJSONFILENAME)
-
-    def getHourlyModelH5FILE(self):
-        return os.path.join(self.getHourlyDirectory(), self.MODELH5FILENAME)
-
-    def getDailyCSVFILE(self):
-        return os.path.join(self.getDailyDirectory(), self.DAILYCSVFILENAME)
-
-    def getDailyNormalisJSONFILE(self):
-        return os.path.join(self.getDailyDirectory(), self.NORMALISEJSONFILENAME)
-
-    def getDailyModelH5FILE(self):
-        return os.path.join(self.getDailyDirectory(), self.MODELH5FILENAME)
+        return os.path.join(directory,"static/{0}".format(indicator_file))

@@ -15,6 +15,5 @@ if __name__ == '__main__':
     api.add_resource(RecurrentNeuralNetwork, '/api/v1/rnn/',resource_class_kwargs={'exchange': exchange})
     api.add_resource(TaskStatus, '/api/v1/taskstatus/',resource_class_kwargs={'exchange': exchange})
     api.add_resource(Predict, '/api/v1/predict/',resource_class_kwargs={'exchange': exchange})
-
     exchange.mi_logger.info('Machine Learning Service Starting')
     application.run(host=exchange.mi_host, port=exchange.mi_port, debug=False)

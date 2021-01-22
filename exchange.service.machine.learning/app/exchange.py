@@ -1,5 +1,6 @@
 import os
 import logging
+from pymongo import MongoClient
 import graypy
 from app.config import Config
 from celery import Celery
@@ -11,19 +12,21 @@ class Exchange():
     root_dir = None
     celery = None
     config = None
+    mongodb_client = None
     current_training_status = {}
     mi_host = "0.0.0.0"
     mi_port = 5005
     mi_graylog_host = "127.0.0.1"
     mi_graylog_port = 12201
     mi_logger = None
-    mi_broker_url = "mongodb://celery:celery@service.mongodb:27017/celery"
-    mi_result_backend = "mongodb://celery:celery@service.mongodb:27017/celery"
+    mi_broker_url = "mongodb://celery:celery@mongodb:27017/celery"
+    mi_result_backend = "mongodb://celery:celery@mongodb:27017/celery"
 
     def __init__(self):
         path = Path(dirname(__file__))
         self.root_dir = join(path.parent,'.env')
         self.current_training_status = {}
+
         if self.root_dir is not None:
             # Load file from the path.
             load_dotenv(self.root_dir)
@@ -59,3 +62,7 @@ class Exchange():
         if os.getenv("MI_GRAYLOG_HOST") is not None:
             self.mi_logger.info('Exchange loading')
         super(Exchange, self).__init__()
+
+    def get_mongo_database(self):
+        mongodb_client = MongoClient("mongodb://machinelearning:machinelearning@mongodb:27017/machinelearning")
+        return mongodb_client.machinelearning

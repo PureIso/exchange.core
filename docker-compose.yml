@@ -74,10 +74,11 @@ services:
             bridge:
 
     # mongo Database
-    service.mongodb:
+    mongodb:
         image: mongo:${MONGO_DB_VERSION}
-        # restart: always
+        restart: always
         container_name: mongodb
+        hostname: mongodb
         # List directories to mount
         volumes:
             - mongo_db:/data/db:rw
@@ -97,6 +98,7 @@ services:
     # Elasticsearch: https://www.elastic.co/guide/en/elasticsearch/reference/6.6/docker.html
     elasticsearch:
         container_name: elasticsearch
+        hostname: elasticsearch
         image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.1
         #data folder in share for persistence
         volumes:
@@ -160,7 +162,7 @@ services:
             dockerfile: ./docker/exchange.service/Dockerfile
         volumes:
             - exchange_service_logs:/exchange/service/logs:rw
-            - exchange_service_indicators:/exchange/service/indicators:rw
+            - exchange_service_indicators:/exchange/service/indicators:z
             - exchange_service_config:/exchange/service/config:rw
         ports:
             - 5000:5000
@@ -171,7 +173,7 @@ services:
         networks:
             bridge:
 
-    # frontend
+    #frontend
     frontend:
         container_name: frontend
         hostname: frontend
@@ -186,7 +188,7 @@ services:
         networks:
             bridge:
     
-    #celery
+    # celery
     celery:
         container_name: celery
         env_file:
@@ -197,6 +199,8 @@ services:
             dockerfile: ./docker/service.machine.learning/Dockerfile 
         # List directories to mount
         command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
+        volumes:
+            - exchange_service_indicators:/usr/src/app/static:rw
         networks:
             bridge:
         
@@ -211,7 +215,7 @@ services:
         # Access to directory has to be shared
         ports:
             - 5005:5005
-        command: python3.8 main.py
+        command: "python3.8 main.py"
         volumes:
             - exchange_service_indicators:/usr/src/app/static:rw
         env_file:
