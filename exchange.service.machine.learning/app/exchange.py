@@ -1,7 +1,7 @@
 import os
 import logging
-from pymongo import MongoClient
 import graypy
+from pymongo import MongoClient
 from app.config import Config
 from celery import Celery
 from os.path import join, dirname

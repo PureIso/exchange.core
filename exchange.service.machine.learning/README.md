@@ -116,9 +116,50 @@ Recurrent Neural Networks for Sequence Learning:
 
 ```shell
 http://localhost:5005/api/v1/rnn/
+GET
+{
+    "api_version": "1.0.0",
+    "indicator_files": [
+        "binance_live_l_endpoint_btc-eur_15M.csv",
+        "binance_live_l_endpoint_btc-eur_1D.csv",
+        "binance_live_l_endpoint_btc-eur_1H.csv",
+        "binance_live_l_endpoint_nu-eur_15M.csv",
+        "binance_live_l_endpoint_nu-eur_1D.csv",
+        "binance_live_l_endpoint_nu-eur_1H.csv",
+        "coinbase_live_l_endpoint_btc-eur_15M.csv",
+        "coinbase_live_l_endpoint_btc-eur_1D.csv",
+        "coinbase_live_l_endpoint_btc-eur_1H.csv",
+        "coinbase_live_l_endpoint_nu-btc_15M.csv",
+        "coinbase_live_l_endpoint_nu-btc_1D.csv",
+        "coinbase_live_l_endpoint_nu-btc_1H.csv",
+        "coinbase_live_l_endpoint_nu-eur_15M.csv",
+        "coinbase_live_l_endpoint_nu-eur_1D.csv",
+        "coinbase_live_l_endpoint_nu-eur_1H.csv",
+        "coinbase_live_l_endpoint_uma-btc_15M.csv",
+        "coinbase_live_l_endpoint_uma-btc_1D.csv",
+        "coinbase_live_l_endpoint_uma-btc_1H.csv",
+        "coinbase_live_l_endpoint_uma-eur_15M.csv",
+        "coinbase_live_l_endpoint_uma-eur_1D.csv",
+        "coinbase_live_l_endpoint_uma-eur_1H.csv",
+        "coinbase_live_l_endpoint_yfi-btc_15M.csv",
+        "coinbase_live_l_endpoint_yfi-btc_1D.csv",
+        "coinbase_live_l_endpoint_yfi-btc_1H.csv"
+    ]
+}
+
+http://localhost:5005/api/v1/rnn/
+POST
 Body
 {
-    "hourly": true,
+    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv",
     "save": true
+}
+
+http://localhost:5005/api/v1/predict/
+POST
+Body
+{
+    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv",
+    "predict": true
 }
 ```

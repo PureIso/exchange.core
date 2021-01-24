@@ -1,7 +1,7 @@
 import sys
 from app.tasks.task_work import training
 from flask_restful import Resource, reqparse
-from flask import Response, jsonify, json
+from flask import Response, jsonify, json, request
 
 class TaskStatus(Resource):
     def __init__(self,exchange):

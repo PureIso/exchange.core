@@ -164,6 +164,8 @@ namespace exchange.core.implementations
                                 decimal sizeDifference = baseCurrencyAccumulatedBalance -
                                                          selectedBaseCurrencyAccount.Balance.ToDecimal();
                                 decimal fillSizeDifference = fill.Size.ToDecimal() - sizeDifference;
+                                if(fillSizeDifference <= 0)
+                                    fillSizeDifference = 1;
                                 sellAbovePrice = (fee / fillSizeDifference) + fillPrice;
                                 buyCompleted = true;
                             }
