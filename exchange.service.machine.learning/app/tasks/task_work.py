@@ -1,25 +1,36 @@
 import os
 import sys
 import datetime
+import json
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 import tensorflowjs as tfjs
-from . import dateparse, normalize, config
+from . import dateparse, dateparse_extended, normalize, config
 from celery import Celery
 from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.layers import Dense, Dropout, LSTM
 from sklearn.model_selection import train_test_split
-from flask import json, Response
+from flask import Response
 from pathlib import Path
 from app.exchange import Exchange
 exchange = Exchange()
 celery = exchange.celery
 
+def get_training_dataset(csv_path):
+    dataset_train = []
+    try:
+        dataset_train = pd.read_csv(
+            csv_path, parse_dates=True, index_col='DateTime', date_parser=dateparse)
+    except Exception:
+        dataset_train = pd.read_csv(
+            csv_path, parse_dates=True, index_col='DateTime', date_parser=dateparse_extended)
+    return dataset_train
+
 @celery.task(bind=True)
-def training(self, hourly, save):
-    if hourly != None and save != None:
+def training(self, indicator_file, save, predict):
+    if indicator_file != None and save != None:
         # Get the input options
         csv_path = ''
         normalizer_path = ''
@@ -29,45 +40,41 @@ def training(self, hourly, save):
 
         self.update_state(state="PROGRESS", meta=exchange.current_training_status)
         # Setting the variables
-        if hourly == 'False':
-            epochs = 3550
-            csv_path = config.getDailyCSVFILE()
-            normalizer_path = config.getDailyNormalisJSONFILE()
-            modelh5_path = config.getDailyModelH5FILE()
-            directory = config.getDailyDirectory()
-        else:
-            epochs = 270
-            csv_path = config.getHourlyCSVFILE()
-            normalizer_path = config.getHourlyNormalisJSONFILE()
-            modelh5_path = config.getHourlyModelH5FILE()
-            directory = config.getHourlyDirectory()
+        epochs = 3550
+        csv_path = config.getFile(indicator_file)
+        normalizer_path = config.getFileNormalizedFile(indicator_file)
+        modelh5_path = config.getFileModelFile(indicator_file)
+        directory = config.getDirectory(indicator_file)
 
         # import dataset using pandas
-        dataset_train = pd.read_csv(
-            csv_path, parse_dates=True, index_col='DateTime', date_parser=dateparse)
+        dataset_train = get_training_dataset(csv_path)
         # get specific columns - training feature set
         feature_set_dataframe = dataset_train[['Close', 'RSI14']]
         feature_set_dataframe_length = len(feature_set_dataframe)
         # get min and max values
         minValue = float(min(feature_set_dataframe['Close']))
         maxValue = float(max(feature_set_dataframe['Close']))
-        if save:
+
+        if save == True:
             try:
-                with open(normalizer_path) as json_file:
+                with open(normalizer_path,'r+') as json_file:
                     data = json.load(json_file)
                     if minValue < data['minValue'] or maxValue > data['maxValue']:
-                        data = {'minValue': minValue,
+                        data = {'indicator_id': indicator_file,
+                                'minValue': minValue,
                                 'maxValue': maxValue, 'epochs': epochs}
-                        with open(normalizer_path, 'w') as outfile:
-                            json.dump(data, outfile)
+                        json.dump(data, normalizer_path)
+                        json_file.write(str(data))
                     minValue = data['minValue']
                     maxValue = data['maxValue']
                     epochs = data['epochs']
             except Exception:
-                with open(normalizer_path, 'w') as outfile:
-                    data = {'minValue': minValue,
+                with open(normalizer_path, 'w+') as outfile:
+                    data = {'indicator_id': indicator_file,
+                            'minValue': minValue,
                             'maxValue': maxValue, 'epochs': epochs}
                     json.dump(data, outfile)
+                    outfile.write(str(data))
 
         # normalize the values
         # Makes the gradient low which will means easier learning
@@ -131,10 +138,63 @@ def training(self, hourly, save):
         # Solving pattern with sequence of data
         regressor = keras.models.Sequential()
         try:
-            regressor = keras.models.load_model(modelh5_path)
+            if predict == True:
+                regressor = keras.models.load_model(modelh5_path)
+                regressor.summary()
+                accuracy = regressor.evaluate(test_set_input, test_set_output)
+                print('Restored model, accuracy: {:5.2f}%'.format(100*accuracy))
+            else:
+                self.update_state(state="PROGRESS", meta={'progress': 70})
+            neurons = 50
+            batch_size = 32
+            # Long Short Term Memory model - supervised Deep Neural Network that is very good at doing time-series prediction.
+            # adding the first LSTM Layer and some Dropout regularisation
+            #
+            # Dropout: Makes sure that network can never rely on any given activation to be present because at any moment they could become squashed i.e. value = 0
+            # forced to learn a redunant representation for everything
+            #
+            # return sequences: We want output after every layer in which will be passed to the next layer
+            regressor.add(keras.layers.LSTM(units=neurons, return_sequences=True,
+                                            input_shape=lstm_input_shape))
+            regressor.add(keras.layers.Dropout(0.2))
+
+            # adding a second LSTM Layer and some Dropout regularisation
+            regressor.add(keras.layers.LSTM(
+                units=neurons, return_sequences=True))
+            regressor.add(keras.layers.Dropout(0.2))
+
+            # adding a third LSTM Layer and some Dropout regularisation
+            regressor.add(keras.layers.LSTM(
+                units=neurons, return_sequences=True))
+            regressor.add(keras.layers.Dropout(0.2))
+
+            # adding a fourth LSTM Layer and some Dropout regularisation
+            regressor.add(keras.layers.LSTM(units=neurons))
+            regressor.add(keras.layers.Dropout(0.2))
+
+            # adding the output layer
+            # Dense format output layer
+            regressor.add(keras.layers.Dense(units=1))  # prediction
+
+            # compile network
+            # find the global minimal point
+            regressor.compile(optimizer='adam',
+                              loss='mean_absolute_error')
             regressor.summary()
             accuracy = regressor.evaluate(test_set_input, test_set_output)
             print('Restored model, accuracy: {:5.2f}%'.format(100*accuracy))
+
+            # fitting the RNN to the training set
+            # giving input in batch sizes of 5
+            # loss should decrease on each an every epochs
+            history = regressor.fit(train_set_input, train_set_output,
+                                    batch_size=batch_size, epochs=epochs, steps_per_epoch=5, validation_data=(test_set_input, test_set_output),  verbose=0, callbacks=[KerasFitCallback()])
+            if save == True:
+                print("Saving Model")
+                # save the model for javascript format readable
+                tfjs.converters.save_keras_model(regressor, directory)
+                # save the model for python format readable
+                regressor.save(modelh5_path)
         except Exception:
             self.update_state(state="PROGRESS", meta={'progress': 70})
             neurons = 50
@@ -181,10 +241,10 @@ def training(self, hourly, save):
             # loss should decrease on each an every epochs
             history = regressor.fit(train_set_input, train_set_output,
                                     batch_size=batch_size, epochs=epochs, steps_per_epoch=5, validation_data=(test_set_input, test_set_output),  verbose=0, callbacks=[KerasFitCallback()])
-            if save == 'True':
+            if save == True:
+                print("Saving Model")
                 # save the model for javascript format readable
-                tfjs.converters.save_keras_model(
-                    regressor, directory)
+                tfjs.converters.save_keras_model(regressor, directory)
                 # save the model for python format readable
                 regressor.save(modelh5_path)
 
@@ -201,16 +261,25 @@ def training(self, hourly, save):
                 normalize(y_label_sma[index], 0, 1, minValue, maxValue))
             x_label_sma_normalized.append(
                 normalize(x_label_sma[index], 0, 1, minValue, maxValue))
-
-        response = json.dumps({'current': 100,
+        
+        if(predict == True):
+            training_result = json.dumps({
+                'result': str(json.dumps({
+                    'ClosePrice': x_label_sma_normalized,
+                    'ClosePricePredict': y_label_sma_normalized}))})
+        else:
+            training_result = json.dumps({'current': 100,
                                'total': 100,
                                'status': 'Task completed!',
                                'details': str(json.dumps(exchange.current_training_status)),
                                'summary': str(regressor.summary()),
-                               'hsitory': str(history),
+                               'history': str(history),
                                'result': str(json.dumps({
                                    'ClosePrice': x_label_sma_normalized,
                                    'ClosePricePredict': y_label_sma_normalized}))})
+        # exchange.get_mongo_database().training_result.insert_one(training_result)
+        print(training_result)
+        response = training_result
     else:
         response = json.dumps(
             {
@@ -221,10 +290,10 @@ def training(self, hourly, save):
 
 class KerasFitCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
-      #dateobject = datetime.date.today()
+        #dateobject = datetime.date.today()
         current_training_status = {
             'state': 'EPOCH TESTING',
-           # 'time':  datetime.datetime.combine(dateobject, datetime.time()),
+            # 'time':  datetime.datetime.combine(dateobject, datetime.time()),
             'batch': 'N/A',
             'loss': logs,
             'epoch': epoch,
