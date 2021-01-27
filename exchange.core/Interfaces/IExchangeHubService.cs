@@ -16,6 +16,7 @@ namespace exchange.core.interfaces
         Task RequestedFillStatistics(string applicationName, string symbol);
         Task RequestedOrder(string applicationName, string symbol);
         Task RequestedSubscription(string applicationName, List<string> symbols);
+        Task NotifySubscriptionStatus(string applicationName, bool isRunning);
         Task NotifyFills(string applicationName, List<Fill> fills);
         Task NotifyOrders(string applicationName, List<Order> orders);
         Task NotifyMainCurrency(string applicationName, string mainCurrency);

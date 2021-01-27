@@ -6,6 +6,7 @@ namespace exchange.core.interfaces
 {
     public interface IExchangeService
     {
+        Task DelegateNotifySubscriptionStatus(string applicationName, bool isRunning);
         Task DelegateNotifyFills(string applicationName, List<Fill> fills);
         Task DelegateNotifyOrders(string applicationName, List<Order> orders);
         Task DelegateNotifyCurrentPrices(string applicationName, Dictionary<string, decimal> currentPrices);

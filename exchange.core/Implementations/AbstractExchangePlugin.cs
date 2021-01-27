@@ -24,6 +24,7 @@ namespace exchange.core.implementations
         public virtual Func<string, List<Fill>, Task> NotifyFills { get; set; }
         public virtual Func<string, List<Order>, Task> NotifyOrders { get; set; }
         public virtual Func<string, FillStatistics, Task> NotifyFillStatistics { get; set; }
+        public virtual Func<string, bool, Task> DelegateNotifySubscriptionStatus { get; set; }
         public virtual Action<string, Dictionary<string, string>> TechnicalIndicatorInformationBroadcast { get; set; }
         #endregion
 

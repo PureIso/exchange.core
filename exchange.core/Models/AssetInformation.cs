@@ -86,7 +86,6 @@ namespace exchange.core.models
             AggregatedSelectedMainBalance = Math.Round(AggregatedSelectedMainBalance, 2);
             BaseCurrencyBalance = Math.Round(BaseCurrencyBalance, 2);
             QuoteCurrencyBalance = Math.Round(QuoteCurrencyBalance, 2);
-
         }
     }
 }

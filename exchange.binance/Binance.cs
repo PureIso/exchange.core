@@ -471,13 +471,17 @@ namespace exchange.binance
                         //Prepare subscription
                         foreach (Product product in products)
                         {
-                            UpdateFillStatistics(product);
+                            await UpdateFillStatistics(product);
                         }
                         SubscribeProducts ??= new List<Product>();
+                        DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, true);
                         string message = SubscribeProducts.Aggregate("stream?streams=", (currentMessage, product) => 
                             currentMessage + (product.ID.ToLower() + "@trade/"));
                         if (string.IsNullOrWhiteSpace(message) || !message.Contains("@trade"))
+                        {
+                            DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, false);
                             return;
+                        }
                         int lastIndexOfSlash = message.LastIndexOf("/", StringComparison.Ordinal);
                         if (lastIndexOfSlash != -1)
                             message = message.Remove(lastIndexOfSlash, 1);
@@ -497,7 +501,7 @@ namespace exchange.binance
                                         continue;
                                     BinanceFeed binanceFeed = JsonSerializer.Deserialize<BinanceFeed>(json);
                                     if (binanceFeed == null || binanceFeed.Type == "error" || string.IsNullOrEmpty(binanceFeed.BinanceData.Symbol) || string.IsNullOrEmpty(binanceFeed.BinanceData.Price))
-                                        return;
+                                        continue;
                                     //update current price
                                     AssetInformation ??= new Dictionary<string, AssetInformation>();
                                     if (!AssetInformation.ContainsKey(binanceFeed.BinanceData.Symbol))
@@ -676,8 +680,7 @@ namespace exchange.binance
                     }
                     catch (Exception e)
                     {
-                        //TODO
-                        //Notify
+                        DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, false);
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                             $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
                         SubscribeProducts = new List<Product>();

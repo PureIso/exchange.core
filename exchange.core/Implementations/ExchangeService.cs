@@ -47,12 +47,17 @@ namespace exchange.core.implementations
                 return;
             await _exchangeHubService.Clients.All.NotifyFillStatistics(applicationName, fillStatistics);
         }
-
         public async Task DelegateNotifyFills(string applicationName, List<Fill> fills)
         {
             if (_exchangeHubService.Clients == null)
                 return;
             await _exchangeHubService.Clients.All.NotifyFills(applicationName, fills);
+        }
+        public async Task DelegateNotifySubscriptionStatus(string applicationName, bool isRunning)
+        {
+            if (_exchangeHubService.Clients == null)
+                return;
+            await _exchangeHubService.Clients.All.NotifySubscriptionStatus(applicationName, isRunning);
         }
         public async Task DelegateNotifyOrders(string applicationName, List<Order> orders)
         {

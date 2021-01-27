@@ -122,6 +122,5 @@ namespace exchange.core.implementations
             FillStatistics fillStatistic = await abstractExchangePlugin.UpdateFillStatistics(product);
             await Clients.Caller.NotifyFillStatistics(abstractExchangePlugin.ApplicationName, fillStatistic);
         }
-
     }
 }
