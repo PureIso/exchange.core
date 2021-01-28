@@ -151,6 +151,7 @@ namespace exchange.core.helpers
                 DateTime unix = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
                 HistoricRate historicRate = new HistoricRate
                 {
+                    //[ time, low, high, open, close, volume ],
                     DateAndTime = unix.AddSeconds(((JsonElement) array[0]).GetInt64()),
                     Low = ((JsonElement) array[1]).GetDecimal(),
                     High = ((JsonElement) array[2]).GetDecimal(),

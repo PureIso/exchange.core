@@ -328,7 +328,7 @@ namespace exchange.coinbase
                         }
                         foreach (Product product in products)
                         {
-                            UpdateFillStatistics(product);
+                            await UpdateFillStatistics(product);
                         }
                         SubscribeProducts = products;
                         InitIndicatorsAsync(products);
@@ -336,13 +336,17 @@ namespace exchange.coinbase
                             await ConnectionAdapter.WebSocketCloseAsync();
                         //Prepare subscription
                         SubscribeProducts ??= new List<Product>();
+                        DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, true);
                         //Begin Processing
                         while (SubscribeProducts.Any())
                         {
                             await ConnectionAdapter.ConnectAsync(ConnectionAdapter.Authentication.WebSocketUri.ToString());
                             json = await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToSubscribeString());
                             if (string.IsNullOrEmpty(json))
+                            {
+                                DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, false);
                                 return;
+                            }
                             ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General,
                                 $"Started Processing Feed Information.\r\nJSON: {json}");
                             try
@@ -528,8 +532,7 @@ namespace exchange.coinbase
                     }
                     catch (Exception e)
                     {
-                        //TODO
-                        //Notify
+                        DelegateNotifySubscriptionStatus?.Invoke(ApplicationName, false);
                         ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.Error,
                             $"Method: StartProcessingFeed\r\nException Stack Trace: {e.StackTrace}\r\nJSON: {json}");
                         SubscribeProducts = new List<Product>();
