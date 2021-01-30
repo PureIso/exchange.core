@@ -83,8 +83,8 @@ NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
 Setup and initialise virtual environment with the correct python version:
 
 ```shell
-virtualenv env --python=python3.8.6
 python -m virtualenv env
+virtualenv env --python=python3.8.6
 env\\Scripts\\activate.bat
 python.exe -m pip install --upgrade pip
 ```

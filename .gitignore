@@ -352,7 +352,7 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
-exchange.service.machine.learning/static/*.*
+exchange.service.machine.learning/static/*
 env/
 out/
 build/
