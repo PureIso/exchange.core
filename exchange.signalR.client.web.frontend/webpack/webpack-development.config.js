@@ -31,12 +31,11 @@ module.exports = {
     devServer: {
         host: '0.0.0.0',
         port: 9000,
-        public: `frontend`,
+        public: `localhost`,
         publicPath: '/',
         compress: false,
         contentBase: buildPath,
         historyApiFallback: true,
-        host: process.env.HOST,
         hot: true,
         inline: true,
         stats: "minimal",

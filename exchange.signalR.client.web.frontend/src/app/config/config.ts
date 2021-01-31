@@ -18,7 +18,7 @@ export class AppConfig {
         } else {
             this.APP_ID = "N/A";
             this.LOG_LEVEL = "DEBUG";
-            this.HUBURL = "http://localhost/backend/hubs";
+            this.HUBURL = "http://localhost:5000/hubs";
             this.HUBNAME = "exchange";
             this.HOST = "0.0.0.0";
         }
