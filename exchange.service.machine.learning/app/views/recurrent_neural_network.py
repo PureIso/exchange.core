@@ -38,14 +38,16 @@ class RecurrentNeuralNetwork(Resource):
             args = self.reqparse.parse_args()
             indicator_file = args['indicator_file']
             save = args['save']
+            previous_prices = []
             self.exchange.mi_logger.info("Recurrent Nural Netowork Processing: Target: {0} Save: {1}".format(indicator_file,save))
+            print("Recurrent Nural Netowork Processing: Target: {0} Save: {1}".format(indicator_file,save))
 
             if indicator_file != None and save != None:
-                task = training.delay(indicator_file, save, True)
+                task = training.delay(indicator_file, save, False, [])
                 message = json.dumps(
                     {"task_id": str(task.task_id),
                      "status": str(task.status),
-                     "status url": str(request.url_root + 'machinelearning/api/v1/taskstatus?task_id=' + task.task_id)})
+                     "status url": str(request.url_root + 'api/v1/taskstatus?task_id=' + task.task_id)})
                 self.exchange.mi_logger.info(message)
                 response = Response(message,
                                     status=202,  # Status Accepted

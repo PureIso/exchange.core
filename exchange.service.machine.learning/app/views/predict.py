@@ -9,6 +9,7 @@ class Predict(Resource):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('indicator_file', type=str, location='json')
         self.reqparse.add_argument('predict', type=bool, location='json')
+        self.reqparse.add_argument('previous_prices', action='append')
         super(Predict, self).__init__()
 
     def get(self):
@@ -29,14 +30,17 @@ class Predict(Resource):
             args = self.reqparse.parse_args()
             indicator_file = args['indicator_file']
             predict = args['predict']
-            self.exchange.mi_logger.info("Recurrent Nural Netowork Processing: Target: {0}".format(indicator_file))
+            previous_prices = args['previous_prices']
+            if previous_prices == None:
+                previous_prices = []
+            self.exchange.mi_logger.info("Recurrent Nural Netowork Processing: Target: {0} Current Prices: {1}".format(indicator_file,previous_prices))
 
             if indicator_file != None:
-                task = training.delay(indicator_file, False, predict)
+                task = training.delay(indicator_file, False, predict, previous_prices)
                 message = json.dumps(
                     {"task_id": str(task.task_id),
                      "status": str(task.status),
-                     "status url": str(request.url_root + 'machinelearning/api/v1/taskstatus?task_id=' + task.task_id)})
+                     "status url": str(request.url_root + 'api/v1/taskstatus?task_id=' + task.task_id)})
                 self.exchange.mi_logger.info(message)
                 response = Response(message,
                                     status=202,  # Status Accepted
