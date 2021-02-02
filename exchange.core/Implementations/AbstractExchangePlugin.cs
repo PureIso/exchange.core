@@ -114,6 +114,7 @@ namespace exchange.core.implementations
             //We want to get the last price we sold
             //This will allow us to find out what price range to buy
             fills ??= await UpdateFillsAsync(validatedProduct);
+            Accounts ??= new List<Account>();
             List<MiniFill> miniFillSellAboveList = new List<MiniFill>();
             List<MiniFill> miniFillBuyBelowList = new List<MiniFill>();
             //Quote Currency Balance: example EUR / BTC
