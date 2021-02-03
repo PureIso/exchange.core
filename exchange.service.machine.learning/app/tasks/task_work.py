@@ -29,32 +29,38 @@ def get_training_dataset(csv_path):
     return dataset_train
 
 @celery.task(bind=True)
-def training(self, indicator_file, save, predict):
+def training(self, indicator_file, save, predict, previous_prices):
+    print("MI Training: {0} {1} {2} {3}".format(indicator_file,save,predict,previous_prices))
     if indicator_file != None and save != None:
         # Get the input options
         csv_path = ''
         normalizer_path = ''
         modelh5_path = ''
-        directory = ''
+        kerasModelDirectory = ''
         epochs = 270
 
-        self.update_state(state="PROGRESS", meta=exchange.current_training_status)
+        self.update_state(state="STARTING", meta=exchange.current_training_status)
         # Setting the variables
         epochs = 3550
         csv_path = config.getFile(indicator_file)
         normalizer_path = config.getFileNormalizedFile(indicator_file)
         modelh5_path = config.getFileModelFile(indicator_file)
-        directory = config.getDirectory(indicator_file)
+        kerasModelDirectory = config.getDirectory(indicator_file)
 
         # import dataset using pandas
         dataset_train = get_training_dataset(csv_path)
         # get specific columns - training feature set
         feature_set_dataframe = dataset_train[['Close', 'RSI14']]
         feature_set_dataframe_length = len(feature_set_dataframe)
+        if previous_prices == [] or previous_prices == None:
+            print("Last 5 Data")
+            previous = dataset_train[['Close']].values[-5:] 
+            print(previous)
         # get min and max values
-        minValue = float(min(feature_set_dataframe['Close']))
-        maxValue = float(max(feature_set_dataframe['Close']))
+        minValue = round(float(min(feature_set_dataframe['Close'])),8)
+        maxValue = round(float(max(feature_set_dataframe['Close'])),8)
 
+        print("Saving Normalized files.")
         if save == True:
             try:
                 with open(normalizer_path,'r+') as json_file:
@@ -64,18 +70,19 @@ def training(self, indicator_file, save, predict):
                                 'minValue': minValue,
                                 'maxValue': maxValue, 'epochs': epochs}
                         json.dump(data, normalizer_path)
-                        json_file.write(str(data))
+                        # json_file.write(str(data))
                     minValue = data['minValue']
                     maxValue = data['maxValue']
                     epochs = data['epochs']
             except Exception:
-                with open(normalizer_path, 'w+') as outfile:
+                with open(normalizer_path, 'w') as outfile:
                     data = {'indicator_id': indicator_file,
                             'minValue': minValue,
                             'maxValue': maxValue, 'epochs': epochs}
                     json.dump(data, outfile)
-                    outfile.write(str(data))
+                    # outfile.write(str(data))
 
+        print("Normalizing values.")
         # normalize the values
         # Makes the gradient low which will means easier learning
         normalized_feature_set_array = []
@@ -93,9 +100,11 @@ def training(self, indicator_file, save, predict):
         x_feature_high_price = []
         y_label_simple_moving_average = []
 
+        print("Normalizing values.")
         # validate feature set length
         if feature_set_dataframe_length < timesteps:
-            return
+            response = json.dumps({"message": 'Invalid timesteps: {0}'.format(timesteps)})
+            return response
         for index in range(timesteps, feature_set_dataframe_length):
             start_row_index = index - timesteps
             end_row_index = index + 1
@@ -110,7 +119,8 @@ def training(self, indicator_file, save, predict):
             y_label_simple_moving_average.append(output_value[0][0])
 
         if len(x_feature_high_price) <= 0:
-            return
+            response = json.dumps({"message": 'Input length is invalid'})
+            return response
         # split training and test
         # output would now be an array
         train_set_input, test_set_input = train_test_split(
@@ -139,63 +149,66 @@ def training(self, indicator_file, save, predict):
         regressor = keras.models.Sequential()
         try:
             if predict == True:
+                print('Loading Regressor Model: {0}'.format(modelh5_path))
                 regressor = keras.models.load_model(modelh5_path)
                 regressor.summary()
                 accuracy = regressor.evaluate(test_set_input, test_set_output)
                 print('Restored model, accuracy: {:5.2f}%'.format(100*accuracy))
             else:
                 self.update_state(state="PROGRESS", meta={'progress': 70})
-            neurons = 50
-            batch_size = 32
-            # Long Short Term Memory model - supervised Deep Neural Network that is very good at doing time-series prediction.
-            # adding the first LSTM Layer and some Dropout regularisation
-            #
-            # Dropout: Makes sure that network can never rely on any given activation to be present because at any moment they could become squashed i.e. value = 0
-            # forced to learn a redunant representation for everything
-            #
-            # return sequences: We want output after every layer in which will be passed to the next layer
-            regressor.add(keras.layers.LSTM(units=neurons, return_sequences=True,
-                                            input_shape=lstm_input_shape))
-            regressor.add(keras.layers.Dropout(0.2))
+                print('New Regressor Model: {0}'.format(modelh5_path))
+                neurons = 50
+                batch_size = 32
+                # Long Short Term Memory model - supervised Deep Neural Network that is very good at doing time-series prediction.
+                # adding the first LSTM Layer and some Dropout regularisation
+                #
+                # Dropout: Makes sure that network can never rely on any given activation to be present because at any moment they could become squashed i.e. value = 0
+                # forced to learn a redunant representation for everything
+                #
+                # return sequences: We want output after every layer in which will be passed to the next layer
+                regressor.add(keras.layers.LSTM(units=neurons, return_sequences=True,
+                                                input_shape=lstm_input_shape))
+                regressor.add(keras.layers.Dropout(0.2))
 
-            # adding a second LSTM Layer and some Dropout regularisation
-            regressor.add(keras.layers.LSTM(
-                units=neurons, return_sequences=True))
-            regressor.add(keras.layers.Dropout(0.2))
+                # adding a second LSTM Layer and some Dropout regularisation
+                regressor.add(keras.layers.LSTM(
+                    units=neurons, return_sequences=True))
+                regressor.add(keras.layers.Dropout(0.2))
 
-            # adding a third LSTM Layer and some Dropout regularisation
-            regressor.add(keras.layers.LSTM(
-                units=neurons, return_sequences=True))
-            regressor.add(keras.layers.Dropout(0.2))
+                # adding a third LSTM Layer and some Dropout regularisation
+                regressor.add(keras.layers.LSTM(
+                    units=neurons, return_sequences=True))
+                regressor.add(keras.layers.Dropout(0.2))
 
-            # adding a fourth LSTM Layer and some Dropout regularisation
-            regressor.add(keras.layers.LSTM(units=neurons))
-            regressor.add(keras.layers.Dropout(0.2))
+                # adding a fourth LSTM Layer and some Dropout regularisation
+                regressor.add(keras.layers.LSTM(units=neurons))
+                regressor.add(keras.layers.Dropout(0.2))
 
-            # adding the output layer
-            # Dense format output layer
-            regressor.add(keras.layers.Dense(units=1))  # prediction
+                # adding the output layer
+                # Dense format output layer
+                regressor.add(keras.layers.Dense(units=1))  # prediction
 
-            # compile network
-            # find the global minimal point
-            regressor.compile(optimizer='adam',
-                              loss='mean_absolute_error')
-            regressor.summary()
-            accuracy = regressor.evaluate(test_set_input, test_set_output)
-            print('Restored model, accuracy: {:5.2f}%'.format(100*accuracy))
+                # compile network
+                # find the global minimal point
+                regressor.compile(optimizer='adam',
+                                loss='mean_absolute_error')
+                regressor.summary()
+                accuracy = regressor.evaluate(test_set_input, test_set_output)
+                print('Restored model, accuracy: {:5.2f}%'.format(100*accuracy))
 
-            # fitting the RNN to the training set
-            # giving input in batch sizes of 5
-            # loss should decrease on each an every epochs
-            history = regressor.fit(train_set_input, train_set_output,
-                                    batch_size=batch_size, epochs=epochs, steps_per_epoch=5, validation_data=(test_set_input, test_set_output),  verbose=0, callbacks=[KerasFitCallback()])
-            if save == True:
-                print("Saving Model")
-                # save the model for javascript format readable
-                tfjs.converters.save_keras_model(regressor, directory)
-                # save the model for python format readable
-                regressor.save(modelh5_path)
+                # fitting the RNN to the training set
+                # giving input in batch sizes of 5
+                # loss should decrease on each an every epochs
+                history = regressor.fit(train_set_input, train_set_output,
+                                        batch_size=batch_size, epochs=epochs, steps_per_epoch=5, validation_data=(test_set_input, test_set_output),  verbose=0, callbacks=[KerasFitCallback()])
+                if save == True:
+                    print("Saving Model")
+                    # save the model for javascript format readable
+                    tfjs.converters.save_keras_model(regressor, kerasModelDirectory)
+                    # save the model for python format readable
+                    regressor.save(modelh5_path)
         except Exception:
+            print('Initial Regressor Model: {0}'.format(modelh5_path))
             self.update_state(state="PROGRESS", meta={'progress': 70})
             neurons = 50
             batch_size = 32
@@ -244,56 +257,82 @@ def training(self, indicator_file, save, predict):
             if save == True:
                 print("Saving Model")
                 # save the model for javascript format readable
-                tfjs.converters.save_keras_model(regressor, directory)
+                tfjs.converters.save_keras_model(regressor, kerasModelDirectory)
                 # save the model for python format readable
                 regressor.save(modelh5_path)
-
-        predicted_price = regressor.predict(test_set_input)
-
-        y_label_sma = np.array(predicted_price)
-        x_label_sma = np.array(test_set_output)
-
-        final_output_length = len(x_label_sma)
-        y_label_sma_normalized = []
-        x_label_sma_normalized = []
-        for index in range(final_output_length):
-            y_label_sma_normalized.append(
-                normalize(y_label_sma[index], 0, 1, minValue, maxValue))
-            x_label_sma_normalized.append(
-                normalize(x_label_sma[index], 0, 1, minValue, maxValue))
         
-        if(predict == True):
-            training_result = json.dumps({
-                'result': str(json.dumps({
-                    'ClosePrice': x_label_sma_normalized,
-                    'ClosePricePredict': y_label_sma_normalized}))})
+        if previous_prices == []:
+            print('Test Prediction:')
+            print(test_set_input)
+            predicted_price = regressor.predict(test_set_input)
+            y_label_sma = np.array(predicted_price)
+            x_label_sma = np.array(test_set_output)
+
+            final_output_length = len(x_label_sma)
+            y_label_sma_normalized = []
+            x_label_sma_normalized = []
+            for index in range(final_output_length):
+                y_label_sma_normalized.append(
+                    normalize(y_label_sma[index], 0, 1, minValue, maxValue))
+                x_label_sma_normalized.append(
+                    normalize(x_label_sma[index], 0, 1, minValue, maxValue))
+            
+            if(predict == True):
+                training_result = json.dumps({
+                    'result': str(json.dumps({
+                        'ClosePrice': x_label_sma_normalized,
+                        'ClosePricePredict': y_label_sma_normalized}))})
+            else:
+                training_result = json.dumps({'current': 100,
+                                'total': 100,
+                                'status': 'Task completed!',
+                                'details': str(json.dumps(exchange.current_training_status)),
+                                'summary': str(regressor.summary()),
+                                'history': str(history),
+                                'result': str(json.dumps({
+                                    'ClosePrice': x_label_sma_normalized,
+                                    'ClosePricePredict': y_label_sma_normalized}))})
+            # exchange.get_mongo_database().training_result.insert_one(training_result)
+            print(training_result)
+            response = training_result
         else:
-            training_result = json.dumps({'current': 100,
-                               'total': 100,
-                               'status': 'Task completed!',
-                               'details': str(json.dumps(exchange.current_training_status)),
-                               'summary': str(regressor.summary()),
-                               'history': str(history),
-                               'result': str(json.dumps({
-                                   'ClosePrice': x_label_sma_normalized,
-                                   'ClosePricePredict': y_label_sma_normalized}))})
-        # exchange.get_mongo_database().training_result.insert_one(training_result)
-        print(training_result)
-        response = training_result
+            print('Prediction:')
+            normalized_previous_price_set_array = []
+            final_price_array = []
+            for previous_price in previous_prices:
+                normalized_value = normalize(round(float(previous_price),8), minValue, maxValue, 0, 1)
+                normalized_previous_price_set_array.append([normalized_value])
+
+            print(normalized_previous_price_set_array)
+            input_value_flatten = np.array(normalized_previous_price_set_array)
+            final_price_array.append(input_value_flatten.flatten())
+            print(final_price_array)
+
+            predicted_price_input_shape = (len(final_price_array), timesteps, 1)
+            print(predicted_price_input_shape)
+            previous_prices = np.reshape(final_price_array, predicted_price_input_shape)
+
+            print(previous_prices)
+            predicted_price = regressor.predict(previous_prices)
+            y_label_sma = np.array(predicted_price)
+            final_output_length = len(y_label_sma)
+            y_label_sma_normalized = []
+            for index in range(final_output_length):
+                y_label_sma_normalized.append(normalize(y_label_sma[index], 0, 1, minValue, maxValue))
+            
+            training_result = json.dumps({'result': str(json.dumps({'ClosePricePredict': y_label_sma_normalized}))})
+            # exchange.get_mongo_database().training_result.insert_one(training_result)
+            print(training_result)
+            response = training_result
     else:
-        response = json.dumps(
-            {
-                "message": 'Invalid input'
-            })
+        response = json.dumps({"message": 'Invalid input'})
     return response
 
 
 class KerasFitCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
-        #dateobject = datetime.date.today()
         current_training_status = {
             'state': 'EPOCH TESTING',
-            # 'time':  datetime.datetime.combine(dateobject, datetime.time()),
             'batch': 'N/A',
             'loss': logs,
             'epoch': epoch,
