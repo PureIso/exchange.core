@@ -14,7 +14,7 @@ Long Short Term Memory (LSTM - cells)
 
 Make sure that you have:
 
-- python3.6.5
+- python3.8.6 x64 or python3.6.5 x86
 - Task Queue: Celery
 - Message Broker for Task Queue: mongoDB
 - Database: mongoDB
@@ -106,7 +106,7 @@ pip freeze --local > requirements.txt
 Initialise environment and Start application:
 
 ```shell
-activate.bat
+init.bat
 start.bat
 ```
 
