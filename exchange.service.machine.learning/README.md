@@ -7,7 +7,7 @@ Long Short Term Memory (LSTM - cells)
 
 ## Solutions
 
-- [Frontend Solution](exchange.signalR.client.web.frontend/README.md#section)
+- [Frontend Solution](configuration.signalR.client.web.frontend/README.md#section)
 - [Backend Solution](exchange.service/README.md#section)
 
 ## Prerequisites
@@ -20,15 +20,54 @@ Make sure that you have:
 - Database: mongoDB
 - Dependancy: Erlang
 
-### Quick Start - Docker-Compose (Start Flask RESTful, Celery and MongoDB)
+### Quick Start - Env / Local (Start Flask RESTful and Celery)
 
-Running docker-compose:
+[Microsoft Visual C++](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+Upgrade pip
 
 ```shell
-docker-compose up
+python -m pip install --upgrade pip
 ```
 
-View output of docker-compose:
+Make sure you have virtualenv installed
+Virtualenv allows you to have different virtual environment for different projects.
+
+```shell
+pip install virtualenv
+```
+
+NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
+Setup and initialise virtual environment with the correct python version:
+
+```shell
+python -m virtualenv env
+virtualenv env --python=python3.8.6
+env\\Scripts\\activate.bat
+python.exe -m pip install --upgrade pip
+```
+
+Initialise environment and Start application:
+
+```shell
+init.bat
+start.bat
+```
+
+Installing requirement file in virtual environment:
+
+```shell
+pip install -r requirements.txt
+```
+
+Backing up packages to requirement file especially after tested update:
+
+```shell
+pip freeze --local > requirements.txt
+```
+
+### Quick Start - Docker-Compose (Start Flask RESTful, Celery and MongoDB)
+
+View docker-compose output and execution:
 
 ```shell
 docker-compose -f docker-compose.yml config
@@ -55,59 +94,6 @@ Clean dangling images:
 
 ```shell
 docker image prune
-```
-
-### Quick Start - Local
-
-[Microsoft Visual C++](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-Upgrade pip
-
-```shell
-python -m pip install --upgrade pip
-```
-
-Make sure you have virtualenv installed
-Virtualenv allows you to have different virtual environment for different projects.
-
-```shell
-pip install virtualenv
-```
-
-Get the current Python version.
-
-```shell
-python --version
-```
-
-NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
-Setup and initialise virtual environment with the correct python version:
-
-```shell
-python -m virtualenv env
-virtualenv env --python=python3.8.6
-env\\Scripts\\activate.bat
-python.exe -m pip install --upgrade pip
-```
-
-Installing requirement file in virtual environment:
-
-```shell
-pip install -r requirements.txt
-```
-
-Backing up packages to requirement file especially after tested update:
-
-```shell
-pip freeze --local > requirements.txt
-```
-
-### Quick Start - Env (Start Flask RESTful and Celery)
-
-Initialise environment and Start application:
-
-```shell
-init.bat
-start.bat
 ```
 
 ### API
@@ -151,8 +137,7 @@ http://localhost:5005/api/v1/rnn/
 POST
 Body
 {
-    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv",
-    "save": true
+    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv"
 }
 
 http://localhost:5005/api/v1/predict/
@@ -160,6 +145,5 @@ POST
 Body
 {
     "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv",
-    "predict": true
 }
 ```
