@@ -1,61 +1,50 @@
-import sys
-from app.tasks.task_work import training
+"""Predict API Controller"""
 from flask_restful import Resource, reqparse
 from flask import json, Response, request
+from app.tasks.task_work import prediction
+
 
 class Predict(Resource):
-    def __init__(self,exchange):
-        self.exchange = exchange
+    """Predict API Class
+    Args:
+        Resource (Resource): RESTFul resource
+    """
+
+    def __init__(self, configuration):
+        self.configuration = configuration
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('indicator_file', type=str, location='json')
-        self.reqparse.add_argument('predict', type=bool, location='json')
-        self.reqparse.add_argument('previous_prices', action='append')
         super(Predict, self).__init__()
 
-    def get(self):
-        try:
-            message = json.dumps({"API VERSION": "1.0.0"})
-            response = Response(message,
-                                status=200,  # Status OK
-                                mimetype='application/json')
-        except:
-            message = json.dumps({"error": str(sys.exc_info()[0])})
-            response = Response(message,
-                                status=500,  # Status Internal Server Error
-                                mimetype='application/json')
+    @staticmethod
+    def get():
+        """Predict [get] method
+        Returns:
+            Response: The response
+        """
+        message = json.dumps({"API VERSION": "1.0.0"})
+        response = Response(message,
+                            status=200,  # Status OK
+                            mimetype='application/json')
         return response
 
     def post(self):
-        try:
-            args = self.reqparse.parse_args()
-            indicator_file = args['indicator_file']
-            predict = args['predict']
-            previous_prices = args['previous_prices']
-            if previous_prices == None:
-                previous_prices = []
-            self.exchange.mi_logger.info("Recurrent Nural Netowork Processing: Target: {0} Current Prices: {1}".format(indicator_file,previous_prices))
+        """predict [post] method
+        Returns:
+            Response: The response
+        """
+        args = self.reqparse.parse_args()
+        indicator_file = args['indicator_file']
+        task = prediction.delay(indicator_file)
+        message = json.dumps({
+            "task_id": str(task.task_id),
+            "status": str(task.status),
+            "status url": "{0}api/v1/taskstatus?task_id={1}".format(
+                request.url_root,
+                task.task_id)})
 
-            if indicator_file != None:
-                task = training.delay(indicator_file, False, predict, previous_prices)
-                message = json.dumps(
-                    {"task_id": str(task.task_id),
-                     "status": str(task.status),
-                     "status url": str(request.url_root + 'api/v1/taskstatus?task_id=' + task.task_id)})
-                self.exchange.mi_logger.info(message)
-                response = Response(message,
-                                    status=202,  # Status Accepted
-                                    mimetype='application/json')
-            else:
-                message = json.dumps({
-                    "message": "Invalid input target: {0}".format(indicator_file)})
-                self.exchange.mi_logger.info(message)
-                response = Response(message, status=200,
-                                    mimetype='application/json')
-            return response
-        except:
-            message = json.dumps({"error": str(sys.exc_info())})
-            self.exchange.mi_logger.error(message)
-            response = Response(message,
-                                status=500,  # Status Internal Server Error
-                                mimetype='application/json')
+        self.configuration.mi_logger.info(message)
+        response = Response(message,
+                            status=202,  # Status Accepted
+                            mimetype='application/json')
         return response
