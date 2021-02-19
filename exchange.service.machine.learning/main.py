@@ -1,6 +1,7 @@
 """Main Entrypoint"""
 from flask_restful import Api
 from flask import Flask
+from flask_cors import CORS
 from app.configuration import Configuration
 from app.views.predict import Predict
 from app.views.task_status import TaskStatus
@@ -9,6 +10,8 @@ from app.views.recurrent_neural_network import RecurrentNeuralNetwork
 if __name__ == '__main__':
     configuration = Configuration()
     application = Flask(__name__, static_url_path='/static')
+    # allow CORS for all domains on all routes
+    cors = CORS(application, resources={r"/api/v1/*": {"origins": "*"}})
     api = Api(application)
     # route initialization
     rnn_routes = [
