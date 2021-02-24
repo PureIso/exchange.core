@@ -6,6 +6,7 @@ import { AssetInformationContainer } from "@interfaces/asset-information-contain
 import { FillsContainer } from "@interfaces/fills-container.interface";
 import { DisplayContainer } from "@interfaces/display-container.interface";
 import { OrdersContainer } from "@interfaces/orders-container.interface";
+import { AnalyticsDataContainer } from "@interfaces/analytics-data-container";
 import * as NotificationContainerReducer from "@reducers/notification-container.reducer";
 import * as ExchangeUIContainerReducer from "@reducers/exchange-ui-container.reducer";
 import * as ProductInformationContainerReducer from "@reducers/product-information-container.reducer";
@@ -14,6 +15,7 @@ import * as AssetInformationContainerReducer from "@reducers/asset-information-c
 import * as FillsContainerReducer from "@reducers/fills-container.reducer";
 import * as DisplayContainerReducer from "@reducers/display-container.reducer";
 import * as OrdersContainerReducer from "@reducers/orders-container.reducer";
+import * as AnalyticsDataContainerReducer from "@reducers/analytics-data-container.reducer";
 
 export interface AppState {
     readonly notificationContainer: NotificationContainer;
@@ -24,6 +26,7 @@ export interface AppState {
     readonly ordersContainer: OrdersContainer;
     readonly fillsContainer: FillsContainer;
     readonly displayContainer: DisplayContainer;
+    readonly analyticsDataContainer: AnalyticsDataContainer
 }
 
 export const INITIALSTATE: AppState = {
@@ -34,5 +37,6 @@ export const INITIALSTATE: AppState = {
     assetInformationContainer: AssetInformationContainerReducer.initialState,
     fillsContainer: FillsContainerReducer.initialState,
     displayContainer: DisplayContainerReducer.initialState,
-    ordersContainer: OrdersContainerReducer.initialState
+    ordersContainer: OrdersContainerReducer.initialState,
+    analyticsDataContainer: AnalyticsDataContainerReducer.initialState
 };

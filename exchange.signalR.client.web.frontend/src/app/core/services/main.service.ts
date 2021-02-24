@@ -14,6 +14,7 @@ import { FillsContainer } from "@interfaces/fills-container.interface";
 import { Order } from "@interfaces/order.interface";
 import { OrdersContainer } from "@interfaces/orders-container.interface";
 import * as NotificationContainerActions from "@actions/notification-container.actions";
+import { HttpClient, HttpHeaders } from "@angular/common/http";
 
 //Interface to the business layer
 @Injectable()
@@ -23,6 +24,9 @@ export class MainService extends HubClient {
     private hubUrlChange: boolean = false;
     private serverHubInitId: any = -1;
     private hubConnection: HubConnection;
+
+    private pathAPI = this.config.setting["PathAPI"];
+    private headers: HttpHeaders;
 
     @select("notificationContainer") notificationContainer$: Observable<NotificationContainer>;
     notificationContainer: NotificationContainer;
@@ -39,8 +43,9 @@ export class MainService extends HubClient {
     @select("ordersContainer") ordersContainer$: Observable<OrdersContainer>;
     ordersContainer: OrdersContainer;
 
-    constructor(private config: AppConfig, private ngRedux: NgRedux<AppState>) {
+    constructor(private config: AppConfig, private ngRedux: NgRedux<AppState>, private httpClient: HttpClient) {
         super();
+        this.headers = new HttpHeaders({ "Content-Type": "application/json; charset=utf-8" });
         let url: string = this.config.HUBURL + "/" +  this.config.HUBNAME;
         this.hubConnection = new HubConnectionBuilder().withUrl(url).build();
     }
@@ -198,4 +203,18 @@ export class MainService extends HubClient {
             return;
         this.hubConnection.invoke("RequestedFillStatistics", applicationName, symbol).catch((err) => console.error(err));
     }
+
+    get_indicator_filenames(): Observable<any> {
+        let url = this.pathAPI + 'rnn/';
+        return this.httpClient.get<any>(url, { headers: this.headers });
+    }
+
+    // addCategory(category: Category): Observable<Category> {
+    //     let url = this.pathAPI + 'category';
+    //     let data = JSON.stringify(category);
+    //     return this.httpClient.post<Category>(
+    //         url,
+    //         data,
+    //         { headers: this.headers });
+    // }
 }
