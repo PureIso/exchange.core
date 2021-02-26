@@ -1,7 +1,8 @@
 import { AccountInformation } from "./account-information.interface";
 import { AnalyticsData } from "./analytics-data.interface";
+import { IndicatorInformation } from "./indicator-information";
 
 export interface AnalyticsDataContainer {
-    indicators: string[];
+    indicator_information: IndicatorInformation;
     analytics_data: AnalyticsData
 }

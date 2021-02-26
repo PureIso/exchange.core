@@ -2,7 +2,10 @@ import * as AnalyticsDataContainerActions from "@actions/analytics-data-containe
 import { AnalyticsDataContainer } from "@interfaces/analytics-data-container";
 
 export const initialState: AnalyticsDataContainer = {
-    indicators: [],
+    indicator_information: {
+        api_version: "",
+        indicator_files: []
+    },
     analytics_data: {
         indicator_name: ""
     }
