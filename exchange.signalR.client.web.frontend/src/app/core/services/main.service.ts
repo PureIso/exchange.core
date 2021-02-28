@@ -15,6 +15,7 @@ import { Order } from "@interfaces/order.interface";
 import { OrdersContainer } from "@interfaces/orders-container.interface";
 import * as NotificationContainerActions from "@actions/notification-container.actions";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { IndicatorInformation } from "@interfaces/indicator-information";
 
 //Interface to the business layer
 @Injectable()
@@ -204,9 +205,9 @@ export class MainService extends HubClient {
         this.hubConnection.invoke("RequestedFillStatistics", applicationName, symbol).catch((err) => console.error(err));
     }
 
-    get_indicator_filenames(): Observable<any> {
+    get_indicator_filenames(): Observable<IndicatorInformation> {
         let url = this.pathAPI + 'rnn/';
-        return this.httpClient.get<any>(url, { headers: this.headers });
+        return this.httpClient.get<IndicatorInformation>(url, { headers: this.headers });
     }
 
     // addCategory(category: Category): Observable<Category> {
