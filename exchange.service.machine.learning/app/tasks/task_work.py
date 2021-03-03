@@ -95,15 +95,12 @@ def training(self, indicator_file_name):
         data['min_close_value'],
         data['max_close_value'])
 
-    training_result = json.dumps({'current': 100,
-                                  'total': 100,
+    training_result = json.dumps({'current_progress': 100,
+                                  'total_progress': 100,
                                   'status': 'Task completed!',
-                                  'details': str(json.dumps(configuration.current_training_status)),
-                                  'summary': regressor_result['summary'],
-                                  'history': regressor_result['history'],
-                                  'result': str(json.dumps({
-                                      'ClosePrice': x_real_close_price_normalized,
-                                      'ClosePricePredict': y_predicted_price_normalized}))})
+                                  'prediction': str(json.dumps({
+                                      'close_price': x_real_close_price_normalized,
+                                      'close_price_prediction': y_predicted_price_normalized}))})
     return training_result
 
 
@@ -151,8 +148,8 @@ def prediction(self, indicator_file_name):
         data['max_close_value'])
 
     training_result = json.dumps({
-        'ClosePrice': np.array(x_close_prices_input).tolist(),
-        'ClosePricePredict': predicted_price_normalized})
+        'close_price': np.array(x_close_prices_input.flatten()).tolist(),
+        'close_price_prediction': predicted_price_normalized})
     return training_result
 
 
