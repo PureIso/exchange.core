@@ -1,6 +1,6 @@
 """Predict API Controller"""
 from flask_restful import Resource, reqparse
-from flask import json, Response, request
+from flask import json, Response
 from app.tasks.task_work import prediction
 
 
@@ -38,10 +38,7 @@ class Predict(Resource):
         task = prediction.delay(indicator_file)
         message = json.dumps({
             "task_id": str(task.task_id),
-            "status": str(task.status),
-            "status url": "{0}api/v1/taskstatus?task_id={1}".format(
-                request.url_root,
-                task.task_id)})
+            "status": str(task.status)})
 
         self.configuration.mi_logger.info(message)
         response = Response(message,

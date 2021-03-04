@@ -12,18 +12,17 @@ class TaskStatus(Resource):
     def __init__(self, configuration):
         self.configuration = configuration
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('task_id', type=str, location='values')
+        self.reqparse.add_argument('task_id', type=str, location='json')
         super(TaskStatus, self).__init__()
 
-    def get(self):
-        """Task Status [get] method
+    def post(self):
+        """Task Status [post] method
         Returns:
             Response: The response
         """
         args = self.reqparse.parse_args()
-        task_id = str(args['task_id'])
+        task_id = args['task_id']
         task = self.configuration.celery.AsyncResult(id=task_id, app=training)
-
         if task.state == 'PENDING':
             # job did not start yet
             response = {
@@ -35,6 +34,7 @@ class TaskStatus(Resource):
                 'state': task.state,
                 'status': str(json.dumps(str(task.info))),
             }
+
         message = json.dumps(response)
         self.configuration.mi_logger.info(message)
         response = Response(message,
