@@ -1,7 +1,7 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS base
+FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS base
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS build
 WORKDIR /src
 COPY ["exchange.coinbase/exchange.coinbase.csproj", "exchange.coinbase/"]
 COPY ["exchange.binance/exchange.binance.csproj", "exchange.binance/"]

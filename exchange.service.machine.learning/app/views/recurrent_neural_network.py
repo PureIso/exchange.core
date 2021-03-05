@@ -25,7 +25,7 @@ class RecurrentNeuralNetwork(Resource):
         indicator_files = []
         indicator_files = Configuration.get_files()
         message = json.dumps({
-            "api_version": "1.0.0", 
+            "api_version": "1.0.0",
             "indicator_files": indicator_files})
         response = Response(message,
                             status=200,  # Status OK

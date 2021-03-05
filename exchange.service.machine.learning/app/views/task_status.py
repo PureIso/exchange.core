@@ -25,17 +25,14 @@ class TaskStatus(Resource):
         task = self.configuration.celery.AsyncResult(id=task_id, app=training)
         if task.state == 'PENDING':
             # job did not start yet
-            response = {
-                'state': task.state,
-                'status': 'Pending...'
-            }
+            message = json.dumps({
+                "state": task.state,
+                "status": {}})
         else:
-            response = {
-                'state': task.state,
-                'status': str(json.dumps(str(task.info))),
-            }
+            message = json.dumps({
+                "state": task.state,
+                "status": json.loads(str(task.info))})
 
-        message = json.dumps(response)
         self.configuration.mi_logger.info(message)
         response = Response(message,
                             status=200,  # Status OK

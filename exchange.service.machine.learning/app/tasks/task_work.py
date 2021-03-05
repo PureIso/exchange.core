@@ -24,7 +24,8 @@ def training(self, indicator_file_name):
     Returns:
         [type]: [description]
     """
-    self.update_state(state="STARTING", meta=configuration.current_training_status)
+    self.update_state(state="STARTING",
+                      meta=configuration.current_training_status)
     # import dataset using pandas
     training_dataset = get_training_dataset(indicator_file_name)
     # get min and max values
@@ -98,9 +99,8 @@ def training(self, indicator_file_name):
     training_result = json.dumps({'current_progress': 100,
                                   'total_progress': 100,
                                   'status': 'Task completed!',
-                                  'prediction': str(json.dumps({
-                                      'close_price': x_real_close_price_normalized,
-                                      'close_price_prediction': y_predicted_price_normalized}))})
+                                  'close_price': x_real_close_price_normalized,
+                                  'close_price_prediction': y_predicted_price_normalized})
     return training_result
 
 
@@ -114,7 +114,8 @@ def prediction(self, indicator_file_name):
     Returns:
         [type]: [description]
     """
-    self.update_state(state="STARTING", meta=configuration.current_training_status)
+    self.update_state(state="STARTING",
+                      meta=configuration.current_training_status)
     # import dataset using pandas
     training_dataset = get_training_dataset(indicator_file_name)
     # get min and max values
@@ -137,7 +138,8 @@ def prediction(self, indicator_file_name):
     x_normalized_close_prices_input.append(
         np.array(normalized_closed_training_dataset).flatten())
     # define training input and output shapes
-    x_normalized_close_prices_input_shape = (len(x_normalized_close_prices_input), 5, 1)
+    x_normalized_close_prices_input_shape = (
+        len(x_normalized_close_prices_input), 5, 1)
     # reshape training input and outputs
     reshaped_data = np.reshape(
         x_normalized_close_prices_input, x_normalized_close_prices_input_shape)
@@ -147,9 +149,11 @@ def prediction(self, indicator_file_name):
         data['min_close_value'],
         data['max_close_value'])
 
-    training_result = json.dumps({
-        'close_price': np.array(x_close_prices_input.flatten()).tolist(),
-        'close_price_prediction': predicted_price_normalized})
+    training_result = json.dumps({'current_progress': 100,
+                                  'total_progress': 100,
+                                  'status': 'Task completed!',
+                                  'close_price': np.array(x_close_prices_input.flatten()).tolist(),
+                                  'close_price_prediction': predicted_price_normalized})
     return training_result
 
 
