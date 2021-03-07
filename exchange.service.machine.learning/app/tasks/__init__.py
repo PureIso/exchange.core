@@ -60,10 +60,10 @@ def get_training_dataset(indicator_file_name):
     dataset_train = []
     try:
         dataset_train = pd.read_csv(
-            csv_path, parse_dates=True, index_col='DateTime', date_parser=dateparse)
+            csv_path, parse_dates=True, date_parser=dateparse)
     except TypeError:
         dataset_train = pd.read_csv(
-            csv_path, parse_dates=True, index_col='DateTime', date_parser=dateparse_extended)
+            csv_path, parse_dates=True, date_parser=dateparse_extended)
     return dataset_train
 
 
