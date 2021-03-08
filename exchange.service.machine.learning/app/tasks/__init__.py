@@ -29,6 +29,30 @@ def dateparse_extended(datetime_str):
     """
     return datetime.datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
 
+def get_next_datetime(datetime_previous_str, datetime_current_str):
+    """[summary]
+
+    Args:
+        datetime_previous_str ([type]): [description]
+        datetime_current_str ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    datetime_previous_object = datetime.datetime.now()
+    datetime_current_object = datetime.datetime.now()
+    try:
+        datetime_previous_object = datetime.datetime.strptime(
+            datetime_previous_str, '%d/%m/%Y %H:%M:%S')
+        datetime_current_object = datetime.datetime.strptime(
+            datetime_current_str, '%d/%m/%Y %H:%M:%S')
+    except TypeError:
+        datetime_previous_object = datetime.datetime.strptime(
+            datetime_previous_str, '%m/%d/%Y %H:%M:%S')
+        datetime_current_object = datetime.datetime.strptime(
+            datetime_current_str, '%m/%d/%Y %H:%M:%S')
+    difference = datetime_current_object - datetime_previous_object
+    return datetime_current_object + difference
 
 def normalize(value, min_value, max_value, new_min, new_max):
     """Normalize a value between new Min and new Max
