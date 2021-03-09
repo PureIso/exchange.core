@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from app.tasks.keras_fit_callback import KerasFitCallback
 from app.configuration import Configuration
 from . import get_training_dataset, normalize
-from . import load_normalized_data_from_json
+from . import load_normalized_data_from_json, get_next_datetime
 from . import normalize_array, reverse_normalize_array
 
 configuration = Configuration()
@@ -29,12 +29,10 @@ def training(self, indicator_file_name):
     # import dataset using pandas
     training_dataset = get_training_dataset(indicator_file_name)
     # get min and max values
-    min_close_value = round(float(min(training_dataset['Close'])), 8)
-    max_close_value = round(float(max(training_dataset['Close'])), 8)
-
     data = load_normalized_data_from_json(indicator_file_name,
-                                          min_close_value,
-                                          max_close_value)
+                                          round(
+                                              float(min(training_dataset['Close'])), 8),
+                                          round(float(max(training_dataset['Close'])), 8))
 
     # normalize the values
     # Makes the gradient low which will means easier learning
@@ -96,11 +94,18 @@ def training(self, indicator_file_name):
         data['min_close_value'],
         data['max_close_value'])
 
+    close_price_json = convert_to_chart('close_price',
+                                        training_dataset['DateTime'],
+                                        x_real_close_price_normalized)
+    close_price_prediction_json = convert_to_chart('close_price_prediction',
+                                                   training_dataset['DateTime'],
+                                                   y_predicted_price_normalized)
+
     training_result = json.dumps({'current_progress': 100,
                                   'total_progress': 100,
                                   'status': 'Task completed!',
-                                  'close_price': x_real_close_price_normalized,
-                                  'close_price_prediction': y_predicted_price_normalized})
+                                  'close_price': close_price_json,
+                                  'close_price_prediction': close_price_prediction_json})
     return training_result
 
 
@@ -124,6 +129,8 @@ def prediction(self, indicator_file_name):
     # normalize the values
     # Makes the gradient low which will means easier learning
     x_close_prices_input = training_dataset[['Close']].values[-5:]
+    x_datetime_prices_input = training_dataset['DateTime'].values[-5:]
+
     data_length = len(x_close_prices_input)
     normalized_closed_training_dataset = []
     for index in range(data_length):
@@ -144,17 +151,54 @@ def prediction(self, indicator_file_name):
     reshaped_data = np.reshape(
         x_normalized_close_prices_input, x_normalized_close_prices_input_shape)
     regressor_result = lstm_prediction(indicator_file_name, reshaped_data)
-    predicted_price_normalized = reverse_normalize_array(
+    predicted_price_n = reverse_normalize_array(
         np.array(regressor_result['predicted_price']),
         data['min_close_value'],
         data['max_close_value'])
 
+    predicted_price_normalized = (np.array(x_close_prices_input.flatten()).tolist())
+    predicted_price_normalized.append(predicted_price_n[0])
+    prediction_date = get_next_datetime(x_datetime_prices_input[-2],x_datetime_prices_input[-1])
+    x_datetime_prices_input = x_datetime_prices_input.tolist()
+    x_datetime_prices_input.append(str(prediction_date))
+    print(x_datetime_prices_input)
+
+    close_price_json = convert_to_chart('close_price',
+                                        x_datetime_prices_input,
+                                        np.array(x_close_prices_input.flatten()).tolist())
+    close_price_prediction_json = convert_to_chart('close_price_prediction',
+                                                   x_datetime_prices_input,
+                                                   predicted_price_normalized)
+
     training_result = json.dumps({'current_progress': 100,
                                   'total_progress': 100,
                                   'status': 'Task completed!',
-                                  'close_price': np.array(x_close_prices_input.flatten()).tolist(),
-                                  'close_price_prediction': predicted_price_normalized})
+                                  'close_price': close_price_json,
+                                  'close_price_prediction': close_price_prediction_json})
     return training_result
+
+
+def convert_to_chart(name, names, values):
+    """[summary]
+
+    Args:
+        name ([type]): [description]
+        names ([type]): [description]
+        values ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    final_data_dict = {"name": "", "series": []}
+    data_array = []
+    for index, value in enumerate(values,0):
+        data_dict = {}
+        data_dict["name"] = names[index]
+        data_dict["value"] = value
+        data_array.append(data_dict)
+    final_data_dict["name"] = name
+    final_data_dict["series"] = data_array
+    return final_data_dict
 
 
 def get_reshaped_input_and_output_data(x_close_prices_input, y_close_price_output, timesteps):
