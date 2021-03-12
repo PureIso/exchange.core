@@ -9,6 +9,7 @@ import { fillsContainerReducer } from "./fills-container.reducer";
 import { displayContainerReducer } from "./display-container.reducer";
 import { ordersContainerReducer } from "./orders-container.reducer";
 import { analyticsDataContainerReducer } from "./analytics-data-container.reducer";
+import { predictionContainerReducer } from "./prediction-container.reducer";
 
 export const combinedReducers = combineReducers<AppState>({
 	notificationContainer: notificationContainerReducer,
@@ -19,6 +20,7 @@ export const combinedReducers = combineReducers<AppState>({
 	fillsContainer: fillsContainerReducer,
 	displayContainer: displayContainerReducer,
 	ordersContainer: ordersContainerReducer,
-	analyticsDataContainer: analyticsDataContainerReducer
+	analyticsDataContainer: analyticsDataContainerReducer,
+	predictionContainer: predictionContainerReducer
 });
 export const store = createStore(combinedReducers, INITIALSTATE);

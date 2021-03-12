@@ -16,6 +16,8 @@ import { OrdersContainer } from "@interfaces/orders-container.interface";
 import * as NotificationContainerActions from "@actions/notification-container.actions";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { IndicatorInformation } from "@interfaces/indicator-information";
+import { PredictionTaskStatus } from "@interfaces/prediction-task-status.interface";
+import { PredictionResult } from "@interfaces/prediction-result.interface";
 
 //Interface to the business layer
 @Injectable()
@@ -210,12 +212,30 @@ export class MainService extends HubClient {
         return this.httpClient.get<IndicatorInformation>(url, { headers: this.headers });
     }
 
-    // addCategory(category: Category): Observable<Category> {
-    //     let url = this.pathAPI + 'category';
-    //     let data = JSON.stringify(category);
-    //     return this.httpClient.post<Category>(
-    //         url,
-    //         data,
-    //         { headers: this.headers });
-    // }
+    post_run_rnn(indicator_file_name: string): Observable<PredictionTaskStatus> {
+        let url = this.pathAPI + 'rnn/';
+        let data = {'indicator_file': indicator_file_name}
+        return this.httpClient.post<PredictionTaskStatus>(
+            url,
+            data,
+            { headers: this.headers });
+    }
+
+    post_run_predict(indicator_file_name: string): Observable<PredictionTaskStatus> {
+        let url = this.pathAPI + 'predict/';
+        let data = {'indicator_file': indicator_file_name}
+        return this.httpClient.post<PredictionTaskStatus>(
+            url,
+            data,
+            { headers: this.headers });
+    }
+
+    post_task_status(task_id: string): Observable<PredictionResult> {
+        let url = this.pathAPI + "taskstatus/";
+        let data = {'task_id': task_id}
+        return this.httpClient.post<PredictionResult>(
+            url,
+            data,
+            { headers: this.headers });
+    }
 }
