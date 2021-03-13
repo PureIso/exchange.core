@@ -193,7 +193,6 @@ export class HubClient {
             HubClient.fillsContainer
         );
         fillStatistics.application_name = applicationName;
-        console.log(fillStatistics);
         fillsContainerActions.updateFillStatistics(fillStatistics);
         HubClient.redux.dispatch({
             type: fillsContainerActions.type,

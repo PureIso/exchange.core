@@ -14,7 +14,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatExpansionModule } from '@angular/material/expansion';
 
 @NgModule({
-    imports: [MainModule, MainRoutingModule, AppRoutingModule, SharedModule, MatToolbarModule, MatButtonModule, MatIconModule,
+    imports: [MainModule, MainRoutingModule, AppRoutingModule, 
+        SharedModule, MatToolbarModule, 
+        MatButtonModule, MatIconModule,
         MatExpansionModule],
     declarations: [AppComponent],
     providers: [],
