@@ -13,7 +13,7 @@
                 <mat-icon>filter</mat-icon> <span class="nav-caption">Trade</span>
             </a>
             <a mat-list-item routerLink="/machinelearning" (click)="sidenav.close()">
-                <mat-icon>filter</mat-icon> <span class="nav-caption">Machine Learning</span>
+                <mat-icon>query_builder</mat-icon> <span class="nav-caption">Machine Learning</span>
             </a>
         </mat-nav-list>
     </mat-sidenav>
@@ -27,11 +27,37 @@
         </mat-toolbar>
 
         <div class="content" fxLayout="row wrap">
-            <div fxFlex="50%">
+            <div fxFlex="25%">
+                <mat-form-field appearance="fill">
+                    <mat-label>Indicators</mat-label>
+                    <mat-select [formControl]="indicatorsFormControl">
+                        <mat-select-trigger>{{indicatorsFormControl.value ? indicatorsFormControl.value : ''}}
+                        </mat-select-trigger>
+                        <mat-option *ngFor="let indicator of indicators" [value]="indicator">{{indicator}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
             </div>
-            <div fxFlex="50%">
-                <button mat-raised-button color="primary" (click)="onGetIndicatorFilenames()">Get Indicator Filenames</button>
-            </div> 
+            <div fxFlex="25%">
+                <button mat-raised-button color="primary" (click)="onGetIndicatorFilenames()">Get Indicator
+                    Filenames</button>
+            </div>
+            <div fxFlex="25%">
+                <button mat-raised-button color="primary" (click)="onPredict()">Predict</button>
+            </div>
+            <div fxFlex="25%">
+                <button mat-raised-button color="primary" (click)="onRunTraining()">Run Training</button>
+            </div>
+            <div fxFlex="25%">
+                <button mat-raised-button color="primary" (click)="onGetTaskResult()">Task Result</button>
+            </div>
+            <div fxFlex="25%">
+                
+            </div>
+            <ngx-charts-line-chart [scheme]="colorScheme" [yScaleMin]="yScaleMin" [yScaleMax]="yScaleMax" [legend]="legend"
+                    [showXAxisLabel]="showXAxisLabel" [showYAxisLabel]="showYAxisLabel" [xAxis]="xAxis" [yAxis]="yAxis"
+                    [xAxisLabel]="xAxisLabel" [yAxisLabel]="yAxisLabel" [timeline]="timeline" [results]="multi"
+                    (select)="onSelect($event)" (activate)="onActivate($event)" (deactivate)="onDeactivate($event)">
+                </ngx-charts-line-chart>
         </div>
     </mat-sidenav-content>
 

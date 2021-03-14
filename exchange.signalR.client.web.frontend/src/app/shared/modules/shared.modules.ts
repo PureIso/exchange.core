@@ -35,6 +35,7 @@ import { FillsComponent } from "./components/fills/fills.component";
 import { ProductTradeComponent } from "./components/product-trade/product-trade.component";
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTabsModule } from '@angular/material/tabs';
+import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 @NgModule({
     imports: [
@@ -46,6 +47,7 @@ import { MatTabsModule } from '@angular/material/tabs';
         MatExpansionModule,
         BrowserAnimationsModule,
         MatNativeDateModule,
+        NgxChartsModule,
         ReactiveFormsModule, MatPaginatorModule, MatTabsModule,
         MatToolbarModule, MatButtonModule, MatIconModule, MatFormFieldModule, MatTableModule, MatCheckboxModule,
         MatInputModule, MatDatepickerModule, MatDividerModule, MatListModule, MatGridListModule, MatButtonToggleModule,
@@ -55,6 +57,7 @@ import { MatTabsModule } from '@angular/material/tabs';
         FormsModule,
         CommonModule,
         BrowserAnimationsModule,
+        NgxChartsModule,
         NotificationComponent,
         FillsComponent,
         ProductTradeComponent,
