@@ -37,7 +37,7 @@ importlib-metadata==3.4.0
 isort==5.7.0
 itsdangerous==1.1.0
 Jinja2==2.11.3
-joblib==1.0.0
+joblib==1.2.0
 Keras==2.4.3
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.2
