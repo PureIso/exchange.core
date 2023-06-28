@@ -7,8 +7,8 @@ astunparse==1.6.3
 autopep8==1.5.5
 billiard==3.6.3.0
 cachetools==4.2.1
-celery==5.0.5
 certifi==2022.12.7
+celery==5.2.2
 cffi==1.14.4
 chardet==3.0.4
 click==7.1.2
@@ -37,7 +37,7 @@ importlib-metadata==3.4.0
 isort==5.7.0
 itsdangerous==1.1.0
 Jinja2==2.11.3
-joblib==1.0.0
+joblib==1.2.0
 Keras==2.4.3
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.2
@@ -47,14 +47,14 @@ Markdown==3.3.3
 MarkupSafe==1.1.1
 mccabe==0.6.1
 monotonic==1.5
-numpy==1.19.5
+numpy==1.22.0
 oauthlib==3.1.0
 opt-einsum==3.3.0
 packaging==20.9
 pandas==1.2.1
 pip-upgrader==1.4.15
 prompt-toolkit==3.0.14
-protobuf==3.14.0
+protobuf==3.18.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycodestyle==2.6.0
@@ -92,7 +92,7 @@ typing-extensions==3.7.4.3
 urllib3==1.26.5
 vine==5.0.0
 wcwidth==0.2.5
-Werkzeug==1.0.1
+Werkzeug==2.2.3
 wrapt==1.12.1
 zipp==3.4.0
 zope.event==4.5.0
