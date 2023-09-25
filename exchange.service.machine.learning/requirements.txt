@@ -24,7 +24,7 @@ Flask-Cors==3.0.10
 Flask-RESTful==0.3.8
 flatbuffers==1.12
 gast==0.3.3
-gevent==21.1.2
+gevent==23.9.1
 google-auth==1.25.0
 google-auth-oauthlib==0.4.2
 google-pasta==0.2.0
