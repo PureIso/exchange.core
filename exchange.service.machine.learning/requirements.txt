@@ -32,7 +32,7 @@ graypy==2.1.0
 greenlet==1.0.0
 grpcio==1.53.2
 h5py==2.10.0
-idna==2.10
+idna==3.7
 importlib-metadata==3.4.0
 isort==5.7.0
 itsdangerous==1.1.0
