@@ -43,7 +43,7 @@ Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.2
 kombu==5.0.2
 lazy-object-proxy==1.4.3
-Markdown==3.3.3
+Markdown==3.8.1
 MarkupSafe==1.1.1
 mccabe==0.6.1
 monotonic==1.5
