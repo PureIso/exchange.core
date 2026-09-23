@@ -1,0 +1,128 @@
+name: exchange-core-observability-acceptance
+
+networks:
+    observability:
+        driver: bridge
+        internal: true
+    ingress:
+        driver: bridge
+
+volumes:
+    mongodb_data:
+    mongodb_config:
+    datanode_data:
+    graylog_data:
+
+secrets:
+    mongo_root_username:
+        file: ./.secrets/observability/mongo-root-username.txt
+    mongo_root_password:
+        file: ./.secrets/observability/mongo-root-password.txt
+    graylog_mongodb_password:
+        file: ./.secrets/observability/graylog-mongodb-password.txt
+    graylog_mongodb_uri:
+        file: ./.secrets/observability/graylog-mongodb-uri.txt
+    graylog_password_secret:
+        file: ./.secrets/observability/graylog-password-secret.txt
+    graylog_root_password_sha2:
+        file: ./.secrets/observability/graylog-root-password-sha2.txt
+
+services:
+    mongodb:
+        image: mongo:8.0.26-noble
+        init: true
+        restart: unless-stopped
+        environment:
+            MONGO_INITDB_DATABASE: graylog
+            MONGO_INITDB_ROOT_USERNAME_FILE: /run/secrets/mongo_root_username
+            MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_root_password
+        secrets:
+            - mongo_root_username
+            - mongo_root_password
+            - graylog_mongodb_password
+            - graylog_mongodb_uri
+        volumes:
+            - mongodb_data:/data/db
+            - mongodb_config:/data/configdb
+            - ./docker/observability/mongodb/10-create-graylog-user.sh:/docker-entrypoint-initdb.d/10-create-graylog-user.sh:ro
+            - ./docker/observability/mongodb/verify-auth-boundary.sh:/usr/local/bin/verify-auth-boundary:ro
+        healthcheck:
+            test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+            interval: 5s
+            timeout: 5s
+            start_period: 15s
+            retries: 12
+        networks:
+            observability:
+
+    datanode:
+        image: graylog/graylog-datanode:7.1.6
+        hostname: datanode
+        restart: unless-stopped
+        environment:
+            GRAYLOG_DATANODE_NODE_ID_FILE: /var/lib/graylog-datanode/node-id
+            GRAYLOG_DATANODE_PASSWORD_SECRET__FILE: /run/secrets/graylog_password_secret
+            GRAYLOG_DATANODE_MONGODB_URI__FILE: /run/secrets/graylog_mongodb_uri
+        secrets:
+            - graylog_password_secret
+            - graylog_mongodb_uri
+        volumes:
+            - datanode_data:/var/lib/graylog-datanode
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+        ports:
+            - "127.0.0.1:${GRAYLOG_DATANODE_PORT:-18999}:8999"
+        depends_on:
+            mongodb:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8999"]
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 12
+        networks:
+            observability:
+            ingress:
+
+    graylog:
+        image: graylog/graylog:7.1.6
+        hostname: graylog
+        restart: unless-stopped
+        environment:
+            GRAYLOG_NODE_ID_FILE: /usr/share/graylog/data/data/node-id
+            GRAYLOG_PASSWORD_SECRET__FILE: /run/secrets/graylog_password_secret
+            GRAYLOG_ROOT_PASSWORD_SHA2__FILE: /run/secrets/graylog_root_password_sha2
+            GRAYLOG_MONGODB_URI__FILE: /run/secrets/graylog_mongodb_uri
+            GRAYLOG_HTTP_BIND_ADDRESS: 0.0.0.0:9000
+            GRAYLOG_HTTP_EXTERNAL_URI: http://127.0.0.1:${GRAYLOG_HTTP_PORT:-19000}/
+            GRAYLOG_ROOT_TIMEZONE: ${GRAYLOG_ROOT_TIMEZONE:-Europe/Tallinn}
+        secrets:
+            - graylog_password_secret
+            - graylog_root_password_sha2
+            - graylog_mongodb_uri
+        volumes:
+            - graylog_data:/usr/share/graylog/data
+        ports:
+            - "127.0.0.1:${GRAYLOG_HTTP_PORT:-19000}:9000/tcp"
+            - "127.0.0.1:${GRAYLOG_GELF_PORT:-12201}:12201/tcp"
+            - "127.0.0.1:${GRAYLOG_GELF_PORT:-12201}:12201/udp"
+        depends_on:
+            mongodb:
+                condition: service_healthy
+            datanode:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000"]
+            interval: 10s
+            timeout: 5s
+            start_period: 60s
+            retries: 12
+        networks:
+            observability:
+            ingress:

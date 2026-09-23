@@ -1,0 +1,162 @@
+<section class="feed-control" data-testid="feed-control">
+  <div>
+    <p class="eyebrow">Market feed</p>
+    <h2>{{ hub.mainCurrency() ?? 'Main currency pending' }}</h2>
+    <p class="feed-copy">
+      {{ hub.selectedSymbols().length }} selected ·
+      {{ hub.subscriptionRunning() ? 'subscription running' : 'subscription stopped' }}
+    </p>
+  </div>
+  <button
+    type="button"
+    data-testid="subscribe-button"
+    (click)="hub.requestSelectedProducts()"
+    [disabled]="hub.connectionState() !== 'connected' || hub.selectedSymbols().length === 0"
+  >
+    Apply feed selection
+  </button>
+</section>
+
+<div class="summary-grid">
+  <section class="summary-card" data-testid="current-prices" aria-live="polite">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Live feed</p>
+        <h2>Current prices</h2>
+      </div>
+      <span>{{ hub.currentPrices().length }} symbols</span>
+    </div>
+    @if (hub.currentPrices().length > 0) {
+      <dl class="metric-list">
+        @for (price of hub.currentPrices(); track price.asset) {
+          <div>
+            <dt>{{ price.asset }}</dt>
+            <dd>{{ price.value }}</dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <p class="compact-empty">No price feed has been published for this exchange.</p>
+    }
+  </section>
+  <section class="summary-card" data-testid="account-balances" aria-live="polite">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Read only</p>
+        <h2>Account balances</h2>
+      </div>
+      <span>{{ hub.accountBalances().length }} assets</span>
+    </div>
+    @if (hub.accountBalances().length > 0) {
+      <dl class="metric-list">
+        @for (balance of hub.accountBalances(); track balance.asset) {
+          <div>
+            <dt>{{ balance.asset }}</dt>
+            <dd>{{ balance.value }}</dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <p class="compact-empty">No account summary is available for this exchange.</p>
+    }
+  </section>
+</div>
+
+<section class="products" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">{{ hub.selectedApplication() ?? 'No exchange selected' }}</p>
+      <h2>Available products</h2>
+    </div>
+    <span>{{ hub.products().length }} products</span>
+  </div>
+  @if (hub.products().length > 0) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><span class="visually-hidden">Feed selection</span></th>
+            <th>Product</th>
+            <th>Base</th>
+            <th>Quote</th>
+            <th>Minimum size</th>
+            <th>Maximum size</th>
+            <th>Quote increment</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of hub.products(); track product.id) {
+            <tr>
+              <td>
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Subscribe to ' + product.id"
+                  [checked]="hub.isProductSelected(product.id)"
+                  (change)="toggleProduct(product.id, $event)"
+                />
+              </td>
+              <td>
+                <strong>{{ product.id }}</strong>
+              </td>
+              <td>{{ product.base_currency }}</td>
+              <td>{{ product.quote_currency }}</td>
+              <td>{{ product.base_min_size || '—' }}</td>
+              <td>{{ product.base_max_size || '—' }}</td>
+              <td>{{ product.quote_increment || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <h3>No product data yet</h3>
+      <p>Products will appear after the backend publishes its current exchange catalog.</p>
+    </div>
+  }
+</section>
+
+<section class="products" data-testid="asset-information" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Subscribed feed</p>
+      <h2>Asset information</h2>
+    </div>
+    <span>{{ hub.assetInformation().length }} updates</span>
+  </div>
+  @if (hub.assetInformation().length > 0) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Current price</th>
+            <th>24h change</th>
+            <th>24h percentage</th>
+            <th>Best bid</th>
+            <th>Best ask</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asset of hub.assetInformation(); track asset.product_id) {
+            <tr>
+              <td>
+                <strong>{{ asset.product_id }}</strong>
+              </td>
+              <td>{{ asset.currency_price }}</td>
+              <td>{{ asset.twenty_four_hour_price_change }}</td>
+              <td>{{ asset.twenty_four_hour_price_percentage_change }}%</td>
+              <td>{{ asset.best_bid || '—' }}</td>
+              <td>{{ asset.best_ask || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <h3>No subscribed asset updates yet</h3>
+      <p>Select products and apply the feed selection to begin receiving updates.</p>
+    </div>
+  }
+</section>

@@ -1,0 +1,150 @@
+.ml-intro,
+.prediction-control,
+.task-card,
+.chart-card,
+.ml-error {
+  border: 1px solid #dce3e9;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 35px rgba(25, 43, 58, 0.06);
+}
+
+.ml-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1.4rem 1.5rem;
+}
+
+.ml-intro h2,
+.task-card h2,
+.chart-card h2 {
+  margin-top: 0.2rem;
+}
+
+.intro-copy {
+  max-width: 48rem;
+  margin-top: 0.5rem;
+  color: #65727e;
+}
+
+.ml-error {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  color: #7d241d;
+}
+
+.prediction-control {
+  display: grid;
+  grid-template-columns: auto minmax(15rem, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.prediction-control label {
+  font-weight: 700;
+}
+
+.task-card,
+.chart-card {
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.chart-card {
+  margin-bottom: 3rem;
+}
+
+.task-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 1.5rem;
+}
+
+.task-details div {
+  min-width: 0;
+}
+
+.task-details dt {
+  color: #65727e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.task-details dd {
+  margin: 0.35rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.chart-wrap {
+  padding: 1rem 1.5rem 1.5rem;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  min-width: 34rem;
+}
+
+.axis {
+  stroke: #9aa8b3;
+  stroke-width: 1;
+}
+
+polyline {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+text {
+  fill: #65727e;
+  font-size: 11px;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  color: #52616f;
+  font-size: 0.8rem;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend i {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+}
+
+@media (max-width: 720px) {
+  .ml-intro,
+  .ml-error {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .prediction-control,
+  .task-details {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-wrap {
+    overflow-x: auto;
+  }
+}

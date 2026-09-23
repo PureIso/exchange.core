@@ -1,0 +1,4 @@
+{
+  "hubUrl": "http://localhost:5000/hubs/exchange",
+  "mlApiUrl": "http://localhost:5005/api/v1/"
+}

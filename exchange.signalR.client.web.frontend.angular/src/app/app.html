@@ -1,0 +1,44 @@
+<header class="shell-header">
+  <div>
+    <p class="eyebrow">Exchange Core</p>
+    <h1>Market workspace</h1>
+  </div>
+  <span class="status" [attr.data-state]="hub.connectionState()">
+    {{ hub.connectionState() }}
+  </span>
+</header>
+
+<main>
+  @if (hub.lastError(); as error) {
+    <section class="notice" role="alert">
+      <strong>Exchange request unavailable.</strong>
+      <span>{{ error }}</span>
+      <button type="button" (click)="hub.connect()">Retry</button>
+    </section>
+  }
+
+  <section class="toolbar" aria-label="Exchange selection">
+    <label for="exchange">Exchange</label>
+    <select
+      id="exchange"
+      [value]="hub.selectedApplication() ?? ''"
+      (change)="selectApplication($event)"
+      [disabled]="hub.applications().length === 0"
+    >
+      @if (hub.applications().length === 0) {
+        <option value="">Waiting for exchanges</option>
+      }
+      @for (application of hub.applications(); track application) {
+        <option [value]="application">{{ application }}</option>
+      }
+    </select>
+  </section>
+
+  <nav class="shell-navigation" aria-label="Primary navigation">
+    <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+    <a routerLink="/history" routerLinkActive="active">History &amp; statistics</a>
+    <a routerLink="/machine-learning" routerLinkActive="active">Machine learning</a>
+  </nav>
+
+  <router-outlet />
+</main>

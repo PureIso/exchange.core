@@ -3,7 +3,7 @@
 
 ## Solutions
 
-- [Frontend Solution](exchange.signalR.client.web.frontend/README.md#section)
+- [Frontend Solution](../exchange.signalR.client.web.frontend.angular/README.md)
 - [Machine Learning Solution](exchange.service.machine.learning/README.md#section)
 
 ## Configuration

@@ -1,4 +1,11 @@
-version: "3.7"
+x-machine-learning-environment: &machine-learning-environment
+    MI_HOST: ${MI_HOST:-0.0.0.0}
+    MI_PORT: ${MI_PORT:-5005}
+    MI_GRAYLOG_HOST: ${MI_GRAYLOG_HOST:-}
+    MI_GRAYLOG_PORT: ${MI_GRAYLOG_PORT:-}
+    MI_BROKER_URL: ${MI_BROKER_URL:?Set MI_BROKER_URL in .env}
+    MI_RESULT_BACKEND: ${MI_RESULT_BACKEND:?Set MI_RESULT_BACKEND in .env}
+    MI_DATABASE_URL: ${MI_DATABASE_URL:?Set MI_DATABASE_URL in .env}
 
 networks:
     bridge:
@@ -64,12 +71,19 @@ volumes:
 
 services:
     nginx.reverse.proxy: 
-        image: nginx:latest
+        image: nginx:1.30.4-alpine3.24-slim
         container_name: nginx.reverse.proxy
         volumes:
-            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
         ports:
-            - 80:80
+            - "${GATEWAY_PORT:-80}:80"
+        depends_on:
+            backend:
+                condition: service_healthy
+            frontend:
+                condition: service_healthy
+            machinelearning:
+                condition: service_healthy
         networks:
             bridge:
 
@@ -157,6 +171,9 @@ services:
     backend:   
         container_name: backend
         hostname: backend
+        image: exchange-core-backend:${EXCHANGE_CORE_IMAGE_TAG:-local}
+        init: true
+        restart: unless-stopped
         build:
             context: .
             dockerfile: ./docker/exchange.service/Dockerfile
@@ -166,66 +183,95 @@ services:
             - exchange_service_config:/exchange/service/config:rw
         ports:
             - 5000:5000
-            - 5001:5001
-        command: dotnet exchange.service.dll
         environment:
-            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+            - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Docker}
+        read_only: true
+        tmpfs:
+            - /tmp
         networks:
             bridge:
 
-    #frontend
+    # Machine-learning Celery worker
+    celery:
+        container_name: celery
+        hostname: celery
+        image: exchange-core-machine-learning:${EXCHANGE_CORE_IMAGE_TAG:-local}
+        init: true
+        restart: unless-stopped
+        env_file:
+            - path: .env
+              required: false
+        environment: *machine-learning-environment
+        build:
+            context: .
+            dockerfile: ./docker/service.machine.learning/Dockerfile
+        command: ["celery", "-A", "app.tasks.task_work:celery", "worker", "--loglevel=INFO", "--pool=prefork"]
+        volumes:
+            - exchange_service_indicators:/usr/src/app/static:rw
+        read_only: true
+        tmpfs:
+            - /tmp
+        depends_on:
+            - mongodb
+        healthcheck:
+            # Mongo transport delivers tasks and results but its remote-control
+            # broadcast does not reliably answer `celery inspect ping`.
+            test: ["CMD", "python", "healthcheck_worker.py"]
+            interval: 30s
+            timeout: 10s
+            start_period: 30s
+            retries: 3
+        networks:
+            bridge:
+
+    # Accepted Angular 22 browser frontend.
     frontend:
         container_name: frontend
         hostname: frontend
-        env_file:
-            - .env
+        image: exchange-core-frontend:${EXCHANGE_CORE_IMAGE_TAG:-local}
+        init: true
         build:
-            context: .
-            dockerfile: ./docker/signalr.webpack.server.frontend/Dockerfile
+            context: ./exchange.signalR.client.web.frontend.angular
+            dockerfile: Dockerfile
         ports:
-            - 9000:9000
-        command: npm run start:docker
+            - "${FRONTEND_PORT:-9000}:8080"
+        environment:
+            EXCHANGE_HUB_URL: ${FRONTEND_HUB_URL:-/backend/hubs/exchange}
+            ML_API_URL: ${FRONTEND_ML_API_URL:-/machinelearning/api/v1/}
+        read_only: true
+        tmpfs:
+            - /tmp
+        depends_on:
+            backend:
+                condition: service_healthy
+            machinelearning:
+                condition: service_healthy
         networks:
             bridge:
-    
-    # celery
-    celery:
-        container_name: celery
-        env_file:
-            - .env
-        # All files and folders in the currect directory
-        build: 
-            context: .
-            dockerfile: ./docker/service.machine.learning/Dockerfile 
-        # List directories to mount
-        command: celery -A app.tasks.task_work:celery worker --loglevel=info -P eventlet
-        volumes:
-            - exchange_service_indicators:/usr/src/app/static:rw
-        networks:
-            bridge:
-        
-    #machine learning web application
+
+    # Machine-learning web application
     machinelearning:
         container_name: machinelearning
         hostname: machinelearning
-        build: 
+        image: exchange-core-machine-learning:${EXCHANGE_CORE_IMAGE_TAG:-local}
+        init: true
+        restart: unless-stopped
+        build:
             context: .
-            dockerfile: ./docker/service.machine.learning/Dockerfile    
-        # Application will run on port 5005
-        # Access to directory has to be shared
+            dockerfile: ./docker/service.machine.learning/Dockerfile
         ports:
             - 5005:5005
-        command: "python3.8 main.py"
+        command: ["python", "main.py"]
         volumes:
             - exchange_service_indicators:/usr/src/app/static:rw
+        read_only: true
+        tmpfs:
+            - /tmp
         env_file:
-            - .env
-        environment:
-            - MI_HOST=${MI_HOST}
-            - MI_PORT=${MI_PORT}
-            - MI_GRAYLOG_HOST=${MI_GRAYLOG_HOST}
-            - MI_GRAYLOG_PORT=${MI_GRAYLOG_PORT}
-            - MI_BROKER_URL=${MI_BROKER_URL}
-            - MI_RESULT_BACKEND=${MI_RESULT_BACKEND}
+            - path: .env
+              required: false
+        environment: *machine-learning-environment
+        depends_on:
+            - mongodb
         networks:
             bridge:

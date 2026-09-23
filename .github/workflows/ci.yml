@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  dotnet:
+    name: .NET restore, build, and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore and reject vulnerable NuGet packages
+        run: >-
+          dotnet restore exchange.core.sln
+          -p:NuGetAudit=true
+          -p:NuGetAuditMode=all
+          -warnaserror:NU1901,NU1902,NU1903,NU1904
+
+      - name: Build
+        run: dotnet build exchange.core.sln --configuration Release --no-restore -p:Platform=x64 --warnaserror
+
+      - name: Test
+        run: dotnet test exchange.core.sln --configuration Release --no-build --no-restore -p:Platform=x64 --verbosity normal
+
+      - name: Report dependency status
+        run: dotnet package list --project exchange.core.sln --vulnerable --include-transitive --no-restore
+
+  frontend:
+    name: Angular install, test, and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: exchange.signalR.client.web.frontend.angular
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install pinned Node.js and npm
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: exchange.signalR.client.web.frontend.angular/.nvmrc
+          cache: npm
+          cache-dependency-path: exchange.signalR.client.web.frontend.angular/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run unit tests
+        run: npm test -- --watch=false
+
+      - name: Build production frontend
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser acceptance tests
+        run: npm run test:e2e
+
+  machine-learning:
+    name: Python locked install and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: exchange.service.machine.learning
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Install pinned Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13.14"
+          cache: pip
+          cache-dependency-path: exchange.service.machine.learning/requirements.lock
+
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes --no-deps --requirement requirements.lock
+
+      - name: Verify dependency compatibility
+        run: python -m pip check
+
+      - name: Run machine-learning tests
+        run: python -m unittest discover -s tests -v
+
+  dependency-review:
+    name: Pull-request dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Reject newly introduced vulnerable dependencies
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+
+  backend-container:
+    name: Backend image build and vulnerability gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/exchange.service/Dockerfile
+          load: true
+          pull: true
+          push: false
+          tags: exchange-core-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+      - name: Scan backend image locally
+        uses: anchore/scan-action@v7
+        with:
+          image: exchange-core-backend:ci
+          fail-build: true
+          severity-cutoff: high
+          output-format: table
+
+  frontend-container:
+    name: Frontend image build and vulnerability gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: exchange.signalR.client.web.frontend.angular
+          file: exchange.signalR.client.web.frontend.angular/Dockerfile
+          load: true
+          pull: true
+          push: false
+          tags: exchange-core-frontend:ci
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+      - name: Scan frontend image locally
+        uses: anchore/scan-action@v7
+        with:
+          image: exchange-core-frontend:ci
+          fail-build: true
+          severity-cutoff: high
+          output-format: table

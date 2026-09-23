@@ -1,7 +1,6 @@
 """Task Work File"""
 import json
 import numpy as np
-import tensorflowjs as tfjs
 from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from app.tasks.keras_fit_callback import KerasFitCallback
@@ -259,7 +258,6 @@ def initialise_model_lstm(indicator_file_name,
     Returns:
         [type]: [description]
     """
-    keras_model_directory = Configuration.get_directory(indicator_file_name)
     modelh5_path = Configuration.get_file_model_file(indicator_file_name)
     # define the RNN input shape
     lstm_input_shape = (timesteps, 1)
@@ -320,10 +318,9 @@ def initialise_model_lstm(indicator_file_name,
                             verbose=0,
                             callbacks=[KerasFitCallback(training, epochs)])
 
-    # save the model for javascript format readable
-    tfjs.converters.save_keras_model(
-        regressor, keras_model_directory)
-    # save the model for python format readable
+    # Save the model used by the Python prediction path. The former
+    # TensorFlow.js export had no runtime consumer and its converter cannot be
+    # resolved with the supported Python 3.13/TensorFlow 2.21 stack.
     regressor.save(modelh5_path)
     predicted_price = regressor.predict(test_set_input)
     result = {'summary': str(regressor.summary()),
@@ -336,7 +333,11 @@ def lstm_prediction(indicator_file_name, data_input):
     modelh5_path = Configuration.get_file_model_file(indicator_file_name)
     # initialize the Recurrent Neural Network
     # Solving pattern with sequence of data
-    regressor = keras.models.load_model(modelh5_path)
+    # Prediction does not need the optimizer or loss configuration. Legacy H5
+    # files may contain compile metadata that Keras 3 can no longer deserialize
+    # (for example, the historical ``mse`` alias), while their model topology
+    # and weights remain valid.
+    regressor = keras.models.load_model(modelh5_path, compile=False)
     predicted_price = regressor.predict(data_input)
     result = {'summary': str(regressor.summary()),
               'predicted_price': predicted_price}

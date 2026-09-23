@@ -1,12 +1,4 @@
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Debug\net5.0\coinbase.config.ini" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Debug\net5.0\exchange.coinbase.dll" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Debug\net5.0\exchange.coinbase.pdb" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Debug\net5.0\binance.config.ini" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Debug\net5.0\exchange.binance.dll" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Debug\net5.0\exchange.binance.pdb" "%~dp0exchange.service\bin\x64\Debug\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Release\net5.0\coinbase.config.ini" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Release\net5.0\exchange.coinbase.dll" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.coinbase\bin\x64\Release\net5.0\exchange.coinbase.pdb" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Release\net5.0\binance.config.ini" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Release\net5.0\exchange.binance.dll" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
-xcopy /E "%~dp0exchange.binance\bin\x64\Release\net5.0\exchange.binance.pdb" "%~dp0exchange.service\bin\x64\Release\net5.0\plugin" /R /H /Y
+@echo off
+setlocal
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%~dp0scripts\package-plugins.ps1" %*
+exit /b %ERRORLEVEL%

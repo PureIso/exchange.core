@@ -458,11 +458,11 @@ namespace exchange.binance
                         {
                             foreach (RelativeStrengthIndex relativeStrengthIndex in RelativeStrengthIndices)
                             {
-                                relativeStrengthIndex.DisableRelativeStrengthIndexUpdater();
+                                await relativeStrengthIndex.DisableRelativeStrengthIndexUpdaterAsync();
                             }
                             RelativeStrengthIndices = new List<RelativeStrengthIndex>();
                             //unsubscribe
-                            ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString()).GetAwaiter();
+                            await ConnectionAdapter.WebSocketSendAsync(SubscribeProducts.ToUnSubscribeString());
                         }
                         SubscribeProducts = products;
                         InitIndicatorsAsync(products);

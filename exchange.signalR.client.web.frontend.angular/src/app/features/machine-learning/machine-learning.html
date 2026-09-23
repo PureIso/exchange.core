@@ -1,0 +1,111 @@
+<section class="ml-intro">
+  <div>
+    <p class="eyebrow">Machine learning</p>
+    <h2>Price prediction</h2>
+    <p class="intro-copy">
+      Run an existing trained model against its latest indicator data. Model training is not exposed
+      in this browser workspace.
+    </p>
+  </div>
+  <button type="button" (click)="loadIndicators()" [disabled]="loadingIndicators()">
+    {{ loadingIndicators() ? 'Loading indicators…' : 'Refresh indicators' }}
+  </button>
+</section>
+
+@if (error(); as errorMessage) {
+  <section class="ml-error" role="alert">
+    <strong>Prediction unavailable.</strong>
+    <span>{{ errorMessage }}</span>
+  </section>
+}
+
+<section class="prediction-control" aria-label="Prediction controls">
+  <label for="indicator-file">Indicator dataset</label>
+  <select
+    id="indicator-file"
+    data-testid="indicator-file"
+    [value]="selectedIndicator()"
+    (change)="selectIndicator($event)"
+    [disabled]="loadingIndicators() || indicators().length === 0"
+  >
+    @if (indicators().length === 0) {
+      <option value="">No indicators available</option>
+    }
+    @for (indicator of indicators(); track indicator) {
+      <option [value]="indicator">{{ indicator }}</option>
+    }
+  </select>
+  <button
+    type="button"
+    data-testid="predict-button"
+    (click)="runPrediction()"
+    [disabled]="!selectedIndicator() || dispatching()"
+  >
+    {{ dispatching() ? 'Starting prediction…' : 'Run prediction' }}
+  </button>
+</section>
+
+<section class="task-card" data-testid="prediction-status" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Celery task</p>
+      <h2>{{ taskState() ?? 'No prediction running' }}</h2>
+    </div>
+    <button type="button" (click)="refreshTask()" [disabled]="!taskId() || checkingTask()">
+      {{ checkingTask() ? 'Checking…' : 'Refresh status' }}
+    </button>
+  </div>
+  @if (taskId(); as id) {
+    <dl class="task-details">
+      <div>
+        <dt>Task ID</dt>
+        <dd>
+          <code>{{ id }}</code>
+        </dd>
+      </div>
+      @if (progress() !== null) {
+        <div>
+          <dt>Progress</dt>
+          <dd>{{ progress() }}%</dd>
+        </div>
+      }
+      @if (taskMessage(); as message) {
+        <div>
+          <dt>Service status</dt>
+          <dd>{{ message }}</dd>
+        </div>
+      }
+    </dl>
+  } @else {
+    <p class="compact-empty">Choose an indicator dataset and run a prediction.</p>
+  }
+</section>
+
+<section class="chart-card" data-testid="prediction-chart" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Result</p>
+      <h2>Actual and predicted close price</h2>
+    </div>
+  </div>
+  @if (chart(); as predictionChart) {
+    <div class="chart-wrap">
+      <svg viewBox="0 0 720 290" role="img" aria-label="Actual and predicted close-price chart">
+        <line x1="40" y1="40" x2="40" y2="250" class="axis" />
+        <line x1="40" y1="250" x2="680" y2="250" class="axis" />
+        <text x="8" y="45">{{ predictionChart.maximum }}</text>
+        <text x="8" y="250">{{ predictionChart.minimum }}</text>
+        @for (line of predictionChart.lines; track line.name) {
+          <polyline [attr.points]="line.points" [attr.stroke]="line.color" />
+        }
+      </svg>
+      <div class="legend">
+        @for (line of predictionChart.lines; track line.name) {
+          <span><i [style.background]="line.color"></i>{{ line.name }}</span>
+        }
+      </div>
+    </div>
+  } @else {
+    <p class="compact-empty">The chart will appear when a prediction completes successfully.</p>
+  }
+</section>

@@ -1,130 +1,64 @@
-# Deep Learning
+# Machine-Learning Service
 
-Time Series forcasting with Tensorflow using Supervised Learning. \
-Sequential Data \
-Recurrent Neural Network (RNN - layer) \
-Long Short Term Memory (LSTM - cells)
+The required Flask/Celery service trains and loads TensorFlow/Keras LSTM models for five-observation time-series prediction. See the modernization record in `06-exchange-core/11-machine-learning-characterization.md` in the companion documentation vault.
 
-## Solutions
+## Supported runtime
 
-- [Frontend Solution](configuration.signalR.client.web.frontend/README.md#section)
-- [Backend Solution](exchange.service/README.md#section)
+- Python 3.13
+- TensorFlow 2.21 / Keras 3.15
+- Flask 3.1
+- Celery 5.6 with MongoDB broker/result backend
+- `requirements.in` for intentional direct dependencies
+- `requirements.lock` for the generated Python 3.13/Linux hash lock
 
-## Prerequisites
+The container uses the patch-pinned official `python:3.13.14-slim-bookworm` image. It installs the lock with hash enforcement, runs as UID/GID `10001`, writes only to the mounted `static` artifact directory and `/tmp`, and provides web and worker health checks through Compose.
 
-Make sure that you have:
+## Local Windows setup
 
-- python3.8.6 x64 or python3.6.5 x86
-- Task Queue: Celery
-- Message Broker for Task Queue: mongoDB
-- Database: mongoDB
-- Dependancy: Erlang
+Install `uv`, copy `.env.example` to `.env`, and supply deployment-specific values without committing the file. Then run:
 
-### Quick Start - Env / Local (Start Flask RESTful and Celery)
-
-[Microsoft Visual C++](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-Upgrade pip
-
-```shell
-python -m pip install --upgrade pip
+```powershell
+./init.bat
+./start.bat
 ```
 
-Make sure you have virtualenv installed
-Virtualenv allows you to have different virtual environment for different projects.
+The local worker uses Celery's `solo` pool because Celery does not officially support Windows. The Linux container uses the default prefork pool.
 
-```shell
-pip install virtualenv
+Run deterministic tests against the locked environment:
+
+```powershell
+uv run --no-project --python 3.13 --with-requirements requirements.txt python -m unittest discover -s tests -v
 ```
 
-NOTE: TensorFlow Supports python3.8.6 x64 or python3.6.5 x86
-Setup and initialise virtual environment with the correct python version:
+Regenerate the Linux lock only after reviewing direct dependency changes:
 
-```shell
-python -m virtualenv env
-virtualenv env --python=python3.8.6
-env\\Scripts\\activate.bat
-python.exe -m pip install --upgrade pip
+```powershell
+uv pip compile requirements.in --python-version 3.13 --python-platform x86_64-manylinux_2_28 --generate-hashes --no-emit-index-url --output-file requirements.lock
 ```
 
-Initialise environment and Start application:
+## Docker Compose
 
-```shell
-init.bat
-start.bat
+From the repository root, copy `.env.example` to `.env`, populate all required values, and run:
+
+```powershell
+docker compose config
+docker compose up --build mongodb celery machinelearning
 ```
 
-Installing requirement file in virtual environment:
+The `machinelearning` service serves port `5005`. The `celery` service uses the same image with an explicit worker command. Both share `/usr/src/app/static` for CSV, normalizer, and H5 artifacts.
 
-```shell
-pip install -r requirements.txt
+Build the image directly from the repository root with:
+
+```powershell
+docker build -f docker/service.machine.learning/Dockerfile -t exchange-core-machine-learning:local .
 ```
 
-Backing up packages to requirement file especially after tested update:
+## API
 
-```shell
-pip freeze --local > requirements.txt
-```
+- `GET /` and `GET /api/v1/rnn/`: API version and available CSV indicator files.
+- `POST /api/v1/rnn/`: dispatch training with JSON `indicator_file`.
+- `GET /api/v1/predict/`: API version.
+- `POST /api/v1/predict/`: dispatch prediction with JSON `indicator_file`.
+- `POST /api/v1/taskstatus/`: inspect a Celery task with JSON `task_id`.
 
-### Quick Start - Docker-Compose (Start Flask RESTful, Celery and MongoDB)
-
-View docker-compose output and execution:
-
-```shell
-docker-compose -f docker-compose.yml config
-docker-compose down -v
-docker-compose down -v && docker-compose up --build
-```
-
-### Quick Start - Docker Commands
-
-Build docker file:
-
-```shell
-docker build -t exchange.service.machine-learning-service:latest .
-```
-
-Creating a volume:
-
-```shell
-docker volume create --driver local --opt type=none --opt device=D:\Docker\data\db --opt o=bind mongo_db
-docker volume create --driver local --opt type=none --opt device=D:\Docker\data\configdb --opt o=bind mongo_configdb
-```
-
-Clean dangling images:
-
-```shell
-docker image prune
-```
-
-### API
-
-Recurrent Neural Networks for Sequence Learning:
-
-```shell
-http://localhost:5005/api/v1/rnn/
-GET
-{
-    "api_version": "1.0.0",
-    "indicator_files": [
-        "binance_live_l_endpoint_btc-eur_15M.csv",
-        "binance_live_l_endpoint_btc-eur_1D.csv",
-        "binance_live_l_endpoint_btc-eur_1H.csv",
-        "coinbase_live_l_endpoint_btc-eur_15M.csv",
-        "coinbase_live_l_endpoint_yfi-btc_1H.csv"
-    ]
-}
-
-http://localhost:5005/api/v1/rnn/
-POST
-Body
-{
-    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv"
-}
-
-http://localhost:5005/api/v1/predict/
-POST
-Body
-{
-    "indicator_file": "coinbase_live_l_endpoint_nu-eur_15M.csv",
-}
-```
+Current request/response schemas and remaining acceptance gates are documented in the characterization record. Do not enable model retraining or production deployment until the `ML-02C` real-artifact, Celery, and container smoke gates pass.

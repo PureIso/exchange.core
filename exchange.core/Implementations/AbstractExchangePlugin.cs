@@ -71,6 +71,12 @@ namespace exchange.core.implementations
             try
             {
                 ProcessLogBroadcast?.Invoke(ApplicationName, MessageType.General, "Closing Feed Subscription.");
+                if (RelativeStrengthIndices != null)
+                {
+                    foreach (RelativeStrengthIndex relativeStrengthIndex in RelativeStrengthIndices)
+                        await relativeStrengthIndex.DisableRelativeStrengthIndexUpdaterAsync();
+                    RelativeStrengthIndices = new List<RelativeStrengthIndex>();
+                }
                 if (ConnectionAdapter != null)
                     isClosed = await ConnectionAdapter?.WebSocketCloseAsync();
                 else return true;

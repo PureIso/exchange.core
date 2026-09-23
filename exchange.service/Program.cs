@@ -4,12 +4,13 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using exchange.coinbase.advancedtrade.authentication;
 using exchange.core.implementations;
 using exchange.core.interfaces;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
@@ -22,70 +23,34 @@ namespace exchange.service
 #else
         private const string DefaultEnvironmentName = "Production";
 #endif
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
-                //Read Configuration from appSettings
-                string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-                if (string.IsNullOrEmpty(environment))
-                    environment = DefaultEnvironmentName;
-                IConfigurationRoot config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.{environment}.json", true,reloadOnChange:true)
-                    .AddEnvironmentVariables()
-                    .Build();
-                //Initialize Logger
-                Log.Logger = new LoggerConfiguration()
-                    .ReadFrom.Configuration(config)
-                    .CreateLogger();
+                WebApplicationBuilder builder = CreateApplicationBuilder(args);
+                ConfigureLogger(builder.Configuration);
+                builder.Logging.ClearProviders();
+                builder.Host.UseSerilog();
 
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.BadRequest
-                };
-                int delayInMilliseconds = 1000;
-                // Get the response.
-                int maxGrayLogConnectionAttempt = config.GetSection("MaxGrayLogConnectionAttempt").Get<int>();
-                while (response.StatusCode != HttpStatusCode.OK && maxGrayLogConnectionAttempt > 0)
-                {
-                    try
-                    {
-                        string grayLogRequestUrl = config.GetSection("GrayLogUrl").Value;
-                        if (!string.IsNullOrEmpty(grayLogRequestUrl))
-                        {
-                            Log.Information($"Connecting to Graylog: {grayLogRequestUrl}");
-                            response = client.GetAsync(grayLogRequestUrl).GetAwaiter().GetResult();
-                            if (response.IsSuccessStatusCode)
-                            {
-                                Log.Information(
-                                    $"Connected to Graylog: {grayLogRequestUrl} status code: {response.StatusCode}");
-                                break;
-                            }
-                            Log.Information(
-                                $"Connection to Graylog: {grayLogRequestUrl} status code: {response.StatusCode} attempt left:{maxGrayLogConnectionAttempt}");
-                            maxGrayLogConnectionAttempt--;
-                            delayInMilliseconds += 1000;
-                        }
-                        else
-                        {
-                            Log.Information("GrayLog url configuration is invalid.\r\nGraylog will not be used.");
-                            response.StatusCode = HttpStatusCode.OK;
-                            maxGrayLogConnectionAttempt = 0;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        maxGrayLogConnectionAttempt--;
-                        // ignored
-                    }
+                await WaitForGraylogAsync(builder.Configuration);
+                ConfigureApplicationServices(builder.Services, builder.Configuration);
+                ServiceHost.AddWebServices(builder.Services, builder.Configuration);
 
-                    Task.Delay(delayInMilliseconds).GetAwaiter();
+                string[] hostUrls = builder.Configuration
+                    .GetSection("HostUrls")
+                    .Get<string[]>() ?? Array.Empty<string>();
+                if (hostUrls.Length > 0)
+                {
+                    Log.Information("Host Url: {HostUrls}", string.Join(",", hostUrls));
+                    builder.WebHost.UseUrls(hostUrls);
                 }
 
-                Log.Information($"Exchange Server Starting: {Dns.GetHostName()}");
-                Log.Information($"Environment: {environment}");
-                CreateHostBuilder(args).Build().Run();
+                await using WebApplication application = builder.Build();
+                ServiceHost.Configure(application);
+
+                Log.Information("Exchange Server Starting: {HostName}", Dns.GetHostName());
+                Log.Information("Environment: {Environment}", builder.Environment.EnvironmentName);
+                await application.RunAsync();
             }
             catch (Exception ex)
             {
@@ -97,80 +62,115 @@ namespace exchange.service
             }
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args)
+        private static WebApplicationBuilder CreateApplicationBuilder(string[] args)
         {
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureLogging(loggingConfiguration => loggingConfiguration.ClearProviders())
-                .UseSerilog()
-                .ConfigureWebHostDefaults(webBuilder =>
+            string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (string.IsNullOrWhiteSpace(environment))
+                environment = DefaultEnvironmentName;
+
+            return WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                ContentRootPath = Directory.GetCurrentDirectory(),
+                EnvironmentName = environment
+            });
+        }
+
+        private static void ConfigureLogger(IConfiguration configuration)
+        {
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .CreateLogger();
+        }
+
+        private static async Task WaitForGraylogAsync(IConfiguration configuration)
+        {
+            string grayLogRequestUrl = configuration["GrayLogUrl"];
+            if (string.IsNullOrWhiteSpace(grayLogRequestUrl))
+            {
+                Log.Information("GrayLog url configuration is invalid. Graylog will not be used.");
+                return;
+            }
+
+            using HttpClient client = new HttpClient();
+            int delayInMilliseconds = 1000;
+            int remainingAttempts = configuration.GetValue<int>("MaxGrayLogConnectionAttempt");
+            while (remainingAttempts > 0)
+            {
+                bool connected = false;
+                try
                 {
-                    //Create a Generic Host - HTTP workload
-                    //Read Configuration from appSettings
-                    string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-                    if (string.IsNullOrEmpty(environment))
-                        environment = DefaultEnvironmentName;
-                    IConfigurationRoot config = new ConfigurationBuilder()
-                        .AddJsonFile("appsettings.json", true, true)
-                        .AddJsonFile($"appsettings.{environment}.json", true)
-                        .Build();
-                    string[] hostUrls = config.GetSection("HostUrls").Get<string[]>();
-                    Log.Information($"Host Url: {string.Join(",", hostUrls)}");
-                    webBuilder.UseUrls(hostUrls);
-                    webBuilder.UseStartup<Startup>();
-                })
-                .ConfigureHostConfiguration(configHost =>
-                {
-                    //The host configuration is also added to the app configuration.
-                    configHost.SetBasePath(Directory.GetCurrentDirectory());
-                    configHost.AddEnvironmentVariables();
-                })
-                .ConfigureAppConfiguration((hostContext, configApp) =>
-                {
-                    string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-                    if (string.IsNullOrEmpty(environment))
-                        environment = DefaultEnvironmentName;
-                    configApp.AddJsonFile($"appsettings.{environment}.json", true);
-                    configApp.AddCommandLine(args);
-                })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    //Creates a Generic Host using non-HTTP workload.
-                    //The IHostedService implementation is added to the DI container
-                    IConfiguration configuration = hostContext.Configuration;
-                    hostContext.HostingEnvironment.ApplicationName = "Exchange.Service";
-                    string[] allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
-                    if (allowedOrigins != null)
+                    Log.Information("Connecting to Graylog: {GrayLogRequestUrl}", grayLogRequestUrl);
+                    using HttpResponseMessage response = await client.GetAsync(grayLogRequestUrl);
+                    if (response.IsSuccessStatusCode)
                     {
-                        Log.Information($"Allowed Origins: {string.Join(",", allowedOrigins)}");
-                        ExchangeSettings exchangeSettings =
-                            configuration.GetSection("ExchangeSettings").Get<ExchangeSettings>();
-                        if (exchangeSettings != null)
-                            services.AddSingleton<IExchangeSettings>(exchangeSettings);
-                        //cross origin requests
-                        services.AddCors(options => options.AddPolicy(Startup.AllowSpecificOrigins, builder =>
-                        {
-                            builder.WithOrigins(allowedOrigins)
-                                .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
-                        }));
+                        Log.Information(
+                            "Connected to Graylog: {GrayLogRequestUrl} status code: {StatusCode}",
+                            grayLogRequestUrl,
+                            response.StatusCode);
+                        connected = true;
                     }
                     else
                     {
-                        Log.Information("Service CORS Origins: N/A");
+                        Log.Information(
+                            "Connection to Graylog: {GrayLogRequestUrl} status code: {StatusCode}",
+                            grayLogRequestUrl,
+                            response.StatusCode);
                     }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Unable to connect to Graylog: {GrayLogRequestUrl}", grayLogRequestUrl);
+                }
 
-                    services.AddSignalR();
-                    string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
-                    if (string.IsNullOrEmpty(directoryName))
-                        return;
-                    string pluginDirectory = Path.Combine(directoryName, "plugin");
-                    if (!Directory.Exists(pluginDirectory))
-                        Directory.CreateDirectory(pluginDirectory);
-                    ExchangePluginService exchangePluginService = new ExchangePluginService();
-                    exchangePluginService.AddPluginFromFolder(pluginDirectory);
-                    services.AddSingleton<IExchangePluginService>(exchangePluginService);
-                    services.AddSingleton<IExchangeService, ExchangeService>();
-                    services.AddHostedService<Worker>();
-                });
+                if (connected)
+                    return;
+
+                remainingAttempts--;
+                if (remainingAttempts <= 0)
+                    return;
+
+                Log.Information("Graylog connection attempts remaining: {Attempts}", remainingAttempts);
+                await Task.Delay(delayInMilliseconds);
+                delayInMilliseconds += 1000;
+            }
+        }
+
+        private static void ConfigureApplicationServices(
+            IServiceCollection services,
+            IConfiguration configuration)
+        {
+            ExchangeSettings exchangeSettings = configuration
+                .GetSection("ExchangeSettings")
+                .Get<ExchangeSettings>();
+            if (exchangeSettings != null)
+                services.AddSingleton<IExchangeSettings>(exchangeSettings);
+
+            string directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+            if (string.IsNullOrEmpty(directoryName))
+                return;
+
+            string pluginDirectory = Path.Combine(directoryName, "plugin");
+            Directory.CreateDirectory(pluginDirectory);
+            ExchangePluginService exchangePluginService = new ExchangePluginService();
+            exchangePluginService.AddPluginFromFolder(
+                pluginDirectory,
+                pluginType => !string.Equals(
+                    pluginType.Assembly.GetName().Name,
+                    "exchange.coinbase.advancedtrade",
+                    StringComparison.OrdinalIgnoreCase));
+            services.AddSingleton<IExchangePluginService>(exchangePluginService);
+            services.AddSingleton(new CoinbaseAdvancedTradeRegistrationOptions
+            {
+                Enabled = configuration.GetValue<bool>("CoinbaseAdvancedTrade:Enabled")
+            });
+            services.AddSingleton<ICoinbaseCredentialSource,
+                EnvironmentCoinbaseCredentialSource>();
+            services.AddSingleton<ICoinbaseAdvancedTradeRuntimeActivator,
+                CoinbaseAdvancedTradeRuntimeActivator>();
+            services.AddSingleton<CoinbaseAdvancedTradePluginRegistrar>();
+            services.AddSingleton<IExchangeService, ExchangeService>();
+            services.AddHostedService<Worker>();
         }
     }
 }

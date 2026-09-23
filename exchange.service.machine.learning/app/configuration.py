@@ -2,7 +2,6 @@
 import os
 import logging
 from pathlib import Path
-from os.path import join, dirname
 import graypy
 from pymongo import MongoClient
 from celery import Celery
@@ -23,47 +22,51 @@ class Configuration():
     mi_graylog_host = "127.0.0.1"
     mi_graylog_port = 12201
     mi_logger = None
-    mi_broker_url = "mongodb://celery:celery@mongodb:27017/celery"
-    mi_result_backend = "mongodb://celery:celery@mongodb:27017/celery"
+    mi_broker_url = None
+    mi_result_backend = None
+    mi_database_url = None
 
     def __init__(self):
-        path = Path(dirname(__file__))
+        service_directory = Path(__file__).resolve().parent.parent
         self.current_training_status = {}
 
-        if join(path.parent, '.env') is not None:
-            # Load file from the path.
-            load_dotenv(join(path.parent, '.env'))
-            self.celery = Celery('machinelearning')
-            self.mi_host = os.getenv("MI_HOST")
-            self.mi_port = os.getenv("MI_PORT")
-        if os.getenv("MI_GRAYLOG_HOST") is not None:
-            self.mi_graylog_host = os.getenv("MI_GRAYLOG_HOST")
-            self.mi_graylog_port = os.getenv("MI_GRAYLOG_PORT")
+        environment_file = service_directory / '.env'
+        if environment_file.is_file():
+            load_dotenv(environment_file)
+
+        self.celery = Celery('machinelearning')
+        self.mi_host = os.getenv("MI_HOST", self.mi_host)
+        self.mi_port = int(os.getenv("MI_PORT", str(self.mi_port)))
+        self.mi_logger = logging.getLogger('mi_logger')
+        self.mi_logger.addHandler(logging.NullHandler())
+
+        graylog_host = os.getenv("MI_GRAYLOG_HOST")
+        graylog_port = os.getenv("MI_GRAYLOG_PORT")
+        if graylog_host and graylog_port:
+            self.mi_graylog_host = graylog_host
+            self.mi_graylog_port = int(graylog_port)
             handler = graypy.GELFUDPHandler(
-                self.mi_graylog_host, int(self.mi_graylog_port))
-            self.mi_logger = logging.getLogger('mi_logger')
-            self.mi_logger.setLevel(logging.ERROR)
+                self.mi_graylog_host, self.mi_graylog_port)
             self.mi_logger.setLevel(logging.INFO)
             self.mi_logger.addHandler(handler)
-        if os.getenv("MI_BROKER_URL") is not None:
-            self.mi_broker_url = os.getenv("MI_BROKER_URL")
-            self.mi_result_backend = os.getenv("MI_RESULT_BACKEND")
+
+        self.mi_broker_url = os.getenv("MI_BROKER_URL")
+        self.mi_result_backend = os.getenv("MI_RESULT_BACKEND")
+        self.mi_database_url = os.getenv("MI_DATABASE_URL")
+        if bool(self.mi_broker_url) != bool(self.mi_result_backend):
+            raise ValueError(
+                "MI_BROKER_URL and MI_RESULT_BACKEND must be configured together")
+        if self.mi_broker_url and self.mi_result_backend:
             self.celery.conf.update(
                 broker_url=self.mi_broker_url,
                 result_backend=self.mi_result_backend,
                 broker_use_ssl=False,
-                authSource='celery',
-                authMechanism="SCRAM-SHA-1",
-                user='celery',
-                password='celery',
-                database_name='celery',
                 taskmeta_collection='celery_taskmeta',
                 groupmeta_collection='celery_groupmeta',
                 max_pool_size=10,
                 options=None
             )
-        if os.getenv("MI_GRAYLOG_HOST") is not None:
-            self.mi_logger.info('Configuration loading')
+        self.mi_logger.info('Configuration loading')
         super(Configuration, self).__init__()
 
     def get_mongo_database(self):
@@ -72,8 +75,9 @@ class Configuration():
         Returns:
             [type]: [description]
         """
-        mongodb_client = MongoClient(
-            "mongodb://machinelearning:machinelearning@mongodb:27017/machinelearning")
+        if not self.mi_database_url:
+            raise RuntimeError("MI_DATABASE_URL is required for database access")
+        mongodb_client = MongoClient(self.mi_database_url)
         return mongodb_client.machinelearning
 
     @staticmethod

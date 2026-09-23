@@ -1,5 +1,9 @@
 # exchange.core
 
+> Modernization is in progress. The supported local verification path is the isolated .NET 10, Angular 22, Python 3.13, Mongo 8 acceptance stack described below. The maintained development and production Compose definitions use Angular 22 behind the same-origin gateway; the retired Angular/Electron client and its legacy Compose profile have been removed.
+
+> The MongoDB/Graylog/Elasticsearch services in `docker-compose.yml` and `docker-compose.prod.yml` remain a legacy migration source, not an approved production deployment. They include incompatible old search/logging versions and host-specific storage. Do not attach their data volumes to newer images or run the custom Mongo repair initializer against valuable data. The target stack, backup/restore drill, and staged migration are tracked under `DATA-01` in the modernization notes.
+
 ## Build status
 
 **Master Branch**:
@@ -87,14 +91,14 @@ The following development process seems to work well for this project.
 
 ## Technologies
 
-**[Frontend Solution](exchange.signalR.client.web.frontend/README.md#section)**
+**[Frontend Solution](exchange.signalR.client.web.frontend.angular/README.md)**
 
 - [Angular](https://angular.io/) - (Framework - Frontend)
 - [TypeScript](https://www.typescriptlang.org/) - (Language - Frontend)
-- [Webpack](https://webpack.js.org/) - (Bundler)
+- [Angular CLI](https://angular.dev/tools/cli) - (Build tooling)
 - [npm](https://www.npmjs.com/) - (Package Manager)
-- [Karma](http://karma-runner.github.io/0.12/index.html) - (Test Runner)
-- [Jasmine](https://jasmine.github.io/) - (Test Framework)
+- [Vitest](https://vitest.dev/) - (Unit test framework)
+- [Playwright](https://playwright.dev/) - (Browser test framework)
 - [Rxjs](https://github.com/ReactiveX/rxjs) - Reactive library for handling asynchronous data calls, callbacks and event-based programs
 - [Sass](http://sass-lang.com/)
 - [Angular Material](https://material.angular.io/) - UI component Library
@@ -126,35 +130,57 @@ The following development process seems to work well for this project.
 - Using visual studios build solution.
 - Run the "copy_plugins.bat", it will copy the plugins to the exchange.service plugin directory (release and debug)
 - Using visual studios run the "exchange.service" project.
-- Using visual studio code, open the "exchange.signalR.client.web.frontend" directory and run the following
+- Using Visual Studio Code, open `exchange.signalR.client.web.frontend.angular` and run:
 
 ```shell
-npm install
+npm ci
 npm start
 ```
 
-- Navigate to localhost:9000
+- Navigate to <http://localhost:4200> for the Angular development server, or use the Docker acceptance setup below.
 
 ## Setup - Docker and Docker Compose
 
-- Using visual studio code, download and install docker
-- In some cases you might have to clean orphaned images using the following command:
+Docker Desktop must be running. Start the modern local acceptance stack from PowerShell:
 
-```shell
-docker image prune
+```powershell
+./scripts/start-modern-stack.ps1 -Build
+./scripts/test-modern-stack.ps1
 ```
 
-- Using visual studio code, remove volumes with the following command
+The supported browser entry point and diagnostic service ports are:
 
-```shell
-docker-compose down -v
+- Angular 22 gateway: <http://localhost:8088>
+- Direct frontend diagnostic port: <http://localhost:9080>
+- .NET backend health: <http://localhost:5000/health>
+- Machine-learning API: <http://localhost:5005/api/v1/predict/>
+
+Stop the stack while retaining its project-scoped volumes:
+
+```powershell
+./scripts/stop-modern-stack.ps1
 ```
 
-- Using visual studio code, build the docker image with the following command
+Pass `-RemoveVolumes` only when intentionally discarding acceptance Mongo data, ML artifacts, indicators, and logs. The acceptance definition does not start the obsolete frontend, Graylog, Elasticsearch, or use host-specific bind paths. Its reverse proxy provides the same-origin Angular, backend, SignalR, and ML route contract used by the maintained Compose stack. It is a local integration boundary, not an approved production deployment.
 
-```shell
-docker-compose up --build
+## Observability target acceptance
+
+The isolated authenticated Graylog 7.1.6/Data Node 7.1.6/MongoDB 8.0.26 target uses separate named volumes and ignored local secret files. It does not mount legacy data or join the application acceptance network.
+
+```powershell
+./scripts/initialize-observability-secrets.ps1
+./scripts/start-observability-stack.ps1
+./scripts/test-observability-stack.ps1
 ```
+
+Open <http://127.0.0.1:19000/> and complete Graylog's required first-start certificate preflight. Retrieve the temporary preflight login from recent Graylog logs; after setup, the normal admin password is stored locally in `.secrets/observability/graylog-root-password.txt`. Configure a GELF input only after Data Node is provisioned.
+
+```powershell
+docker compose -f docker-compose.observability.acceptance.yml logs graylog
+./scripts/stop-observability-stack.ps1
+```
+
+The stop script preserves volumes. `-RemoveVolumes` destroys only this isolated target project's MongoDB, Data Node, and Graylog acceptance state and should be used deliberately.
 
 ## Common Issues
 

@@ -46,7 +46,7 @@ def get_next_datetime(datetime_previous_str, datetime_current_str):
             datetime_previous_str, '%d/%m/%Y %H:%M:%S')
         datetime_current_object = datetime.datetime.strptime(
             datetime_current_str, '%d/%m/%Y %H:%M:%S')
-    except TypeError:
+    except (TypeError, ValueError):
         datetime_previous_object = datetime.datetime.strptime(
             datetime_previous_str, '%m/%d/%Y %H:%M:%S')
         datetime_current_object = datetime.datetime.strptime(
@@ -112,20 +112,28 @@ def load_normalized_data_from_json(indicator_file_name,
     try:
         with open(normalizer_path, 'r+') as json_file:
             data = json.load(json_file)
+        stored_minimum = data['min_close_value']
+        stored_maximum = data['max_close_value']
+        stored_epochs = data['epochs']
         if min_close_value is None or max_close_value is None:
-            result['min_close_value'] = data['min_close_value']
-            result['max_close_value'] = data['max_close_value']
-            result['epochs'] = data['epochs']
+            result['min_close_value'] = stored_minimum
+            result['max_close_value'] = stored_maximum
+            result['epochs'] = stored_epochs
             return result
-        
-        if min_close_value < data['min_close_value'] or \
-                max_close_value > data['max_close_value']:
+
+        merged_minimum = min(min_close_value, stored_minimum)
+        merged_maximum = max(max_close_value, stored_maximum)
+        result['min_close_value'] = merged_minimum
+        result['max_close_value'] = merged_maximum
+        result['epochs'] = stored_epochs
+        if merged_minimum != stored_minimum or merged_maximum != stored_maximum:
             save_normalized_data_to_json(
-                normalizer_path, indicator_file_name, min_close_value, max_close_value, epochs)
-            result['min_close_value'] = data['min_close_value']
-            result['max_close_value'] = data['max_close_value']
-            result['epochs'] = data['epochs']
-            return result
+                normalizer_path,
+                indicator_file_name,
+                merged_minimum,
+                merged_maximum,
+                stored_epochs)
+        return result
     except IOError:
         save_normalized_data_to_json(
             normalizer_path, indicator_file_name, min_close_value, max_close_value, epochs)
@@ -183,10 +191,12 @@ def reverse_normalize_array(data_list, min_close_value, max_close_value):
     Returns:
         list of float: [description]
     """
-    data_length = len(data_list)
+    flattened_data = data_list.reshape(-1) if hasattr(data_list, 'reshape') \
+        else data_list
+    data_length = len(flattened_data)
     normalized_data = []
     for index in range(data_length):
         normalized_value = normalize(
-            data_list[index], 0, 1, min_close_value, max_close_value)
+            flattened_data[index], 0, 1, min_close_value, max_close_value)
         normalized_data.append(normalized_value)
     return normalized_data

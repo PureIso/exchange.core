@@ -37,6 +37,11 @@ namespace exchange.core.implementations
 
         public void AddPluginFromFolder(string folderPath)
         {
+            AddPluginFromFolder(folderPath, null);
+        }
+
+        public void AddPluginFromFolder(string folderPath, Func<Type, bool> pluginTypeFilter)
+        {
             try
             {
                 foreach (string plugin in Directory.GetFiles(folderPath))
@@ -53,6 +58,8 @@ namespace exchange.core.implementations
                         if (pluginType.BaseType?.FullName != null && (pluginType.BaseType == null ||
                                                                       pluginType.BaseType.FullName.ToLower() !=
                                                                       AssemblyBaseTypeFullName))
+                            continue;
+                        if (pluginTypeFilter != null && !pluginTypeFilter(pluginType))
                             continue;
                         //New plug-in information setting
                         AbstractExchangePlugin pluginInterfaceInstance =

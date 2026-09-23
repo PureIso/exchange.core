@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 using exchange.core.enums;
 using exchange.core.models;
 using exchange.core.helpers;
@@ -15,12 +14,19 @@ namespace exchange.core.indicators
 {
     public class RelativeStrengthIndex
     {
-        public RelativeStrengthIndex(string fileName, Product product)
+        public RelativeStrengthIndex(
+            string fileName,
+            Product product,
+            TimeSpan? requestDelay = null,
+            TimeSpan? updateInterval = null)
         {
             RelativeStrengthIndexSettings = Load(fileName, product);
-            _updater = new System.Timers.Timer();
             _ioLock = new object();
+            _updaterLock = new object();
             _processHistorySemaphoreSlim = new SemaphoreSlim(1, 1);
+            _updaterTask = Task.CompletedTask;
+            _requestDelay = requestDelay ?? TimeSpan.FromSeconds(1);
+            _updateInterval = updateInterval ?? TimeSpan.FromMinutes(5);
             FileName = fileName;
             RelativeStrengthIndexSettings.Product = product;
         }
@@ -31,9 +37,13 @@ namespace exchange.core.indicators
 
         #region Fields
 
-        private readonly System.Timers.Timer _updater;
         private readonly object _ioLock;
+        private readonly object _updaterLock;
         private readonly SemaphoreSlim _processHistorySemaphoreSlim;
+        private readonly TimeSpan _requestDelay;
+        private readonly TimeSpan _updateInterval;
+        private CancellationTokenSource _updaterCancellation;
+        private Task _updaterTask;
 
         #endregion
 
@@ -48,18 +58,52 @@ namespace exchange.core.indicators
 
         public void EnableRelativeStrengthIndexUpdater()
         {
-            _updater.Elapsed += RelativeStrengthIndexUpdateHandlerAsync;
-            _updater.Interval = 300000; //10 minutes
-            _updater.Enabled = true;
-            _updater.Start();
-            RelativeStrengthIndexUpdateHandlerAsync(null, null);
+            lock (_updaterLock)
+            {
+                if (_updaterCancellation != null)
+                    return;
+
+                _updaterCancellation = new CancellationTokenSource();
+                _updaterTask = RunUpdaterAsync(_updaterCancellation.Token);
+            }
         }
 
-        public void DisableRelativeStrengthIndexUpdater()
+        public async Task DisableRelativeStrengthIndexUpdaterAsync()
         {
-            _updater.Enabled = false;
-            _updater.Stop();
-            _updater.Elapsed -= RelativeStrengthIndexUpdateHandlerAsync;
+            CancellationTokenSource cancellation;
+            Task updaterTask;
+            lock (_updaterLock)
+            {
+                cancellation = _updaterCancellation;
+                updaterTask = _updaterTask;
+                cancellation?.Cancel();
+            }
+
+            if (cancellation == null)
+                return;
+
+            try
+            {
+                await updaterTask;
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+            }
+            finally
+            {
+                bool ownsCancellation;
+                lock (_updaterLock)
+                {
+                    ownsCancellation = ReferenceEquals(_updaterCancellation, cancellation);
+                    if (ownsCancellation)
+                    {
+                        _updaterCancellation = null;
+                        _updaterTask = Task.CompletedTask;
+                    }
+                }
+                if (ownsCancellation)
+                    cancellation.Dispose();
+            }
         }
 
         #endregion
@@ -94,15 +138,20 @@ namespace exchange.core.indicators
             }
         }
 
-        private void RelativeStrengthIndexUpdateHandlerAsync(object source, ElapsedEventArgs e)
+        private async Task RunUpdaterAsync(CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(FileName))
-                return;
-            Task.WhenAll(
-                Task.Run(ProcessHistoryDailyChartDownload),
-                Task.Run(ProcessHistoryHourlyChartDownload),
-                Task.Run(ProcessHistoryQuarterlyChartDownload)
-            );
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!string.IsNullOrEmpty(FileName))
+                {
+                    await Task.WhenAll(
+                        ProcessHistoryDailyChartDownloadAsync(cancellationToken),
+                        ProcessHistoryHourlyChartDownloadAsync(cancellationToken),
+                        ProcessHistoryQuarterlyChartDownloadAsync(cancellationToken));
+                }
+                await Task.Delay(_updateInterval, cancellationToken);
+            }
         }
         private void SaveAnalyticData(string filePath, string data)
         {
@@ -112,11 +161,14 @@ namespace exchange.core.indicators
                     File.AppendAllText(filePath, data);
             }
         }
-        private async void ProcessHistoryDailyChartDownload()
+        private async Task ProcessHistoryDailyChartDownloadAsync(
+            CancellationToken cancellationToken)
         {
-            await _processHistorySemaphoreSlim.WaitAsync();
+            bool lockTaken = false;
             try
             {
+                await _processHistorySemaphoreSlim.WaitAsync(cancellationToken);
+                lockTaken = true;
                 string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_1D.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
@@ -169,6 +221,7 @@ namespace exchange.core.indicators
                 int endGap = 21;
                 while (startingDateTime < now)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     DateTime endingDateTime = startingDateTime.AddDays(endGap);
                     //Get the latest historic data
                     HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch
@@ -179,7 +232,7 @@ namespace exchange.core.indicators
                         Granularity = (Granularity) granularity
                     };
                     //Prevent overloaded calls by delaying for 1 second before call
-                    await Task.Delay(1000);
+                    await Task.Delay(_requestDelay, cancellationToken);
                     //Get the latest historic data
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                     if (!result.Any())
@@ -192,6 +245,7 @@ namespace exchange.core.indicators
                     //Iterate though the historic data
                     foreach (HistoricRate rate in result)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (rate.DateAndTime.Date >= now.Date)
                             break;
                         if (previousHistoricRate != null && previousHistoricRate.DateAndTime.ToString("dd/MM/yyyy") ==
@@ -302,21 +356,28 @@ namespace exchange.core.indicators
                     Save();
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
             catch (Exception ex)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: ProcessHistoryHourlyChartDownload\r\nException Stack Trace: {ex.StackTrace}");
+                    $"Method: ProcessHistoryDailyChartDownloadAsync\r\nException Stack Trace: {ex.StackTrace}");
             }
             finally
             {
-                _processHistorySemaphoreSlim.Release();
+                if (lockTaken)
+                    _processHistorySemaphoreSlim.Release();
             }
         }
-        private async void ProcessHistoryHourlyChartDownload()
+        private async Task ProcessHistoryHourlyChartDownloadAsync(
+            CancellationToken cancellationToken)
         {
-            await _processHistorySemaphoreSlim.WaitAsync();
+            bool lockTaken = false;
             try
             {
+                await _processHistorySemaphoreSlim.WaitAsync(cancellationToken);
+                lockTaken = true;
                 string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_1H.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
@@ -371,6 +432,7 @@ namespace exchange.core.indicators
                 int endGap = 7;
                 while (startingDateTime < now)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     DateTime endingDateTime = startingDateTime.AddDays(endGap).ToUniversalTime();
                     //Get the latest historic data
                     HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch
@@ -381,7 +443,7 @@ namespace exchange.core.indicators
                         Granularity = (Granularity) granularity
                     };
                     //Prevent overloaded calls by delaying for 1 second before call
-                    await Task.Delay(1000);
+                    await Task.Delay(_requestDelay, cancellationToken);
                     //Get the latest historic data
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                     if (!result.Any())
@@ -394,6 +456,7 @@ namespace exchange.core.indicators
                     //Iterate though the historic data
                     foreach (HistoricRate rate in result)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (rate.DateAndTime >= now)
                             break;
                         if (previousHistoricRate != null &&
@@ -511,21 +574,28 @@ namespace exchange.core.indicators
                     Save();
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
             catch (Exception e)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: ProcessHistoryDailyChartDownload\r\nException Stack Trace: {e.StackTrace}");
+                    $"Method: ProcessHistoryHourlyChartDownloadAsync\r\nException Stack Trace: {e.StackTrace}");
             }
             finally
             {
-                _processHistorySemaphoreSlim.Release();
+                if (lockTaken)
+                    _processHistorySemaphoreSlim.Release();
             }
         }
-        private async void ProcessHistoryQuarterlyChartDownload()
+        private async Task ProcessHistoryQuarterlyChartDownloadAsync(
+            CancellationToken cancellationToken)
         {
-            await _processHistorySemaphoreSlim.WaitAsync();
+            bool lockTaken = false;
             try
             {
+                await _processHistorySemaphoreSlim.WaitAsync(cancellationToken);
+                lockTaken = true;
                 string fileName = FileName + $"_{RelativeStrengthIndexSettings.Product.ID.ToLower()}_15M.csv";
                 string data = "DateTime,High,Open,Close,Low,Volume,MA7,RSI14\n";
                 //Validate file
@@ -582,6 +652,7 @@ namespace exchange.core.indicators
                 int endGap = 2;
                 while (startingDateTime < now)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     DateTime endingDateTime = startingDateTime.AddDays(endGap).ToUniversalTime();
                     //Get the latest historic data
                     HistoricCandlesSearch historicCandlesSearch = new HistoricCandlesSearch
@@ -592,7 +663,7 @@ namespace exchange.core.indicators
                         Granularity = (Granularity) granularity
                     };
                     //Prevent overloaded calls by delaying for 1 second before call
-                    await Task.Delay(1000);
+                    await Task.Delay(_requestDelay, cancellationToken);
                     //Get the latest historic data
                     List<HistoricRate> result = await UpdateProductHistoricCandles(historicCandlesSearch);
                     if (!result.Any())
@@ -605,6 +676,7 @@ namespace exchange.core.indicators
                     //Iterate though the historic data
                     foreach (HistoricRate rate in result)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         if (rate.DateAndTime >= now)
                             break;
                         if (previousHistoricRate != null &&
@@ -723,14 +795,18 @@ namespace exchange.core.indicators
                     Save();
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
             catch (Exception ex)
             {
                 ProcessLogBroadcast?.Invoke(MessageType.Error,
-                    $"Method: ProcessHistoryHourlyChartDownload\r\nException Stack Trace: {ex.StackTrace}");
+                    $"Method: ProcessHistoryQuarterlyChartDownloadAsync\r\nException Stack Trace: {ex.StackTrace}");
             }
             finally
             {
-                _processHistorySemaphoreSlim.Release();
+                if (lockTaken)
+                    _processHistorySemaphoreSlim.Release();
             }
         }
         #endregion

@@ -9,6 +9,8 @@ namespace exchange.core.models
 
         [JsonPropertyName("trade_id")] public int TradeID { get; set; }
 
+        [JsonPropertyName("external_trade_id")] public string ExternalTradeID { get; set; }
+
         [JsonPropertyName("product_id")] public string ProductID { get; set; }
 
         [JsonPropertyName("price")] public string Price { get; set; }

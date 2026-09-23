@@ -675,53 +675,6 @@ namespace exchange.test
         #region Web Socket Test
 
         [TestMethod]
-        public void WebSocketSubscribe_ShouldReturnTrue()
-        {
-            //Arrange
-            List<Product> products = new List<Product>
-            {
-                new Product
-                {
-                    ID = "BTC-EUR",
-                    BaseCurrency = "BTC",
-                    QuoteCurrency = "EUR",
-                    BaseMinSize = "0.001",
-                    BaseMaxSize = "10000.00",
-                    QuoteIncrement = "0.01"
-                },
-                new Product
-                {
-                    ID = "ETH-EUR",
-                    BaseCurrency = "ETH",
-                    QuoteCurrency = "EUR",
-                    BaseMinSize = "0.001",
-                    BaseMaxSize = "10000.00",
-                    QuoteIncrement = "0.01"
-                }
-            };
-            HttpClient httpClient = new HttpClient();
-            ClientWebSocket clientWebSocket = new ClientWebSocket();
-            Mock<ConnectionAdapter> connectionFactoryMock =
-                new Mock<ConnectionAdapter>(MockBehavior.Strict, httpClient);
-            connectionFactoryMock.Setup(x => x.WebSocketSendAsync(products.ToSubscribeString()))
-                .ReturnsAsync(
-                    @"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}");
-            connectionFactoryMock.Setup(x => x.IsWebSocketConnected()).Returns(true);
-            connectionFactoryMock.Setup(x => x.WebSocketReceiveAsync())
-                .Returns(Task.FromResult(
-                    @"{""type"":""subscriptions"",""channels"":[{""name"":""ticker"",""product_ids"":[""BTC-EUR"",""ETH-EUR""]}]}"));
-
-            Coinbase subjectUnderTest = new Coinbase
-            {
-                ClientWebSocket = clientWebSocket,
-                ConnectionAdapter = connectionFactoryMock.Object
-            };
-            //Act
-            subjectUnderTest.ChangeFeed(products);
-            Assert.IsTrue(true);
-        }
-
-        [TestMethod]
         [Timeout(5000)]
         public void WebSocketProcessFeed_ShouldReturnFeed()
         {

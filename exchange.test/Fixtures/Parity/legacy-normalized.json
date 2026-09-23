@@ -1,0 +1,66 @@
+{
+  "products": [
+    {
+      "id": "BTC-USD",
+      "base_currency": "BTC",
+      "quote_currency": "USD",
+      "base_min_size": "0.00000001",
+      "base_max_size": "100",
+      "quote_increment": "0.01"
+    }
+  ],
+  "account_balances": {
+    "BTC": 1.25,
+    "USD": 500.00
+  },
+  "orders": [
+    {
+      "id": "order-001",
+      "size": "0.10",
+      "product_id": "BTC-USD",
+      "side": "buy",
+      "type": "limit",
+      "post_only": false,
+      "price": "65000.00",
+      "time_in_force": "gtc",
+      "created_at": "2026-08-15T10:00:00Z",
+      "fill_fees": "1.25",
+      "filled_size": "0.10",
+      "executed_value": "6500.00",
+      "status": "done",
+      "settled": true
+    }
+  ],
+  "fills": [
+    {
+      "trade_id": 123,
+      "product_id": "BTC-USD",
+      "price": "65000.00",
+      "size": "0.10",
+      "order_id": "order-001",
+      "side": "buy",
+      "fee": "1.25",
+      "settled": true,
+      "created_at": "2026-08-15T10:00:01.100Z"
+    }
+  ],
+  "tickers": [
+    {
+      "ProductID": "BTC-USD",
+      "price": "65000.00",
+      "bid": "64999.00",
+      "ask": "65001.00",
+      "size": "0.25"
+    }
+  ],
+  "live_assets": [
+    {
+      "product_id": "BTC-USD",
+      "currency_price": 65000.00,
+      "best_bid": "64999.00",
+      "best_ask": "65001.00",
+      "twenty_four_hour_price_change": 500.00,
+      "twenty_four_hour_price_percentage_change": 0.775
+    }
+  ]
+}

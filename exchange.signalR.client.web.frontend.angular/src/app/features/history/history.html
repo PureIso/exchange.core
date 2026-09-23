@@ -1,0 +1,211 @@
+<section class="history-control" aria-label="History filters">
+  <div>
+    <p class="eyebrow">Read-only history</p>
+    <h2>Orders and fills</h2>
+  </div>
+  <label for="history-product">Product</label>
+  <select
+    id="history-product"
+    data-testid="history-product"
+    [value]="hub.historyProduct() ?? ''"
+    (change)="selectHistoryProduct($event)"
+    [disabled]="hub.products().length === 0"
+  >
+    @for (product of hub.products(); track product.id) {
+      <option [value]="product.id">{{ product.id }}</option>
+    }
+  </select>
+  <button
+    type="button"
+    data-testid="history-button"
+    (click)="hub.requestHistory()"
+    [disabled]="
+      hub.connectionState() !== 'connected' || !hub.historyProduct() || hub.historyLoading()
+    "
+  >
+    {{ hub.historyLoading() ? 'Loading…' : 'Load history' }}
+  </button>
+</section>
+
+<section class="products" data-testid="order-history" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">{{ hub.historyProduct() ?? 'Select a product' }}</p>
+      <h2>Orders</h2>
+    </div>
+    <span>{{ hub.orders().length }} orders</span>
+  </div>
+  @if (hub.orders().length > 0) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Side</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Size</th>
+            <th>Filled</th>
+            <th>Price</th>
+            <th>Fees</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of hub.orders(); track order.id) {
+            <tr>
+              <td>
+                <code>{{ order.id }}</code>
+              </td>
+              <td>
+                <span class="side" [attr.data-side]="order.side">{{ order.side }}</span>
+              </td>
+              <td>{{ order.type }}</td>
+              <td>{{ order.status }}</td>
+              <td>{{ order.size }}</td>
+              <td>{{ order.filled_size }}</td>
+              <td>{{ order.price || '—' }}</td>
+              <td>{{ order.fill_fees || '—' }}</td>
+              <td>{{ order.created_at }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="compact-empty">No orders loaded for this product.</p>
+  }
+</section>
+
+<section class="products" data-testid="fill-history" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">{{ hub.historyProduct() ?? 'Select a product' }}</p>
+      <h2>Fills</h2>
+    </div>
+    <span>{{ hub.fills().length }} fills</span>
+  </div>
+  @if (hub.fills().length > 0) {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Trade ID</th>
+            <th>Order ID</th>
+            <th>Side</th>
+            <th>Size</th>
+            <th>Price</th>
+            <th>Fee</th>
+            <th>Settled</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fill of hub.fills(); track fill.external_trade_id || fill.trade_id) {
+            <tr>
+              <td>
+                <code>{{ fill.external_trade_id || fill.trade_id }}</code>
+              </td>
+              <td>
+                <code>{{ fill.order_id }}</code>
+              </td>
+              <td>
+                <span class="side" [attr.data-side]="fill.side">{{ fill.side }}</span>
+              </td>
+              <td>{{ fill.size }}</td>
+              <td>{{ fill.price }}</td>
+              <td>{{ fill.fee }}</td>
+              <td>{{ fill.settled ? 'Yes' : 'No' }}</td>
+              <td>{{ fill.created_at }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="compact-empty">No fills loaded for this product.</p>
+  }
+</section>
+
+<section class="products" data-testid="fill-statistics" aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">{{ hub.historyProduct() ?? 'Select a product' }}</p>
+      <h2>Fill statistics</h2>
+    </div>
+    <button
+      type="button"
+      data-testid="statistics-button"
+      (click)="hub.requestFillStatistics()"
+      [disabled]="
+        hub.connectionState() !== 'connected' || !hub.historyProduct() || hub.statisticsLoading()
+      "
+    >
+      {{ hub.statisticsLoading() ? 'Loading…' : 'Load statistics' }}
+    </button>
+  </div>
+  @if (hub.fillStatistics(); as statistics) {
+    <div class="statistics-summary">
+      <div>
+        <span>Base currency</span><strong>{{ statistics.base_currency }}</strong>
+      </div>
+      <div>
+        <span>Quote currency</span><strong>{{ statistics.quote_currency }}</strong>
+      </div>
+      <div>
+        <span>Sell above levels</span
+        ><strong>{{ statistics.mini_fill_sell_above_list.length }}</strong>
+      </div>
+      <div>
+        <span>Buy below levels</span
+        ><strong>{{ statistics.mini_fill_buy_below_list.length }}</strong>
+      </div>
+    </div>
+    <div class="statistics-grid">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th colspan="2">Sell above</th>
+            </tr>
+            <tr>
+              <th>Price</th>
+              <th>Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (level of statistics.mini_fill_sell_above_list; track $index) {
+              <tr>
+                <td>{{ level.price }}</td>
+                <td>{{ level.size }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th colspan="2">Buy below</th>
+            </tr>
+            <tr>
+              <th>Price</th>
+              <th>Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (level of statistics.mini_fill_buy_below_list; track $index) {
+              <tr>
+                <td>{{ level.price }}</td>
+                <td>{{ level.size }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  } @else {
+    <p class="compact-empty">Fill statistics have not been loaded for this product.</p>
+  }
+</section>

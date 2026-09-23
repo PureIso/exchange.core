@@ -353,8 +353,13 @@ MigrationBackup/
 .ionide/
 
 exchange.service.machine.learning/static/*
+.env
+**/.env
+.secrets/
 env/
+.venv/
 out/
 build/
 coverage/
+/artifacts/
 .vscode/

@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+.feed-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+}
+.feed-control h2 {
+  margin-top: 0.2rem;
+}
+.feed-copy {
+  margin-top: 0.3rem;
+  color: #65727e;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.summary-card {
+  overflow: hidden;
+}
+.metric-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: #e5ebf0;
+}
+.metric-list > div {
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  background: #fff;
+}
+.metric-list dt {
+  overflow: hidden;
+  color: #65727e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric-list dd {
+  overflow-wrap: anywhere;
+  margin: 0.35rem 0 0;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .feed-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
