@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 using exchange.coinbase.advancedtrade;
 using exchange.coinbase.advancedtrade.authentication;
 using exchange.core.implementations;
@@ -101,6 +103,95 @@ namespace exchange.test
         }
 
         [TestMethod]
+        public async Task PublicDataRegistration_DoesNotReadCredentialsOrCreateAuthenticatedClients()
+        {
+            CountingCredentialSource credentials = new CountingCredentialSource();
+            RecordingPublicHandler publicHandler = new RecordingPublicHandler();
+            using CoinbaseAdvancedTradeRuntimeActivator activator =
+                new CoinbaseAdvancedTradeRuntimeActivator(
+                    credentials,
+                    () => new HttpClientHandler(),
+                    () => new HttpClient(publicHandler));
+            CoinbaseAdvancedTradePluginRegistrar registrar =
+                new CoinbaseAdvancedTradePluginRegistrar(
+                    new CoinbaseAdvancedTradeRegistrationOptions
+                    {
+                        PublicDataEnabled = true
+                    },
+                    activator);
+            ExchangePluginService plugins = new ExchangePluginService();
+
+            bool registered = await registrar.RegisterAsync(plugins, CancellationToken.None);
+
+            Assert.IsTrue(registered);
+            Assert.AreEqual(0, credentials.ReadCount);
+            Assert.IsEmpty(publicHandler.Requests);
+            Assert.HasCount(1, plugins.PluginExchanges);
+            CoinbaseAdvancedTrade plugin =
+                (CoinbaseAdvancedTrade)plugins.PluginExchanges[0];
+            FieldInfo authenticatedClientField = typeof(CoinbaseAdvancedTrade)
+                .GetField("_authenticatedClient", BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo userWebSocketField = typeof(CoinbaseAdvancedTrade)
+                .GetField("_userOrderWebSocket", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNull(authenticatedClientField?.GetValue(plugin));
+            Assert.IsNull(userWebSocketField?.GetValue(plugin));
+            plugin.Dispose();
+        }
+
+        [TestMethod]
+        public async Task PublicDataRegistration_FailsClosedForAccountHistoryAndWrites()
+        {
+            using CoinbaseAdvancedTradeRuntimeActivator activator =
+                new CoinbaseAdvancedTradeRuntimeActivator(new CountingCredentialSource());
+            CoinbaseAdvancedTradePluginRegistrar registrar =
+                new CoinbaseAdvancedTradePluginRegistrar(
+                    new CoinbaseAdvancedTradeRegistrationOptions
+                    {
+                        PublicDataEnabled = true
+                    },
+                    activator);
+            ExchangePluginService plugins = new ExchangePluginService();
+
+            await registrar.RegisterAsync(plugins, CancellationToken.None);
+            CoinbaseAdvancedTrade plugin =
+                (CoinbaseAdvancedTrade)plugins.PluginExchanges[0];
+
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.UpdateAccountsAsync());
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.UpdateOrdersAsync());
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.UpdateFillsAsync(null));
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.CancelAllOrdersAsync(null));
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.CancelOrderAsync(null));
+            await Assert.ThrowsAsync<NotSupportedException>(
+                () => plugin.PostOrdersAsync(null));
+            plugin.Dispose();
+        }
+
+        [TestMethod]
+        public async Task AuthenticatedAndPublicProfilesCannotBeEnabledTogether()
+        {
+            using CoinbaseAdvancedTradeRuntimeActivator activator =
+                new CoinbaseAdvancedTradeRuntimeActivator(new CountingCredentialSource());
+            CoinbaseAdvancedTradePluginRegistrar registrar =
+                new CoinbaseAdvancedTradePluginRegistrar(
+                    new CoinbaseAdvancedTradeRegistrationOptions
+                    {
+                        Enabled = true,
+                        PublicDataEnabled = true
+                    },
+                    activator);
+
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => registrar.RegisterAsync(new ExchangePluginService(), CancellationToken.None));
+
+            StringAssert.Contains(exception.Message, "mutually exclusive");
+        }
+
+        [TestMethod]
         public void RuntimeManagedPlugin_IsExcludedFromGenericFolderScanning()
         {
             string temporaryParent = Path.Combine(
@@ -187,6 +278,20 @@ namespace exchange.test
                 {
                     Content = new StringContent(_json, Encoding.UTF8, "application/json")
                 });
+            }
+        }
+
+        private sealed class RecordingPublicHandler : HttpMessageHandler
+        {
+            public List<Uri> Requests { get; } = new List<Uri>();
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                Requests.Add(request.RequestUri);
+                throw new InvalidOperationException(
+                    "The public registration test must not perform REST requests.");
             }
         }
     }

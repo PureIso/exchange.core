@@ -11,7 +11,7 @@ FROM nginx:1.30.4-alpine3.24-slim AS runtime
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/write-runtime-config.sh /usr/local/bin/write-runtime-config
-RUN chmod +x /usr/local/bin/write-runtime-config
+RUN sed -i 's/\r$//' /usr/local/bin/write-runtime-config && chmod +x /usr/local/bin/write-runtime-config
 COPY --from=build /app/dist/exchange-web/browser /usr/share/nginx/html
 
 ENV EXCHANGE_HUB_URL=http://localhost:5000/hubs/exchange

@@ -19,6 +19,7 @@ class Configuration():
     current_training_status = {}
     mi_host = "0.0.0.0"
     mi_port = 5005
+    mi_cors_allowed_origins: list[str] = []
     mi_graylog_host = "127.0.0.1"
     mi_graylog_port = 12201
     mi_logger = None
@@ -37,6 +38,14 @@ class Configuration():
         self.celery = Celery('machinelearning')
         self.mi_host = os.getenv("MI_HOST", self.mi_host)
         self.mi_port = int(os.getenv("MI_PORT", str(self.mi_port)))
+        configured_cors_origins: str = os.getenv("MI_CORS_ALLOWED_ORIGINS", "")
+        self.mi_cors_allowed_origins = [
+            origin.strip()
+            for origin in configured_cors_origins.split(",")
+            if origin.strip()]
+        if any("*" in origin for origin in self.mi_cors_allowed_origins):
+            raise ValueError(
+                "MI_CORS_ALLOWED_ORIGINS must not contain wildcard origins")
         self.mi_logger = logging.getLogger('mi_logger')
         self.mi_logger.addHandler(logging.NullHandler())
 
@@ -81,25 +90,41 @@ class Configuration():
         return mongodb_client.machinelearning
 
     @staticmethod
-    def get_files():
+    def get_files() -> list[str]:
         """[summary]
 
         Returns:
             [type]: [description]
         """
-        indicator_files = []
-        os.chdir(os.path.dirname(__file__))
-        os.chdir("..")
-        directory = os.getcwd()
-        directory = os.path.join(directory, "static")
-        data_files = os.listdir(directory)
-        for file_name in data_files:
-            if file_name.endswith(".csv"):
-                indicator_files.append(file_name)
-        return indicator_files
+        directory: Path = Configuration.get_static_directory()
+        if not directory.is_dir():
+            return []
+
+        static_directory: Path = directory.resolve()
+        return sorted(
+            path.name
+            for path in directory.iterdir()
+            if path.is_file()
+            and not path.is_symlink()
+            and path.suffix == ".csv"
+            and path.resolve().parent == static_directory)
 
     @staticmethod
-    def get_file(indicator_file):
+    def get_static_directory() -> Path:
+        """Return the service directory containing CSV inventory files."""
+        return Path(__file__).resolve().parent.parent / "static"
+
+    @staticmethod
+    def is_valid_indicator_file(indicator_file: object) -> bool:
+        """Return whether the value is an exact CSV inventory basename."""
+        if not isinstance(indicator_file, str) or not indicator_file:
+            return False
+        if "/" in indicator_file or "\\" in indicator_file:
+            return False
+        return indicator_file in Configuration.get_files()
+
+    @staticmethod
+    def get_file(indicator_file: str) -> str | None:
         """[summary]
 
         Args:
@@ -108,18 +133,14 @@ class Configuration():
         Returns:
             [type]: [description]
         """
-        os.chdir(os.path.dirname(__file__))
-        os.chdir("..")
-        directory = os.getcwd()
-        directory = os.path.join(directory, "static")
-        data_files = os.listdir(directory)
-        for file_name in data_files:
-            if file_name.endswith(indicator_file):
-                return os.path.join(directory, file_name)
-        return None
+        if not Configuration.is_valid_indicator_file(indicator_file):
+            return None
+        static_directory: Path = Configuration.get_static_directory()
+        indicator_path: Path = static_directory / indicator_file
+        return str(indicator_path)
 
     @staticmethod
-    def get_file_normalized_file(indicator_file):
+    def get_file_normalized_file(indicator_file: str) -> str:
         """[summary]
 
         Args:
@@ -128,18 +149,14 @@ class Configuration():
         Returns:
             [type]: [description]
         """
-        directory = Configuration.get_directory(indicator_file)
-        indicator_file = indicator_file.replace(".csv", "_normalizer.json")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        data_files = os.listdir(directory)
-        for file_name in data_files:
-            if file_name.endswith(indicator_file):
-                return os.path.join(directory, file_name)
-        return os.path.join(directory, indicator_file)
+        directory: Path = Configuration.get_directory(indicator_file)
+        normalizer_file: str = indicator_file[:-4] + "_normalizer.json"
+        directory.mkdir(parents=True, exist_ok=True)
+        existing_file: Path = directory / normalizer_file
+        return str(existing_file)
 
     @staticmethod
-    def get_file_model_file(indicator_file):
+    def get_file_model_file(indicator_file: str) -> str:
         """[summary]
 
         Args:
@@ -148,18 +165,14 @@ class Configuration():
         Returns:
             [type]: [description]
         """
-        indicator_model_file = indicator_file.replace(".csv", "_model.h5")
-        directory = Configuration.get_directory(indicator_file)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        data_files = os.listdir(directory)
-        for file_name in data_files:
-            if file_name.endswith(indicator_model_file):
-                return os.path.join(directory, file_name)
-        return os.path.join(directory, indicator_model_file)
+        directory: Path = Configuration.get_directory(indicator_file)
+        model_file: str = indicator_file[:-4] + "_model.h5"
+        directory.mkdir(parents=True, exist_ok=True)
+        existing_file: Path = directory / model_file
+        return str(existing_file)
 
     @staticmethod
-    def get_directory(indicator_file):
+    def get_directory(indicator_file: str) -> Path:
         """[summary]
 
         Args:
@@ -168,8 +181,7 @@ class Configuration():
         Returns:
             [type]: [description]
         """
-        indicator_file = indicator_file.replace(".csv", "").replace("-", "_")
-        os.chdir(os.path.dirname(__file__))
-        os.chdir("..")
-        directory = os.getcwd()
-        return os.path.join(directory, "static/{0}".format(indicator_file))
+        if not Configuration.is_valid_indicator_file(indicator_file):
+            raise ValueError("Invalid indicator file")
+        directory_name: str = indicator_file[:-4].replace("-", "_")
+        return Configuration.get_static_directory() / directory_name

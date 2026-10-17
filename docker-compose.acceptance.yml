@@ -8,6 +8,7 @@ x-machine-learning-environment: &machine-learning-environment
     MI_BROKER_URL: mongodb://mongodb:27017/celery
     MI_RESULT_BACKEND: mongodb://mongodb:27017/celery
     MI_DATABASE_URL: mongodb://mongodb:27017/machinelearning
+    MI_CORS_ALLOWED_ORIGINS: ${MI_CORS_ALLOWED_ORIGINS:-}
 
 networks:
     acceptance:
@@ -18,6 +19,7 @@ volumes:
     mongo_config:
     backend_logs:
     backend_indicators:
+    backend_config:
     ml_artifacts:
 
 services:
@@ -47,9 +49,12 @@ services:
             - "${BACKEND_ACCEPTANCE_PORT:-5000}:5000"
         environment:
             ASPNETCORE_ENVIRONMENT: Docker
+            GrayLogUrl: ""
+            CoinbaseAdvancedTrade__PublicDataEnabled: "true"
         volumes:
             - backend_logs:/exchange/service/logs
             - backend_indicators:/exchange/service/indicators
+            - backend_config:/exchange/service/config
         read_only: true
         tmpfs:
             - /tmp
@@ -90,7 +95,6 @@ services:
         build:
             context: .
             dockerfile: ./docker/service.machine.learning/Dockerfile
-        command: ["python", "main.py"]
         ports:
             - "${ML_ACCEPTANCE_PORT:-5005}:5005"
         environment: *machine-learning-environment

@@ -317,6 +317,10 @@ grpcio==1.83.0 \
     --hash=sha256:f5f410d7c2903eabb34789dfd6342eef04af1ad459943936b7e09a9f5bd417b9 \
     --hash=sha256:fba099b716e73512d61b97f71ea3c31a72abb36904036e316bf4dd148ca8dcc8
     # via tensorflow
+gunicorn==26.2.0 \
+    --hash=sha256:62b864895d9ebff0b2f9867ba04fe811c93121596540830c9c916d0769668447 \
+    --hash=sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3
+    # via -r requirements.in
 h5py==3.14.0 \
     --hash=sha256:016e89d3be4c44f8d5e115fab60548e518ecd9efe9fa5c5324505a90773e6f03 \
     --hash=sha256:0cbd41f4e3761f150aa5b662df991868ca533872c95467216f2bec5fcad84882 \

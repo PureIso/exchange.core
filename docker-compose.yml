@@ -6,6 +6,7 @@ x-machine-learning-environment: &machine-learning-environment
     MI_BROKER_URL: ${MI_BROKER_URL:?Set MI_BROKER_URL in .env}
     MI_RESULT_BACKEND: ${MI_RESULT_BACKEND:?Set MI_RESULT_BACKEND in .env}
     MI_DATABASE_URL: ${MI_DATABASE_URL:?Set MI_DATABASE_URL in .env}
+    MI_CORS_ALLOWED_ORIGINS: ${MI_CORS_ALLOWED_ORIGINS:-}
 
 networks:
     bridge:
@@ -261,7 +262,6 @@ services:
             dockerfile: ./docker/service.machine.learning/Dockerfile
         ports:
             - 5005:5005
-        command: ["python", "main.py"]
         volumes:
             - exchange_service_indicators:/usr/src/app/static:rw
         read_only: true

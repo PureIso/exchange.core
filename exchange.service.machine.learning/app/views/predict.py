@@ -1,7 +1,9 @@
 """Predict API Controller"""
 from flask_restful import Resource, reqparse
 from flask import json, Response
+from typing import Any
 from app.tasks.task_work import prediction
+from app.configuration import Configuration
 
 
 class Predict(Resource):
@@ -28,20 +30,26 @@ class Predict(Resource):
                             mimetype='application/json')
         return response
 
-    def post(self):
+    def post(self) -> Response:
         """predict [post] method
         Returns:
             Response: The response
         """
-        args = self.reqparse.parse_args()
-        indicator_file = args['indicator_file']
-        task = prediction.delay(indicator_file)
-        message = json.dumps({
+        args: Any = self.reqparse.parse_args()
+        indicator_file: Any = args['indicator_file']
+        if not Configuration.is_valid_indicator_file(indicator_file):
+            response: Response = Response(
+                json.dumps({"error": "invalid_indicator_file"}),
+                status=400,
+                mimetype='application/json')
+            return response
+        task: Any = prediction.delay(indicator_file)
+        message: str = json.dumps({
             "task_id": str(task.task_id),
             "status": str(task.status)})
 
         self.configuration.mi_logger.info(message)
-        response = Response(message,
+        response: Response = Response(message,
                             status=202,  # Status Accepted
                             mimetype='application/json')
         return response

@@ -8,12 +8,14 @@ from app.views.task_status import TaskStatus
 from app.views.recurrent_neural_network import RecurrentNeuralNetwork
 
 
-def create_app(configuration=None):
+def create_app(configuration: Configuration | None = None) -> Flask:
     """Create the Flask application without starting the development server."""
     configuration = configuration or Configuration()
-    application = Flask(__name__, static_url_path='/static')
-    CORS(application, resources={r"/api/v1/*": {"origins": "*"}})
-    api = Api(application)
+    application: Flask = Flask(__name__, static_url_path='/static')
+    origins: list[str] = configuration.mi_cors_allowed_origins
+    if origins:
+        CORS(application, resources={r"/api/v1/*": {"origins": origins}})
+    api: Api = Api(application)
     api.add_resource(
         RecurrentNeuralNetwork,
         '/',

@@ -1,0 +1,17 @@
+{
+  "accounts": [
+    {
+      "uuid": "sandbox-account-1",
+      "name": "Static contract fixture",
+      "currency": "USD",
+      "available_balance": {
+        "value": "0",
+        "currency": "USD"
+      },
+      "default": true,
+      "active": true
+    }
+  ],
+  "has_next": false,
+  "cursor": ""
+}

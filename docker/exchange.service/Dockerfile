@@ -37,7 +37,11 @@ ENV ASPNETCORE_ENVIRONMENT=Docker \
     DOTNET_EnableDiagnostics=0
 
 WORKDIR /app
-RUN mkdir -p \
+RUN apt-get update \
+    && apt-get upgrade --yes --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p \
         /app/plugin \
         /exchange/service/logs \
         /exchange/service/indicators \

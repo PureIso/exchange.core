@@ -1,6 +1,7 @@
 """Characterize the existing Flask and Celery-facing HTTP contract."""
 import unittest
-from unittest.mock import patch
+from typing import Any
+from unittest.mock import Mock, patch
 
 from dependency_stubs import install_import_stubs
 
@@ -36,9 +37,10 @@ class _Celery:
 
 
 class _Configuration:
-    def __init__(self, result=None):
+    def __init__(self, result: _Task | None = None) -> None:
         self.mi_logger = _Logger()
         self.celery = _Celery(result)
+        self.mi_cors_allowed_origins: list[str] = []
 
 
 class ApiContractTests(unittest.TestCase):
@@ -63,19 +65,37 @@ class ApiContractTests(unittest.TestCase):
                     },
                     response.get_json())
 
-    def test_predict_get_contract_and_cors(self):
+    def test_predict_get_contract_has_no_cross_origin_access_by_default(self):
         response = self.client.get(
-            "/api/v1/predict/", headers={"Origin": "https://example.test"})
+            "/api/v1/predict/", headers={"Origin": "https://unconfigured.example"})
 
         self.assertEqual(200, response.status_code)
         self.assertEqual({"API VERSION": "1.0.0"}, response.get_json())
-        self.assertEqual("https://example.test", response.headers["Access-Control-Allow-Origin"])
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
 
+    def test_predict_get_cors_allows_only_configured_origins(self) -> None:
+        configuration: _Configuration = _Configuration()
+        configuration.mi_cors_allowed_origins = ["https://allowed.example"]
+        application: Any = create_app(configuration)
+
+        allowed_response: Any = application.test_client().get(
+            "/api/v1/predict/", headers={"Origin": "https://allowed.example"})
+        denied_response: Any = application.test_client().get(
+            "/api/v1/predict/", headers={"Origin": "https://unconfigured.example"})
+
+        self.assertEqual(
+            "https://allowed.example",
+            allowed_response.headers["Access-Control-Allow-Origin"])
+        self.assertNotIn("Access-Control-Allow-Origin", denied_response.headers)
+
+    @patch("app.views.predict.Configuration.is_valid_indicator_file",
+           return_value=True)
     @patch("app.views.predict.prediction.delay")
-    def test_predict_post_dispatches_prediction(self, delay):
+    def test_predict_post_dispatches_prediction(
+            self, delay: Mock, valid_indicator: Mock) -> None:
         delay.return_value = _Task(task_id="prediction-1", status="PENDING")
 
-        response = self.client.post(
+        response: Any = self.client.post(
             "/api/v1/predict/", json={"indicator_file": "btc-eur.csv"})
 
         self.assertEqual(202, response.status_code)
@@ -83,12 +103,16 @@ class ApiContractTests(unittest.TestCase):
             {"task_id": "prediction-1", "status": "PENDING"},
             response.get_json())
         delay.assert_called_once_with("btc-eur.csv")
+        valid_indicator.assert_called_once_with("btc-eur.csv")
 
+    @patch("app.views.recurrent_neural_network.Configuration.is_valid_indicator_file",
+           return_value=True)
     @patch("app.views.recurrent_neural_network.training.delay")
-    def test_rnn_post_dispatches_training(self, delay):
+    def test_rnn_post_dispatches_training(
+            self, delay: Mock, valid_indicator: Mock) -> None:
         delay.return_value = _Task(task_id="training-1", status="PENDING")
 
-        response = self.client.post(
+        response: Any = self.client.post(
             "/api/v1/rnn/", json={"indicator_file": "eth-eur.csv"})
 
         self.assertEqual(202, response.status_code)
@@ -96,6 +120,33 @@ class ApiContractTests(unittest.TestCase):
             {"task_id": "training-1", "status": "PENDING"},
             response.get_json())
         delay.assert_called_once_with("eth-eur.csv")
+        valid_indicator.assert_called_once_with("eth-eur.csv")
+
+    @patch("app.views.predict.Configuration.is_valid_indicator_file",
+           return_value=False)
+    @patch("app.views.predict.prediction.delay")
+    def test_predict_rejects_invalid_indicator_without_enqueueing(
+            self, delay: Mock, valid_indicator: Mock) -> None:
+        response: Any = self.client.post(
+            "/api/v1/predict/", json={"indicator_file": "../secret.csv"})
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual({"error": "invalid_indicator_file"}, response.get_json())
+        delay.assert_not_called()
+        valid_indicator.assert_called_once_with("../secret.csv")
+
+    @patch("app.views.recurrent_neural_network.Configuration.is_valid_indicator_file",
+           return_value=False)
+    @patch("app.views.recurrent_neural_network.training.delay")
+    def test_rnn_rejects_invalid_indicator_without_enqueueing(
+            self, delay: Mock, valid_indicator: Mock) -> None:
+        response: Any = self.client.post(
+            "/api/v1/rnn/", json={"indicator_file": "missing.csv"})
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual({"error": "invalid_indicator_file"}, response.get_json())
+        delay.assert_not_called()
+        valid_indicator.assert_called_once_with("missing.csv")
 
     def test_pending_task_status_has_empty_status(self):
         response = self.client.post(
@@ -118,6 +169,52 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(
             {"state": "SUCCESS", "status": {"current_progress": 100}},
             response.get_json())
+
+    def test_progress_task_status_normalizes_dict_metadata(self) -> None:
+        configuration: _Configuration = _Configuration(
+            _Task(status="PROGRESS", info={"progress": 70}))
+        application: Any = create_app(configuration)
+        application.config.update(TESTING=True)
+
+        response: Any = application.test_client().post(
+            "/api/v1/taskstatus/", json={"task_id": "task-789"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "state": "PROGRESS",
+                "status": {
+                    "current_progress": 70,
+                    "total_progress": 100,
+                    "status": "Task in progress.",
+                },
+            },
+            response.get_json())
+
+    def test_failure_status_is_generic_and_does_not_log_exception_details(
+            self) -> None:
+        secret: str = "sentinel-secret-value"
+        configuration: _Configuration = _Configuration(
+            _Task(status="FAILURE", info=RuntimeError(secret)))
+        application: Any = create_app(configuration)
+        application.config.update(TESTING=True)
+
+        response: Any = application.test_client().post(
+            "/api/v1/taskstatus/", json={"task_id": "task-failed"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "state": "FAILURE",
+                "status": {
+                    "current_progress": 0,
+                    "total_progress": 100,
+                    "status": "Task failed.",
+                },
+            },
+            response.get_json())
+        self.assertNotIn(secret, response.get_data(as_text=True))
+        self.assertNotIn(secret, "".join(configuration.mi_logger.messages))
 
 
 if __name__ == "__main__":

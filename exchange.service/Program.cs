@@ -162,7 +162,9 @@ namespace exchange.service
             services.AddSingleton<IExchangePluginService>(exchangePluginService);
             services.AddSingleton(new CoinbaseAdvancedTradeRegistrationOptions
             {
-                Enabled = configuration.GetValue<bool>("CoinbaseAdvancedTrade:Enabled")
+                Enabled = configuration.GetValue<bool>("CoinbaseAdvancedTrade:Enabled"),
+                PublicDataEnabled = configuration.GetValue<bool>(
+                    "CoinbaseAdvancedTrade:PublicDataEnabled")
             });
             services.AddSingleton<ICoinbaseCredentialSource,
                 EnvironmentCoinbaseCredentialSource>();

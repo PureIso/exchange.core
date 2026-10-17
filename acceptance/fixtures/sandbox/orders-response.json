@@ -1,0 +1,12 @@
+{
+  "orders": [
+    {
+      "order_id": "sandbox-order-1",
+      "product_id": "BTC-USD",
+      "status": "OPEN",
+      "order_type": "LIMIT",
+      "side": "BUY"
+    }
+  ],
+  "sequence": 1
+}
