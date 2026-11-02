@@ -60,7 +60,7 @@ pyasn1-modules==0.2.8
 pycodestyle==2.6.0
 pycparser==2.20
 Pygments==2.15.0
-pylint==2.6.0
+pylint==4.0.9
 pymongo==4.6.3
 pyparsing==2.4.7
 python-dateutil==2.8.1
